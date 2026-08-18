@@ -1,19 +1,28 @@
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL;
 
-async function request(endpoint, options = {}) {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
-  });
+async function request(
+  endpoint,
+  options = {}
+) {
+  const response = await fetch(
+    `${API_URL}${endpoint}`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    }
+  );
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     throw new Error(
-      data?.error?.message || "Something went wrong."
+      data?.error?.message ||
+        "Something went wrong."
     );
   }
 
@@ -50,6 +59,15 @@ export const api = {
       body: JSON.stringify({
         refreshToken,
       }),
+    });
+  },
+
+  getReservations(accessToken) {
+    return request("/reservations", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
   },
 };
