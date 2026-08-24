@@ -70,4 +70,13 @@ export const api = {
       },
     });
   },
+
+  getReservation(id, accessToken) {
+    return request(`/reservations/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+  },
 };
