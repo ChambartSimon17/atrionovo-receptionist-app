@@ -5,7 +5,11 @@ import {
   useState,
 } from "react";
 
-import { api } from "../services/api";
+import {
+  api,
+  configureAuth,
+} from "../services/api";
+
 import {
   saveTokens,
   getAccessToken,
@@ -31,6 +35,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     restoreSession();
+  }, []);
+
+  useEffect(() => {
+    configureAuth({
+      tokenRefreshed: (
+        newAccessToken
+      ) => {
+        setAccessToken(
+          newAccessToken
+        );
+      },
+
+      authFailure: async () => {
+        await clearTokens();
+
+        setAccessToken(null);
+        setUser(null);
+        setRestaurant(null);
+      },
+    });
   }, []);
 
   async function restoreSession() {

@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +27,9 @@ export default function ReservationDetails() {
 
   const [error, setError] =
     useState(null);
+
+  const [cancelling, setCancelling] =
+    useState(false);
 
   useEffect(() => {
     async function loadReservation() {
@@ -103,6 +107,68 @@ export default function ReservationDetails() {
     }
   }
 
+  function handleCancelReservation() {
+    Alert.alert(
+      "Reservatie annuleren",
+      "Weet je zeker dat je deze reservatie wilt annuleren?",
+      [
+        {
+          text: "Nee",
+          style: "cancel",
+        },
+        {
+          text: "Ja, annuleren",
+          style: "destructive",
+          onPress: cancelReservation,
+        },
+      ]
+    );
+  }
+
+  async function cancelReservation() {
+    if (!id || !accessToken) {
+      return;
+    }
+
+    try {
+      setCancelling(true);
+
+      await api.cancelReservation(
+        id,
+        accessToken
+      );
+
+      setReservation((current) => ({
+        ...current,
+        status: "CANCELLED",
+      }));
+
+      Alert.alert(
+        "Reservatie geannuleerd",
+        "De reservatie is succesvol geannuleerd.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error(
+        "Failed to cancel reservation:",
+        error
+      );
+
+      Alert.alert(
+        "Annuleren mislukt",
+        error.message ||
+          "De reservatie kon niet worden geannuleerd."
+      );
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -165,7 +231,14 @@ export default function ReservationDetails() {
             Reservatie
           </Text>
 
-          <View style={styles.statusCard}>
+          <View
+            style={[
+              styles.statusCard,
+              reservation.status ===
+                "CANCELLED" &&
+                styles.cancelledStatusCard,
+            ]}
+          >
             <Text style={styles.label}>
               Status
             </Text>
@@ -245,6 +318,37 @@ export default function ReservationDetails() {
               {reservation.notes || "-"}
             </Text>
           </View>
+
+          {reservation.status ===
+            "CONFIRMED" && (
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[
+                  styles.cancelButton,
+                  cancelling &&
+                    styles.disabledButton,
+                ]}
+                onPress={
+                  handleCancelReservation
+                }
+                disabled={cancelling}
+              >
+                {cancelling ? (
+                  <ActivityIndicator
+                    color="#fff"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.cancelButtonText
+                    }
+                  >
+                    Reservatie annuleren
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -324,6 +428,10 @@ const styles = StyleSheet.create({
     borderLeftColor: "#22c55e",
   },
 
+  cancelledStatusCard: {
+    borderLeftColor: "#ef4444",
+  },
+
   label: {
     fontSize: 14,
     color: "#888",
@@ -338,6 +446,29 @@ const styles = StyleSheet.create({
   status: {
     fontSize: 20,
     fontWeight: "700",
+  },
+
+  actions: {
+    marginTop: 12,
+  },
+
+  cancelButton: {
+    backgroundColor: "#ef4444",
+    minHeight: 54,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   center: {
