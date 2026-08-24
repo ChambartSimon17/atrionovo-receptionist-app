@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useAuth } from "../context/auth-context";
 import { api } from "../services/api";
 
@@ -254,6 +254,7 @@ export default function Dashboard() {
     user,
     restaurant,
     accessToken,
+    logout,
   } = useAuth();
 
   const { width } =
@@ -322,9 +323,11 @@ export default function Dashboard() {
     );
 
 
-  useEffect(() => {
-    loadReservations();
-  }, [loadReservations]);
+  useFocusEffect(
+    useCallback(() => {
+      loadReservations(true);
+    }, [loadReservations])
+  );
 
 
   // ====================================================
@@ -691,6 +694,19 @@ export default function Dashboard() {
             dinnerReservations
           }
         />
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={async () => {
+            await logout();
+            router.replace("/login");
+          }}
+        >
+          <Text style={styles.logoutText}>
+            Uitloggen
+          </Text>
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -1065,5 +1081,23 @@ const styles = StyleSheet.create({
   emptyServiceText: {
     fontSize: 14,
     color: "#999",
+  },
+
+  // ====================================================
+  // Logout button
+  // ====================================================
+
+  logoutButton: {
+    backgroundColor: "#111",
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  logoutText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
