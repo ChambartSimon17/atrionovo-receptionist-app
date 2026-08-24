@@ -10,13 +10,6 @@ const API_URL =
 // ======================================================
 // Auth refresh state
 // ======================================================
-//
-// When multiple API requests receive a 401 at the same
-// time, they should all wait for the same refresh request.
-//
-// This prevents multiple refresh requests from happening
-// simultaneously.
-// ======================================================
 
 let refreshPromise = null;
 
@@ -49,12 +42,14 @@ async function request(
   const response = await fetch(
     `${API_URL}${endpoint}`,
     {
+      ...options,
+
       headers: {
         "Content-Type":
           "application/json",
+
         ...options.headers,
       },
-      ...options,
     }
   );
 
@@ -81,8 +76,6 @@ async function request(
 // ======================================================
 
 async function refreshAccessToken() {
-  // If another request is already refreshing,
-  // wait for that same refresh request.
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -104,6 +97,7 @@ async function refreshAccessToken() {
             "/auth/refresh",
             {
               method: "POST",
+
               body: JSON.stringify({
                 refreshToken,
               }),
@@ -124,8 +118,6 @@ async function refreshAccessToken() {
             newRefreshToken,
         });
 
-        // Tell AuthContext about the
-        // new access token.
         if (onTokenRefreshed) {
           onTokenRefreshed(
             newAccessToken
@@ -173,9 +165,6 @@ async function authenticatedRequest(
       }
     );
   } catch (error) {
-    // Only refresh when the backend
-    // explicitly tells us the access
-    // token is unauthorized.
     if (error.status !== 401) {
       throw error;
     }
@@ -183,8 +172,6 @@ async function authenticatedRequest(
     const newAccessToken =
       await refreshAccessToken();
 
-    // Retry the ORIGINAL request
-    // with the new access token.
     return request(
       endpoint,
       {
@@ -206,11 +193,16 @@ async function authenticatedRequest(
 // ======================================================
 
 export const api = {
+  // ====================================================
+  // Auth
+  // ====================================================
+
   login(credentials) {
     return request(
       "/auth/login",
       {
         method: "POST",
+
         body: JSON.stringify(
           credentials
         ),
@@ -223,6 +215,7 @@ export const api = {
       "/auth/register",
       {
         method: "POST",
+
         body: JSON.stringify(
           userData
         ),
@@ -245,12 +238,17 @@ export const api = {
       "/auth/refresh",
       {
         method: "POST",
+
         body: JSON.stringify({
           refreshToken,
         }),
       }
     );
   },
+
+  // ====================================================
+  // Reservations
+  // ====================================================
 
   getReservations(accessToken) {
     return authenticatedRequest(
@@ -284,6 +282,42 @@ export const api = {
       accessToken,
       {
         method: "POST",
+      }
+    );
+  },
+
+  updateReservation(
+    reservationId,
+    reservation,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/${reservationId}`,
+      accessToken,
+      {
+        method: "PUT",
+
+        body: JSON.stringify(
+          reservation
+        ),
+      }
+    );
+  },
+
+  rescheduleReservation(
+    reservationId,
+    startTime,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/${reservationId}/reschedule`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify({
+          startTime,
+        }),
       }
     );
   },

@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "../../context/auth-context";
@@ -169,6 +172,12 @@ export default function ReservationDetails() {
     }
   }
 
+  function handleEditReservation() {
+    router.push(
+      `/reservation/edit?id=${reservation.id}`
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -323,6 +332,21 @@ export default function ReservationDetails() {
             "CONFIRMED" && (
             <View style={styles.actions}>
               <TouchableOpacity
+                style={styles.editButton}
+                onPress={
+                  handleEditReservation
+                }
+              >
+                <Text
+                  style={
+                    styles.editButtonText
+                  }
+                >
+                  Reservatie wijzigen
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[
                   styles.cancelButton,
                   cancelling &&
@@ -450,6 +474,22 @@ const styles = StyleSheet.create({
 
   actions: {
     marginTop: 12,
+  },
+
+  editButton: {
+    backgroundColor: "#087FE5",
+    minHeight: 54,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+
+  editButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   cancelButton: {
