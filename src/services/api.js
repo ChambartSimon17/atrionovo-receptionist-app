@@ -247,6 +247,68 @@ export const api = {
   },
 
   // ====================================================
+  // Restaurant
+  // ====================================================
+
+  getMyRestaurant(accessToken) {
+    return authenticatedRequest(
+      "/restaurants/me",
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  updateMyRestaurant(
+    restaurantData,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      "/restaurants/me",
+      accessToken,
+      {
+        method: "PUT",
+
+        body: JSON.stringify(
+          restaurantData
+        ),
+      }
+    );
+  },
+
+  getOpeningHours(
+    restaurantId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/opening-hours`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  updateOpeningHours(
+    restaurantId,
+    openingHours,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/opening-hours`,
+      accessToken,
+      {
+        method: "PUT",
+
+        body: JSON.stringify({
+          openingHours,
+        }),
+      }
+    );
+  },
+
+  // ====================================================
   // Reservations
   // ====================================================
 

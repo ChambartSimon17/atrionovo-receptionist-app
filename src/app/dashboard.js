@@ -11,10 +11,9 @@ import {
   View,
 } from "react-native";
 
-import { router, useFocusEffect } from "expo-router";
+import { router, useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../context/auth-context";
 import { api } from "../services/api";
-
 
 // ======================================================
 // Service configuration
@@ -52,7 +51,6 @@ const SERVICES = {
   },
 };
 
-
 // ======================================================
 // Helpers
 // ======================================================
@@ -68,14 +66,12 @@ function isSameDay(date, referenceDate) {
   );
 }
 
-
 function getMinutesSinceMidnight(date) {
   return (
     date.getHours() * 60 +
     date.getMinutes()
   );
 }
-
 
 function isInsideService(
   date,
@@ -98,7 +94,6 @@ function isInsideService(
   );
 }
 
-
 function formatTime(date) {
   return date.toLocaleTimeString(
     "nl-BE",
@@ -109,7 +104,6 @@ function formatTime(date) {
     }
   );
 }
-
 
 function formatDate(date) {
   return date.toLocaleDateString(
@@ -122,7 +116,6 @@ function formatDate(date) {
   );
 }
 
-
 function formatGuestCount(count) {
   if (count === 1) {
     return "1 persoon";
@@ -130,7 +123,6 @@ function formatGuestCount(count) {
 
   return `${count} personen`;
 }
-
 
 // ======================================================
 // Reservation Card
@@ -184,7 +176,6 @@ function ReservationCard({
     </TouchableOpacity>
   );
 }
-
 
 // ======================================================
 // Service Section
@@ -244,7 +235,6 @@ function ServiceSection({
   );
 }
 
-
 // ======================================================
 // Dashboard
 // ======================================================
@@ -274,7 +264,6 @@ export default function Dashboard() {
 
   const [error, setError] =
     useState(null);
-
 
   // ====================================================
   // Fetch reservations
@@ -322,13 +311,11 @@ export default function Dashboard() {
       [accessToken]
     );
 
-
   useFocusEffect(
     useCallback(() => {
       loadReservations(true);
     }, [loadReservations])
   );
-
 
   // ====================================================
   // Today's reservations
@@ -339,7 +326,6 @@ export default function Dashboard() {
       () => new Date(),
       []
     );
-
 
   const todaysReservations =
     useMemo(() => {
@@ -375,7 +361,6 @@ export default function Dashboard() {
         );
     }, [reservations, today]);
 
-
   // ====================================================
   // Split reservations by service
   // ====================================================
@@ -397,7 +382,6 @@ export default function Dashboard() {
       );
     }, [todaysReservations]);
 
-
   const dinnerReservations =
     useMemo(() => {
       return todaysReservations.filter(
@@ -415,11 +399,9 @@ export default function Dashboard() {
       );
     }, [todaysReservations]);
 
-
   const totalReservations =
     lunchReservations.length +
     dinnerReservations.length;
-
 
   // ====================================================
   // Loading
@@ -440,7 +422,6 @@ export default function Dashboard() {
       </SafeAreaView>
     );
   }
-
 
   // ====================================================
   // Dashboard
@@ -499,6 +480,9 @@ export default function Dashboard() {
           <TouchableOpacity
             style={styles.settingsButton}
             activeOpacity={0.7}
+            onPress={() =>
+              router.push("/settings")
+            }
           >
             <Text
               style={
@@ -509,7 +493,6 @@ export default function Dashboard() {
             </Text>
           </TouchableOpacity>
         </View>
-
 
         {/* ============================================
             Date + total
@@ -546,7 +529,6 @@ export default function Dashboard() {
           </View>
         </View>
 
-
         {/* ============================================
             Error
         ============================================ */}
@@ -581,7 +563,6 @@ export default function Dashboard() {
             </TouchableOpacity>
           </View>
         )}
-
 
         {/* ============================================
             Service overview
@@ -626,7 +607,6 @@ export default function Dashboard() {
             </Text>
           </View>
 
-
           <View
             style={[
               styles.serviceOverviewCard,
@@ -660,7 +640,6 @@ export default function Dashboard() {
           </View>
         </View>
 
-
         {/* ============================================
             Reservations
         ============================================ */}
@@ -679,14 +658,12 @@ export default function Dashboard() {
           </Text>
         </View>
 
-
         <ServiceSection
           service={SERVICES.lunch}
           reservations={
             lunchReservations
           }
         />
-
 
         <ServiceSection
           service={SERVICES.dinner}
@@ -706,12 +683,10 @@ export default function Dashboard() {
             Uitloggen
           </Text>
         </TouchableOpacity>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
-
 
 // ======================================================
 // Styles
@@ -736,7 +711,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
 
-
   // ====================================================
   // Loading
   // ====================================================
@@ -753,7 +727,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#666",
   },
-
 
   // ====================================================
   // Header
@@ -806,7 +779,6 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-
   // ====================================================
   // Date
   // ====================================================
@@ -845,7 +817,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#777",
   },
-
 
   // ====================================================
   // Error
@@ -886,7 +857,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-
 
   // ====================================================
   // Service overview
@@ -935,7 +905,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-
   // ====================================================
   // Reservations header
   // ====================================================
@@ -956,7 +925,6 @@ const styles = StyleSheet.create({
     color: "#777",
     marginTop: 3,
   },
-
 
   // ====================================================
   // Service
@@ -999,7 +967,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#777",
   },
-
 
   // ====================================================
   // Reservation list
@@ -1064,7 +1031,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#777",
   },
-
 
   // ====================================================
   // Empty service
