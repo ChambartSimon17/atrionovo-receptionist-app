@@ -39,22 +39,36 @@ async function request(
   endpoint,
   options = {}
 ) {
+  const headers = {
+    ...options.headers,
+  };
+
+  // Alleen Content-Type JSON meesturen
+  // wanneer er daadwerkelijk een body is.
+  if (options.body !== undefined) {
+    headers["Content-Type"] =
+      "application/json";
+  }
+
   const response = await fetch(
     `${API_URL}${endpoint}`,
     {
       ...options,
-
-      headers: {
-        "Content-Type":
-          "application/json",
-
-        ...options.headers,
-      },
+      headers,
     }
   );
 
-  const data =
-    await response.json();
+  const text = await response.text();
+
+  let data = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null;
+    }
+  }
 
   if (!response.ok) {
     const error = new Error(
@@ -308,6 +322,70 @@ export const api = {
     );
   },
 
+  getSpecialOpeningDays(
+    restaurantId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/special-opening-days`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createSpecialOpeningDay(
+    restaurantId,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/special-opening-days`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          data
+        ),
+      }
+    );
+  },
+
+  updateSpecialOpeningDay(
+    restaurantId,
+    id,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/special-opening-days/${id}`,
+      accessToken,
+      {
+        method: "PUT",
+
+        body: JSON.stringify(
+          data
+        ),
+      }
+    );
+  },
+
+  deleteSpecialOpeningDay(
+    restaurantId,
+    id,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/special-opening-days/${id}`,
+      accessToken,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   // ====================================================
   // Reservations
   // ====================================================
@@ -383,4 +461,6 @@ export const api = {
       }
     );
   },
+
+  
 };
