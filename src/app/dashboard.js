@@ -29,22 +29,34 @@ import { api } from "../services/api";
 // Helpers
 // ======================================================
 
-function isSameDay(date, referenceDate) {
-  return (
-    date.getFullYear() ===
-      referenceDate.getFullYear() &&
-    date.getMonth() ===
-      referenceDate.getMonth() &&
-    date.getDate() ===
-      referenceDate.getDate()
-  );
-}
+function getMinutesSinceMidnight(
+  date,
+  timezone
+) {
+  const formatter =
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: timezone,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
 
-function getMinutesSinceMidnight(date) {
-  return (
-    date.getHours() * 60 +
-    date.getMinutes()
+  const parts =
+    formatter.formatToParts(date);
+
+  const hour = Number(
+    parts.find(
+      (part) => part.type === "hour"
+    ).value
   );
+
+  const minute = Number(
+    parts.find(
+      (part) => part.type === "minute"
+    ).value
+  );
+
+  return hour * 60 + minute;
 }
 
 function minutesToTime(minutes) {
@@ -57,10 +69,11 @@ function minutesToTime(minutes) {
   )}:${String(mins).padStart(2, "0")}`;
 }
 
-function formatTime(date) {
+function formatTime(date, timezone) {
   return date.toLocaleTimeString(
     "nl-BE",
     {
+      timeZone: timezone,
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
@@ -68,10 +81,11 @@ function formatTime(date) {
   );
 }
 
-function formatDate(date) {
+function formatDate(date, timezone) {
   return date.toLocaleDateString(
     "nl-BE",
     {
+      timeZone: timezone,
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -79,14 +93,29 @@ function formatDate(date) {
   );
 }
 
-function formatApiDate(date) {
-  const year = date.getFullYear();
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+function formatApiDate(date, timezone) {
+  const formatter =
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+
+  const parts =
+    formatter.formatToParts(date);
+
+  const year = parts.find(
+    (part) => part.type === "year"
+  ).value;
+
+  const month = parts.find(
+    (part) => part.type === "month"
+  ).value;
+
+  const day = parts.find(
+    (part) => part.type === "day"
+  ).value;
 
   return `${year}-${month}-${day}`;
 }
@@ -113,18 +142,20 @@ function formatGuestCount(count) {
 // MONDAY ... SUNDAY
 // ======================================================
 
-function getDayOfWeekKey(date) {
-  const days = [
-    "SUNDAY",
-    "MONDAY",
-    "TUESDAY",
-    "WEDNESDAY",
-    "THURSDAY",
-    "FRIDAY",
-    "SATURDAY",
-  ];
+function getDayOfWeekKey(
+  date,
+  timezone
+) {
+  const weekday =
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone: timezone,
+        weekday: "long",
+      }
+    ).format(date);
 
-  return days[date.getDay()];
+  return weekday.toUpperCase();
 }
 
 // ======================================================
@@ -133,13 +164,17 @@ function getDayOfWeekKey(date) {
 
 function isReservationInsideService(
   reservation,
-  service
+  service,
+  timezone
 ) {
   const date =
     new Date(reservation.startTime);
 
   const minutes =
-    getMinutesSinceMidnight(date);
+    getMinutesSinceMidnight(
+      date,
+      timezone
+    );
 
   return (
     minutes >= service.startMinutes &&
@@ -280,6 +315,7 @@ function createServicesForDay(
 
 function ReservationCard({
   reservation,
+  timezone,
 }) {
   const startTime =
     new Date(reservation.startTime);
@@ -298,7 +334,10 @@ function ReservationCard({
         <Text
           style={styles.reservationTime}
         >
-          {formatTime(startTime)}
+          {formatTime(
+            startTime,
+            timezone
+          )}
         </Text>
       </View>
 
@@ -346,6 +385,7 @@ function ReservationCard({
 function ServiceSection({
   service,
   reservations,
+  timezone,
 }) {
   return (
     <View
@@ -414,6 +454,7 @@ function ServiceSection({
                 reservation={
                   reservation
                 }
+                timezone={timezone}
               />
             )
           )}
@@ -489,6 +530,23 @@ export default function Dashboard() {
             restaurantResponse?.data ||
             restaurantResponse;
 
+          const timezone =
+            restaurantData.timezone ||
+            "Europe/Brussels";
+
+          // ==============================================
+          // Restaurant local date
+          // ==============================================
+
+          const currentDate =
+            new Date();
+
+          const localDate =
+            formatApiDate(
+              currentDate,
+              timezone
+            );
+
           // ==============================================
           // Reservations + opening hours
           // ==============================================
@@ -498,7 +556,7 @@ export default function Dashboard() {
             openingHoursResponse,
           ] = await Promise.all([
             api.getReservationsForDay(
-              formatApiDate(new Date()),
+              localDate,
               accessToken
             ),
 
@@ -579,6 +637,10 @@ export default function Dashboard() {
     []
   );
 
+  const timezone =
+    restaurant?.timezone ||
+    "Europe/Brussels";
+
   // ====================================================
   // Today's opening hours
   // ====================================================
@@ -586,7 +648,10 @@ export default function Dashboard() {
   const todaysOpeningHours =
     useMemo(() => {
       const todayKey =
-        getDayOfWeekKey(today);
+        getDayOfWeekKey(
+          today,
+          timezone
+        );
 
       return openingHours
         .filter(
@@ -599,7 +664,11 @@ export default function Dashboard() {
             a.opensAtMinutes -
             b.opensAtMinutes
         );
-    }, [openingHours, today]);
+    }, [
+      openingHours,
+      today,
+      timezone,
+    ]);
 
   // ====================================================
   // Today's services
@@ -618,26 +687,11 @@ export default function Dashboard() {
 
   const todaysReservations =
     useMemo(() => {
-      return reservations
+      return [...reservations]
         .filter(
-          (reservation) => {
-            if (
-              reservation.status !==
-              "CONFIRMED"
-            ) {
-              return false;
-            }
-
-            const startTime =
-              new Date(
-                reservation.startTime
-              );
-
-            return isSameDay(
-              startTime,
-              today
-            );
-          }
+          (reservation) =>
+            reservation.status ===
+            "CONFIRMED"
         )
         .sort(
           (a, b) =>
@@ -648,7 +702,7 @@ export default function Dashboard() {
               b.startTime
             )
         );
-    }, [reservations, today]);
+    }, [reservations]);
 
   // ====================================================
   // Reservations grouped by service
@@ -665,7 +719,8 @@ export default function Dashboard() {
               (reservation) =>
                 isReservationInsideService(
                   reservation,
-                  service
+                  service,
+                  timezone
                 )
             ),
         })
@@ -673,6 +728,7 @@ export default function Dashboard() {
     }, [
       todaysServices,
       todaysReservations,
+      timezone,
     ]);
 
   // ====================================================
@@ -799,7 +855,10 @@ export default function Dashboard() {
             <Text
               style={styles.date}
             >
-              {formatDate(today)}
+              {formatDate(
+                today,
+                timezone
+              )}
             </Text>
 
             <Text
@@ -1010,6 +1069,7 @@ export default function Dashboard() {
               reservations={
                 reservations
               }
+              timezone={timezone}
             />
           )
         )}
