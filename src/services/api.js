@@ -413,6 +413,21 @@ export const api = {
     );
   },
 
+  getReservationsForDay(
+    date,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/day?date=${encodeURIComponent(
+        date
+      )}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
   cancelReservation(
     reservationId,
     accessToken
@@ -460,7 +475,5 @@ export const api = {
         }),
       }
     );
-  },
-
-  
+  },  
 };

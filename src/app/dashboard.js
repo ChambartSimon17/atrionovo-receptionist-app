@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
 import {
   ActivityIndicator,
   RefreshControl,
@@ -11,45 +17,13 @@ import {
   View,
 } from "react-native";
 
-import { router, useRouter, useFocusEffect } from "expo-router";
+import {
+  router,
+  useFocusEffect,
+} from "expo-router";
+
 import { useAuth } from "../context/auth-context";
 import { api } from "../services/api";
-
-// ======================================================
-// Service configuration
-// ======================================================
-//
-// Pas deze tijden aan wanneer de openingsuren van een
-// restaurant anders zijn.
-//
-// De starttijd is inclusief.
-// De eindtijd is exclusief.
-//
-// Bijvoorbeeld:
-// 15:00 hoort niet meer bij de middagservice.
-// ======================================================
-
-const SERVICES = {
-  lunch: {
-    key: "lunch",
-    title: "Middagservice",
-    subtitle: "12:00 – 15:00",
-    startHour: 12,
-    startMinute: 0,
-    endHour: 15,
-    endMinute: 0,
-  },
-
-  dinner: {
-    key: "dinner",
-    title: "Avondservice",
-    subtitle: "18:00 – 22:00",
-    startHour: 18,
-    startMinute: 0,
-    endHour: 22,
-    endMinute: 0,
-  },
-};
 
 // ======================================================
 // Helpers
@@ -73,25 +47,14 @@ function getMinutesSinceMidnight(date) {
   );
 }
 
-function isInsideService(
-  date,
-  service
-) {
-  const minutes =
-    getMinutesSinceMidnight(date);
+function minutesToTime(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
 
-  const start =
-    service.startHour * 60 +
-    service.startMinute;
-
-  const end =
-    service.endHour * 60 +
-    service.endMinute;
-
-  return (
-    minutes >= start &&
-    minutes < end
-  );
+  return `${String(hours).padStart(
+    2,
+    "0"
+  )}:${String(mins).padStart(2, "0")}`;
 }
 
 function formatTime(date) {
@@ -116,12 +79,199 @@ function formatDate(date) {
   );
 }
 
+function formatApiDate(date) {
+  const year = date.getFullYear();
+  const month = String(
+    date.getMonth() + 1
+  ).padStart(2, "0");
+  const day = String(
+    date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function formatGuestCount(count) {
   if (count === 1) {
     return "1 persoon";
   }
 
   return `${count} personen`;
+}
+
+// ======================================================
+// Weekday helper
+// ======================================================
+//
+// JavaScript:
+// 0 = Sunday
+// 1 = Monday
+// ...
+// 6 = Saturday
+//
+// Backend:
+// MONDAY ... SUNDAY
+// ======================================================
+
+function getDayOfWeekKey(date) {
+  const days = [
+    "SUNDAY",
+    "MONDAY",
+    "TUESDAY",
+    "WEDNESDAY",
+    "THURSDAY",
+    "FRIDAY",
+    "SATURDAY",
+  ];
+
+  return days[date.getDay()];
+}
+
+// ======================================================
+// Service helpers
+// ======================================================
+
+function isReservationInsideService(
+  reservation,
+  service
+) {
+  const date =
+    new Date(reservation.startTime);
+
+  const minutes =
+    getMinutesSinceMidnight(date);
+
+  return (
+    minutes >= service.startMinutes &&
+    minutes < service.endMinutes
+  );
+}
+
+function createServicesForDay(
+  openingHours
+) {
+  if (!openingHours?.length) {
+    return [];
+  }
+
+  const sortedOpeningHours = [
+    ...openingHours,
+  ].sort(
+    (a, b) =>
+      a.opensAtMinutes -
+      b.opensAtMinutes
+  );
+
+  // ====================================================
+  // Eén opening period
+  // ====================================================
+  //
+  // Bijvoorbeeld:
+  // 12:00 - 22:00
+  //
+  // => Service 1
+  // ====================================================
+
+  if (sortedOpeningHours.length === 1) {
+    const period =
+      sortedOpeningHours[0];
+
+    return [
+      {
+        key: "service-1",
+        title: "Service 1",
+        subtitle: `${minutesToTime(
+          period.opensAtMinutes
+        )} – ${minutesToTime(
+          period.closesAtMinutes
+        )}`,
+        startMinutes:
+          period.opensAtMinutes,
+        endMinutes:
+          period.closesAtMinutes,
+      },
+    ];
+  }
+
+  // ====================================================
+  // Twee opening periods
+  // ====================================================
+  //
+  // Bijvoorbeeld:
+  // 12:00 - 15:00
+  // 18:00 - 22:00
+  //
+  // => Middagservice
+  // => Avondservice
+  // ====================================================
+
+  if (sortedOpeningHours.length === 2) {
+    return [
+      {
+        key: "lunch",
+        title: "Middagservice",
+        subtitle: `${minutesToTime(
+          sortedOpeningHours[0]
+            .opensAtMinutes
+        )} – ${minutesToTime(
+          sortedOpeningHours[0]
+            .closesAtMinutes
+        )}`,
+        startMinutes:
+          sortedOpeningHours[0]
+            .opensAtMinutes,
+        endMinutes:
+          sortedOpeningHours[0]
+            .closesAtMinutes,
+      },
+
+      {
+        key: "dinner",
+        title: "Avondservice",
+        subtitle: `${minutesToTime(
+          sortedOpeningHours[1]
+            .opensAtMinutes
+        )} – ${minutesToTime(
+          sortedOpeningHours[1]
+            .closesAtMinutes
+        )}`,
+        startMinutes:
+          sortedOpeningHours[1]
+            .opensAtMinutes,
+        endMinutes:
+          sortedOpeningHours[1]
+            .closesAtMinutes,
+      },
+    ];
+  }
+
+  // ====================================================
+  // Fallback voor meer dan 2 periods
+  // ====================================================
+  //
+  // Niet noodzakelijk voor de normale restaurantflow,
+  // maar voorkomt dat opening periods verloren gaan.
+  // ====================================================
+
+  return sortedOpeningHours.map(
+    (period, index) => ({
+      key: `service-${index + 1}`,
+
+      title: `Service ${index + 1}`,
+
+      subtitle: `${minutesToTime(
+        period.opensAtMinutes
+      )} – ${minutesToTime(
+        period.closesAtMinutes
+      )}`,
+
+      startMinutes:
+        period.opensAtMinutes,
+
+      endMinutes:
+        period.closesAtMinutes,
+    })
+  );
 }
 
 // ======================================================
@@ -145,12 +295,16 @@ function ReservationCard({
       }
     >
       <View style={styles.timeColumn}>
-        <Text style={styles.reservationTime}>
+        <Text
+          style={styles.reservationTime}
+        >
           {formatTime(startTime)}
         </Text>
       </View>
 
-      <View style={styles.reservationMain}>
+      <View
+        style={styles.reservationMain}
+      >
         <Text
           style={styles.reservationName}
           numberOfLines={1}
@@ -159,17 +313,25 @@ function ReservationCard({
           {reservation.lastName}
         </Text>
 
-        <Text style={styles.reservationMeta}>
+        <Text
+          style={styles.reservationMeta}
+        >
           {formatGuestCount(
             reservation.guestCount
           )}
         </Text>
       </View>
 
-      <View style={styles.statusContainer}>
-        <View style={styles.confirmedDot} />
+      <View
+        style={styles.statusContainer}
+      >
+        <View
+          style={styles.confirmedDot}
+        />
 
-        <Text style={styles.statusText}>
+        <Text
+          style={styles.statusText}
+        >
           Bevestigd
         </Text>
       </View>
@@ -186,24 +348,42 @@ function ServiceSection({
   reservations,
 }) {
   return (
-    <View style={styles.serviceSection}>
-      <View style={styles.serviceHeader}>
+    <View
+      style={styles.serviceSection}
+    >
+      <View
+        style={styles.serviceHeader}
+      >
         <View>
-          <Text style={styles.serviceTitle}>
+          <Text
+            style={styles.serviceTitle}
+          >
             {service.title}
           </Text>
 
-          <Text style={styles.serviceSubtitle}>
+          <Text
+            style={styles.serviceSubtitle}
+          >
             {service.subtitle}
           </Text>
         </View>
 
-        <View style={styles.serviceCount}>
-          <Text style={styles.serviceCountNumber}>
+        <View
+          style={styles.serviceCount}
+        >
+          <Text
+            style={
+              styles.serviceCountNumber
+            }
+          >
             {reservations.length}
           </Text>
 
-          <Text style={styles.serviceCountLabel}>
+          <Text
+            style={
+              styles.serviceCountLabel
+            }
+          >
             {reservations.length === 1
               ? "reservatie"
               : "reservaties"}
@@ -212,13 +392,21 @@ function ServiceSection({
       </View>
 
       {reservations.length === 0 ? (
-        <View style={styles.emptyService}>
-          <Text style={styles.emptyServiceText}>
+        <View
+          style={styles.emptyService}
+        >
+          <Text
+            style={
+              styles.emptyServiceText
+            }
+          >
             Geen reservaties
           </Text>
         </View>
       ) : (
-        <View style={styles.reservationList}>
+        <View
+          style={styles.reservationList}
+        >
           {reservations.map(
             (reservation) => (
               <ReservationCard
@@ -256,6 +444,9 @@ export default function Dashboard() {
   const [reservations, setReservations] =
     useState([]);
 
+  const [openingHours, setOpeningHours] =
+    useState([]);
+
   const [isLoading, setIsLoading] =
     useState(true);
 
@@ -266,10 +457,10 @@ export default function Dashboard() {
     useState(null);
 
   // ====================================================
-  // Fetch reservations
+  // Fetch dashboard data
   // ====================================================
 
-  const loadReservations =
+  const loadDashboard =
     useCallback(
       async (refresh = false) => {
         if (!accessToken) {
@@ -285,23 +476,81 @@ export default function Dashboard() {
 
           setError(null);
 
-          const response =
-            await api.getReservations(
+          // ==============================================
+          // Restaurant
+          // ==============================================
+
+          const restaurantResponse =
+            await api.getMyRestaurant(
               accessToken
             );
 
+          const restaurantData =
+            restaurantResponse?.data ||
+            restaurantResponse;
+
+          // ==============================================
+          // Reservations + opening hours
+          // ==============================================
+
+          const [
+            reservationsResponse,
+            openingHoursResponse,
+          ] = await Promise.all([
+            api.getReservationsForDay(
+              formatApiDate(new Date()),
+              accessToken
+            ),
+
+            api.getOpeningHours(
+              restaurantData.id,
+              accessToken
+            ),
+          ]);
+
+          const reservationsData =
+            reservationsResponse?.data ||
+            [];
+
+          const openingHoursData =
+            openingHoursResponse?.data ||
+            openingHoursResponse ||
+            [];
+
+          console.log(
+            "DASHBOARD RESERVATIONS:",
+            JSON.stringify(
+              reservationsData,
+              null,
+              2
+            )
+          );
+
+          console.log(
+            "DASHBOARD OPENING HOURS:",
+            JSON.stringify(
+              openingHoursData,
+              null,
+              2
+            )
+          );
+
           setReservations(
-            response?.data || []
+            reservationsData
+          );
+
+          setOpeningHours(
+            openingHoursData
           );
         } catch (error) {
           console.error(
-            "Failed to load reservations:",
+            "Failed to load dashboard:",
             error
           );
 
           setError(
             error?.message ||
-              "Reservaties konden niet worden geladen."
+              "De dashboardgegevens konden niet worden geladen."
           );
         } finally {
           setIsLoading(false);
@@ -311,21 +560,61 @@ export default function Dashboard() {
       [accessToken]
     );
 
+  // ====================================================
+  // Reload when dashboard gets focus
+  // ====================================================
+
   useFocusEffect(
     useCallback(() => {
-      loadReservations(true);
-    }, [loadReservations])
+      loadDashboard(true);
+    }, [loadDashboard])
   );
+
+  // ====================================================
+  // Today
+  // ====================================================
+
+  const today = useMemo(
+    () => new Date(),
+    []
+  );
+
+  // ====================================================
+  // Today's opening hours
+  // ====================================================
+
+  const todaysOpeningHours =
+    useMemo(() => {
+      const todayKey =
+        getDayOfWeekKey(today);
+
+      return openingHours
+        .filter(
+          (openingHour) =>
+            openingHour.dayOfWeek ===
+            todayKey
+        )
+        .sort(
+          (a, b) =>
+            a.opensAtMinutes -
+            b.opensAtMinutes
+        );
+    }, [openingHours, today]);
+
+  // ====================================================
+  // Today's services
+  // ====================================================
+
+  const todaysServices =
+    useMemo(() => {
+      return createServicesForDay(
+        todaysOpeningHours
+      );
+    }, [todaysOpeningHours]);
 
   // ====================================================
   // Today's reservations
   // ====================================================
-
-  const today =
-    useMemo(
-      () => new Date(),
-      []
-    );
 
   const todaysReservations =
     useMemo(() => {
@@ -362,46 +651,40 @@ export default function Dashboard() {
     }, [reservations, today]);
 
   // ====================================================
-  // Split reservations by service
+  // Reservations grouped by service
   // ====================================================
 
-  const lunchReservations =
+  const reservationsByService =
     useMemo(() => {
-      return todaysReservations.filter(
-        (reservation) => {
-          const date =
-            new Date(
-              reservation.startTime
-            );
+      return todaysServices.map(
+        (service) => ({
+          service,
 
-          return isInsideService(
-            date,
-            SERVICES.lunch
-          );
-        }
+          reservations:
+            todaysReservations.filter(
+              (reservation) =>
+                isReservationInsideService(
+                  reservation,
+                  service
+                )
+            ),
+        })
       );
-    }, [todaysReservations]);
+    }, [
+      todaysServices,
+      todaysReservations,
+    ]);
 
-  const dinnerReservations =
-    useMemo(() => {
-      return todaysReservations.filter(
-        (reservation) => {
-          const date =
-            new Date(
-              reservation.startTime
-            );
-
-          return isInsideService(
-            date,
-            SERVICES.dinner
-          );
-        }
-      );
-    }, [todaysReservations]);
+  // ====================================================
+  // Total today's reservations
+  // ====================================================
 
   const totalReservations =
-    lunchReservations.length +
-    dinnerReservations.length;
+    todaysReservations.length;
+
+  // ====================================================
+  // Service overview
+  // ====================================================
 
   // ====================================================
   // Loading
@@ -410,13 +693,17 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <SafeAreaView
-        style={styles.loadingContainer}
+        style={
+          styles.loadingContainer
+        }
       >
         <ActivityIndicator
           size="large"
         />
 
-        <Text style={styles.loadingText}>
+        <Text
+          style={styles.loadingText}
+        >
           Reservaties laden...
         </Text>
       </SafeAreaView>
@@ -434,6 +721,7 @@ export default function Dashboard() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
+
           isLandscape &&
             styles.scrollContentLandscape,
         ]}
@@ -443,7 +731,7 @@ export default function Dashboard() {
               isRefreshing
             }
             onRefresh={() =>
-              loadReservations(true)
+              loadDashboard(true)
             }
           />
         }
@@ -457,11 +745,15 @@ export default function Dashboard() {
 
         <View style={styles.header}>
           <View>
-            <Text style={styles.logo}>
+            <Text
+              style={styles.logo}
+            >
               AtrioNovo
             </Text>
 
-            <Text style={styles.greeting}>
+            <Text
+              style={styles.greeting}
+            >
               Welkom,{" "}
               {user?.firstName ||
                 "gebruiker"}
@@ -478,10 +770,14 @@ export default function Dashboard() {
           </View>
 
           <TouchableOpacity
-            style={styles.settingsButton}
+            style={
+              styles.settingsButton
+            }
             activeOpacity={0.7}
             onPress={() =>
-              router.push("/settings")
+              router.push(
+                "/settings"
+              )
             }
           >
             <Text
@@ -500,26 +796,38 @@ export default function Dashboard() {
 
         <View style={styles.dateRow}>
           <View>
-            <Text style={styles.date}>
+            <Text
+              style={styles.date}
+            >
               {formatDate(today)}
             </Text>
 
             <Text
-              style={styles.dateSubtitle}
+              style={
+                styles.dateSubtitle
+              }
             >
               Vandaag
             </Text>
           </View>
 
-          <View style={styles.totalContainer}>
+          <View
+            style={
+              styles.totalContainer
+            }
+          >
             <Text
-              style={styles.totalNumber}
+              style={
+                styles.totalNumber
+              }
             >
               {totalReservations}
             </Text>
 
             <Text
-              style={styles.totalLabel}
+              style={
+                styles.totalLabel
+              }
             >
               {totalReservations ===
               1
@@ -535,28 +843,38 @@ export default function Dashboard() {
 
         {error && (
           <View
-            style={styles.errorContainer}
+            style={
+              styles.errorContainer
+            }
           >
             <Text
-              style={styles.errorTitle}
+              style={
+                styles.errorTitle
+              }
             >
               Er ging iets mis
             </Text>
 
             <Text
-              style={styles.errorText}
+              style={
+                styles.errorText
+              }
             >
               {error}
             </Text>
 
             <TouchableOpacity
-              style={styles.retryButton}
+              style={
+                styles.retryButton
+              }
               onPress={() =>
-                loadReservations()
+                loadDashboard()
               }
             >
               <Text
-                style={styles.retryText}
+                style={
+                  styles.retryText
+                }
               >
                 Opnieuw proberen
               </Text>
@@ -568,83 +886,104 @@ export default function Dashboard() {
             Service overview
         ============================================ */}
 
-        <View
-          style={[
-            styles.serviceOverview,
-            isLandscape &&
-              styles.serviceOverviewLandscape,
-          ]}
-        >
+        {todaysServices.length >
+          0 && (
           <View
             style={[
-              styles.serviceOverviewCard,
+              styles.serviceOverview,
+
               isLandscape &&
-                styles.serviceOverviewCardLandscape,
+                styles.serviceOverviewLandscape,
+
+              todaysServices.length ===
+                1 &&
+                styles.serviceOverviewSingle,
             ]}
+          >
+            {reservationsByService.map(
+              ({
+                service,
+                reservations,
+              }) => (
+                <View
+                  key={service.key}
+                  style={[
+                    styles.serviceOverviewCard,
+
+                    isLandscape &&
+                      styles.serviceOverviewCardLandscape,
+
+                    todaysServices.length ===
+                      1 &&
+                      styles.serviceOverviewCardSingle,
+                  ]}
+                >
+                  <Text
+                    style={
+                      styles.overviewLabel
+                    }
+                  >
+                    {service.title}
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.overviewNumber
+                    }
+                  >
+                    {reservations.length}
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.overviewSubtitle
+                    }
+                  >
+                    {service.subtitle}
+                  </Text>
+                </View>
+              )
+            )}
+          </View>
+        )}
+
+        {/* ============================================
+            Closed today
+        ============================================ */}
+
+        {todaysServices.length ===
+          0 && (
+          <View
+            style={
+              styles.closedToday
+            }
           >
             <Text
               style={
-                styles.overviewLabel
+                styles.closedTodayTitle
               }
             >
-              Middagservice
+              Vandaag gesloten
             </Text>
 
             <Text
               style={
-                styles.overviewNumber
+                styles.closedTodayText
               }
             >
-              {lunchReservations.length}
-            </Text>
-
-            <Text
-              style={
-                styles.overviewSubtitle
-              }
-            >
-              12:00 – 15:00
+              Er zijn vandaag geen
+              openingstijden ingesteld.
             </Text>
           </View>
-
-          <View
-            style={[
-              styles.serviceOverviewCard,
-              isLandscape &&
-                styles.serviceOverviewCardLandscape,
-            ]}
-          >
-            <Text
-              style={
-                styles.overviewLabel
-              }
-            >
-              Avondservice
-            </Text>
-
-            <Text
-              style={
-                styles.overviewNumber
-              }
-            >
-              {dinnerReservations.length}
-            </Text>
-
-            <Text
-              style={
-                styles.overviewSubtitle
-              }
-            >
-              18:00 – 22:00
-            </Text>
-          </View>
-        </View>
+        )}
 
         {/* ============================================
             Reservations
         ============================================ */}
 
-        <View style={styles.sectionHeader}>
+        <View
+          style={styles.sectionHeader}
+        >
           <Text
             style={styles.sectionTitle}
           >
@@ -652,34 +991,47 @@ export default function Dashboard() {
           </Text>
 
           <Text
-            style={styles.sectionSubtitle}
+            style={
+              styles.sectionSubtitle
+            }
           >
             Vandaag
           </Text>
         </View>
 
-        <ServiceSection
-          service={SERVICES.lunch}
-          reservations={
-            lunchReservations
-          }
-        />
+        {reservationsByService.map(
+          ({
+            service,
+            reservations,
+          }) => (
+            <ServiceSection
+              key={service.key}
+              service={service}
+              reservations={
+                reservations
+              }
+            />
+          )
+        )}
 
-        <ServiceSection
-          service={SERVICES.dinner}
-          reservations={
-            dinnerReservations
-          }
-        />
+        {/* ============================================
+            Logout
+        ============================================ */}
 
         <TouchableOpacity
-          style={styles.logoutButton}
+          style={
+            styles.logoutButton
+          }
           onPress={async () => {
             await logout();
-            router.replace("/login");
+            router.replace(
+              "/login"
+            );
           }}
         >
-          <Text style={styles.logoutText}>
+          <Text
+            style={styles.logoutText}
+          >
             Uitloggen
           </Text>
         </TouchableOpacity>
@@ -868,6 +1220,10 @@ const styles = StyleSheet.create({
     marginTop: 28,
   },
 
+  serviceOverviewSingle: {
+    flexDirection: "column",
+  },
+
   serviceOverviewLandscape: {
     gap: 20,
   },
@@ -884,6 +1240,10 @@ const styles = StyleSheet.create({
   serviceOverviewCardLandscape: {
     minHeight: 170,
     padding: 26,
+  },
+
+  serviceOverviewCardSingle: {
+    flex: 0,
   },
 
   overviewLabel: {
@@ -903,6 +1263,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#777",
     marginTop: 2,
+  },
+
+  // ====================================================
+  // Closed today
+  // ====================================================
+
+  closedToday: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    padding: 20,
+    marginTop: 28,
+  },
+
+  closedTodayTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#111",
+  },
+
+  closedTodayText: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 5,
   },
 
   // ====================================================
@@ -1050,7 +1433,7 @@ const styles = StyleSheet.create({
   },
 
   // ====================================================
-  // Logout button
+  // Logout
   // ====================================================
 
   logoutButton: {
