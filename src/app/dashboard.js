@@ -498,6 +498,26 @@ export default function Dashboard() {
     useState(null);
 
   // ====================================================
+  // Today
+  // ====================================================
+  //
+  // We bewaren de huidige datum in state zodat de
+  // dashboarddatum ook kan veranderen wanneer de app
+  // open blijft over middernacht.
+  // ====================================================
+
+  const [today, setToday] =
+    useState(() => new Date());
+
+  // ====================================================
+  // Timezone
+  // ====================================================
+
+  const timezone =
+    restaurant?.timezone ||
+    "Europe/Brussels";
+
+  // ====================================================
   // Fetch dashboard data
   // ====================================================
 
@@ -530,21 +550,27 @@ export default function Dashboard() {
             restaurantResponse?.data ||
             restaurantResponse;
 
-          const timezone =
+          const restaurantTimezone =
             restaurantData.timezone ||
             "Europe/Brussels";
 
           // ==============================================
-          // Restaurant local date
+          // Current date
           // ==============================================
 
           const currentDate =
             new Date();
 
+          setToday(currentDate);
+
+          // ==============================================
+          // Restaurant local date
+          // ==============================================
+
           const localDate =
             formatApiDate(
               currentDate,
-              timezone
+              restaurantTimezone
             );
 
           // ==============================================
@@ -574,6 +600,11 @@ export default function Dashboard() {
             openingHoursResponse?.data ||
             openingHoursResponse ||
             [];
+
+          console.log(
+            "DASHBOARD LOCAL DATE:",
+            localDate
+          );
 
           console.log(
             "DASHBOARD RESERVATIONS:",
@@ -629,17 +660,37 @@ export default function Dashboard() {
   );
 
   // ====================================================
-  // Today
+  // Automatic refresh every minute
+  // ====================================================
+  //
+  // Zolang het dashboard open is:
+  //
+  // - Iedere minuut worden nieuwe reservaties opgehaald.
+  // - Bij middernacht wordt automatisch de nieuwe
+  //   restaurantdatum gebruikt.
+  // - De reservaties van de nieuwe dag worden opgehaald.
+  //
+  // Hierdoor verschijnt een nieuwe reservatie binnen
+  // maximaal ongeveer 1 minuut op het dashboard.
   // ====================================================
 
-  const today = useMemo(
-    () => new Date(),
-    []
-  );
+  useEffect(() => {
+    if (!accessToken) {
+      return;
+    }
 
-  const timezone =
-    restaurant?.timezone ||
-    "Europe/Brussels";
+    const interval =
+      setInterval(() => {
+        loadDashboard(true);
+      }, 60 * 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [
+    accessToken,
+    loadDashboard,
+  ]);
 
   // ====================================================
   // Today's opening hours
