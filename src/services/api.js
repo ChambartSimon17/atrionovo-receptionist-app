@@ -428,6 +428,20 @@ export const api = {
     );
   },
 
+  getReservationCountsForMonth(
+    year,
+    month,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/month?year=${year}&month=${month}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
   cancelReservation(
     reservationId,
     accessToken

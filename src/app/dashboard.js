@@ -20,6 +20,7 @@ import {
 import {
   router,
   useFocusEffect,
+  useLocalSearchParams,
 } from "expo-router";
 
 import { useAuth } from "../context/auth-context";
@@ -28,6 +29,37 @@ import { api } from "../services/api";
 // ======================================================
 // Helpers
 // ======================================================
+
+function parseDateParam(dateParam) {
+  if (!dateParam) {
+    return null;
+  }
+
+  const [
+    year,
+    month,
+    day,
+  ] = String(dateParam)
+    .split("-")
+    .map(Number);
+
+  if (
+    !year ||
+    !month ||
+    !day
+  ) {
+    return null;
+  }
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    12,
+    0,
+    0
+  );
+}
 
 function getMinutesSinceMidnight(
   date,
@@ -46,13 +78,15 @@ function getMinutesSinceMidnight(
 
   const hour = Number(
     parts.find(
-      (part) => part.type === "hour"
+      (part) =>
+        part.type === "hour"
     ).value
   );
 
   const minute = Number(
     parts.find(
-      (part) => part.type === "minute"
+      (part) =>
+        part.type === "minute"
     ).value
   );
 
@@ -60,16 +94,25 @@ function getMinutesSinceMidnight(
 }
 
 function minutesToTime(minutes) {
-  const hours = Math.floor(minutes / 60);
+  const hours = Math.floor(
+    minutes / 60
+  );
+
   const mins = minutes % 60;
 
   return `${String(hours).padStart(
     2,
     "0"
-  )}:${String(mins).padStart(2, "0")}`;
+  )}:${String(mins).padStart(
+    2,
+    "0"
+  )}`;
 }
 
-function formatTime(date, timezone) {
+function formatTime(
+  date,
+  timezone
+) {
   return date.toLocaleTimeString(
     "nl-BE",
     {
@@ -81,7 +124,10 @@ function formatTime(date, timezone) {
   );
 }
 
-function formatDate(date, timezone) {
+function formatDate(
+  date,
+  timezone
+) {
   return date.toLocaleDateString(
     "nl-BE",
     {
@@ -93,28 +139,37 @@ function formatDate(date, timezone) {
   );
 }
 
-function formatApiDate(date, timezone) {
+function formatApiDate(
+  date,
+  timezone
+) {
   const formatter =
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
+    new Intl.DateTimeFormat(
+      "en-CA",
+      {
+        timeZone: timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }
+    );
 
   const parts =
     formatter.formatToParts(date);
 
   const year = parts.find(
-    (part) => part.type === "year"
+    (part) =>
+      part.type === "year"
   ).value;
 
   const month = parts.find(
-    (part) => part.type === "month"
+    (part) =>
+      part.type === "month"
   ).value;
 
   const day = parts.find(
-    (part) => part.type === "day"
+    (part) =>
+      part.type === "day"
   ).value;
 
   return `${year}-${month}-${day}`;
@@ -129,17 +184,25 @@ function formatGuestCount(count) {
 }
 
 // ======================================================
-// Weekday helper
+// Date navigation helper
 // ======================================================
-//
-// JavaScript:
-// 0 = Sunday
-// 1 = Monday
-// ...
-// 6 = Saturday
-//
-// Backend:
-// MONDAY ... SUNDAY
+
+function changeCalendarDay(
+  date,
+  amount
+) {
+  const nextDate =
+    new Date(date);
+
+  nextDate.setDate(
+    nextDate.getDate() + amount
+  );
+
+  return nextDate;
+}
+
+// ======================================================
+// Weekday helper
 // ======================================================
 
 function getDayOfWeekKey(
@@ -168,7 +231,9 @@ function isReservationInsideService(
   timezone
 ) {
   const date =
-    new Date(reservation.startTime);
+    new Date(
+      reservation.startTime
+    );
 
   const minutes =
     getMinutesSinceMidnight(
@@ -177,8 +242,10 @@ function isReservationInsideService(
     );
 
   return (
-    minutes >= service.startMinutes &&
-    minutes < service.endMinutes
+    minutes >=
+      service.startMinutes &&
+    minutes <
+      service.endMinutes
   );
 }
 
@@ -200,28 +267,28 @@ function createServicesForDay(
   // ====================================================
   // Eén opening period
   // ====================================================
-  //
-  // Bijvoorbeeld:
-  // 12:00 - 22:00
-  //
-  // => Service 1
-  // ====================================================
 
-  if (sortedOpeningHours.length === 1) {
+  if (
+    sortedOpeningHours.length === 1
+  ) {
     const period =
       sortedOpeningHours[0];
 
     return [
       {
         key: "service-1",
+
         title: "Service 1",
+
         subtitle: `${minutesToTime(
           period.opensAtMinutes
         )} – ${minutesToTime(
           period.closesAtMinutes
         )}`,
+
         startMinutes:
           period.opensAtMinutes,
+
         endMinutes:
           period.closesAtMinutes,
       },
@@ -231,20 +298,16 @@ function createServicesForDay(
   // ====================================================
   // Twee opening periods
   // ====================================================
-  //
-  // Bijvoorbeeld:
-  // 12:00 - 15:00
-  // 18:00 - 22:00
-  //
-  // => Middagservice
-  // => Avondservice
-  // ====================================================
 
-  if (sortedOpeningHours.length === 2) {
+  if (
+    sortedOpeningHours.length === 2
+  ) {
     return [
       {
         key: "lunch",
+
         title: "Middagservice",
+
         subtitle: `${minutesToTime(
           sortedOpeningHours[0]
             .opensAtMinutes
@@ -252,9 +315,11 @@ function createServicesForDay(
           sortedOpeningHours[0]
             .closesAtMinutes
         )}`,
+
         startMinutes:
           sortedOpeningHours[0]
             .opensAtMinutes,
+
         endMinutes:
           sortedOpeningHours[0]
             .closesAtMinutes,
@@ -262,7 +327,9 @@ function createServicesForDay(
 
       {
         key: "dinner",
+
         title: "Avondservice",
+
         subtitle: `${minutesToTime(
           sortedOpeningHours[1]
             .opensAtMinutes
@@ -270,9 +337,11 @@ function createServicesForDay(
           sortedOpeningHours[1]
             .closesAtMinutes
         )}`,
+
         startMinutes:
           sortedOpeningHours[1]
             .opensAtMinutes,
+
         endMinutes:
           sortedOpeningHours[1]
             .closesAtMinutes,
@@ -283,16 +352,16 @@ function createServicesForDay(
   // ====================================================
   // Fallback voor meer dan 2 periods
   // ====================================================
-  //
-  // Niet noodzakelijk voor de normale restaurantflow,
-  // maar voorkomt dat opening periods verloren gaan.
-  // ====================================================
 
   return sortedOpeningHours.map(
     (period, index) => ({
-      key: `service-${index + 1}`,
+      key: `service-${
+        index + 1
+      }`,
 
-      title: `Service ${index + 1}`,
+      title: `Service ${
+        index + 1
+      }`,
 
       subtitle: `${minutesToTime(
         period.opensAtMinutes
@@ -318,21 +387,31 @@ function ReservationCard({
   timezone,
 }) {
   const startTime =
-    new Date(reservation.startTime);
+    new Date(
+      reservation.startTime
+    );
 
   return (
     <TouchableOpacity
       activeOpacity={0.75}
-      style={styles.reservationCard}
+      style={
+        styles.reservationCard
+      }
       onPress={() =>
         router.push(
           `/reservation/${reservation.id}`
         )
       }
     >
-      <View style={styles.timeColumn}>
+      <View
+        style={
+          styles.timeColumn
+        }
+      >
         <Text
-          style={styles.reservationTime}
+          style={
+            styles.reservationTime
+          }
         >
           {formatTime(
             startTime,
@@ -342,10 +421,14 @@ function ReservationCard({
       </View>
 
       <View
-        style={styles.reservationMain}
+        style={
+          styles.reservationMain
+        }
       >
         <Text
-          style={styles.reservationName}
+          style={
+            styles.reservationName
+          }
           numberOfLines={1}
         >
           {reservation.firstName}{" "}
@@ -353,7 +436,9 @@ function ReservationCard({
         </Text>
 
         <Text
-          style={styles.reservationMeta}
+          style={
+            styles.reservationMeta
+          }
         >
           {formatGuestCount(
             reservation.guestCount
@@ -362,14 +447,20 @@ function ReservationCard({
       </View>
 
       <View
-        style={styles.statusContainer}
+        style={
+          styles.statusContainer
+        }
       >
         <View
-          style={styles.confirmedDot}
+          style={
+            styles.confirmedDot
+          }
         />
 
         <Text
-          style={styles.statusText}
+          style={
+            styles.statusText
+          }
         >
           Bevestigd
         </Text>
@@ -389,27 +480,37 @@ function ServiceSection({
 }) {
   return (
     <View
-      style={styles.serviceSection}
+      style={
+        styles.serviceSection
+      }
     >
       <View
-        style={styles.serviceHeader}
+        style={
+          styles.serviceHeader
+        }
       >
         <View>
           <Text
-            style={styles.serviceTitle}
+            style={
+              styles.serviceTitle
+            }
           >
             {service.title}
           </Text>
 
           <Text
-            style={styles.serviceSubtitle}
+            style={
+              styles.serviceSubtitle
+            }
           >
             {service.subtitle}
           </Text>
         </View>
 
         <View
-          style={styles.serviceCount}
+          style={
+            styles.serviceCount
+          }
         >
           <Text
             style={
@@ -424,16 +525,20 @@ function ServiceSection({
               styles.serviceCountLabel
             }
           >
-            {reservations.length === 1
+            {reservations.length ===
+            1
               ? "reservatie"
               : "reservaties"}
           </Text>
         </View>
       </View>
 
-      {reservations.length === 0 ? (
+      {reservations.length ===
+      0 ? (
         <View
-          style={styles.emptyService}
+          style={
+            styles.emptyService
+          }
         >
           <Text
             style={
@@ -445,16 +550,22 @@ function ServiceSection({
         </View>
       ) : (
         <View
-          style={styles.reservationList}
+          style={
+            styles.reservationList
+          }
         >
           {reservations.map(
             (reservation) => (
               <ReservationCard
-                key={reservation.id}
+                key={
+                  reservation.id
+                }
                 reservation={
                   reservation
                 }
-                timezone={timezone}
+                timezone={
+                  timezone
+                }
               />
             )
           )}
@@ -470,6 +581,10 @@ function ServiceSection({
 
 export default function Dashboard() {
   const {
+    date: selectedDateParam,
+  } = useLocalSearchParams();
+
+  const {
     user,
     restaurant,
     accessToken,
@@ -482,35 +597,47 @@ export default function Dashboard() {
   const isLandscape =
     width > 700;
 
-  const [reservations, setReservations] =
-    useState([]);
-
-  const [openingHours, setOpeningHours] =
-    useState([]);
-
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [isRefreshing, setIsRefreshing] =
-    useState(false);
-
-  const [error, setError] =
-    useState(null);
-
   // ====================================================
-  // Today
-  // ====================================================
-  //
-  // We bewaren de huidige datum in state zodat de
-  // dashboarddatum ook kan veranderen wanneer de app
-  // open blijft over middernacht.
+  // Selected day
   // ====================================================
 
-  const [today, setToday] =
-    useState(() => new Date());
+  const [
+    selectedDate,
+    setSelectedDate,
+  ] = useState(() => {
+    return (
+      parseDateParam(
+        selectedDateParam
+      ) || new Date()
+    );
+  });
 
   // ====================================================
-  // Timezone
+  // Sync selected date with
+  // calendar route parameter
+  // ====================================================
+
+  useEffect(() => {
+    if (!selectedDateParam) {
+      return;
+    }
+
+    const parsedDate =
+      parseDateParam(
+        selectedDateParam
+      );
+
+    if (parsedDate) {
+      setSelectedDate(
+        parsedDate
+      );
+    }
+  }, [
+    selectedDateParam,
+  ]);
+
+  // ====================================================
+  // Restaurant timezone
   // ====================================================
 
   const timezone =
@@ -518,19 +645,53 @@ export default function Dashboard() {
     "Europe/Brussels";
 
   // ====================================================
+  // Dashboard state
+  // ====================================================
+
+  const [
+    reservations,
+    setReservations,
+  ] = useState([]);
+
+  const [
+    openingHours,
+    setOpeningHours,
+  ] = useState([]);
+
+  const [
+    isLoading,
+    setIsLoading,
+  ] = useState(true);
+
+  const [
+    isRefreshing,
+    setIsRefreshing,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState(null);
+
+  // ====================================================
   // Fetch dashboard data
   // ====================================================
 
   const loadDashboard =
     useCallback(
-      async (refresh = false) => {
+      async (
+        refresh = false,
+        dateOverride = null
+      ) => {
         if (!accessToken) {
           return;
         }
 
         try {
           if (refresh) {
-            setIsRefreshing(true);
+            setIsRefreshing(
+              true
+            );
           } else {
             setIsLoading(true);
           }
@@ -555,13 +716,12 @@ export default function Dashboard() {
             "Europe/Brussels";
 
           // ==============================================
-          // Current date
+          // Selected date
           // ==============================================
 
-          const currentDate =
-            new Date();
-
-          setToday(currentDate);
+          const currentSelectedDate =
+            dateOverride ||
+            selectedDate;
 
           // ==============================================
           // Restaurant local date
@@ -569,7 +729,7 @@ export default function Dashboard() {
 
           const localDate =
             formatApiDate(
-              currentDate,
+              currentSelectedDate,
               restaurantTimezone
             );
 
@@ -615,15 +775,6 @@ export default function Dashboard() {
             )
           );
 
-          console.log(
-            "DASHBOARD OPENING HOURS:",
-            JSON.stringify(
-              openingHoursData,
-              null,
-              2
-            )
-          );
-
           setReservations(
             reservationsData
           );
@@ -643,10 +794,16 @@ export default function Dashboard() {
           );
         } finally {
           setIsLoading(false);
-          setIsRefreshing(false);
+          setIsRefreshing(
+            false
+          );
         }
       },
-      [accessToken]
+      [
+        accessToken,
+        selectedDate,
+        selectedDateParam,
+      ]
     );
 
   // ====================================================
@@ -662,17 +819,6 @@ export default function Dashboard() {
   // ====================================================
   // Automatic refresh every minute
   // ====================================================
-  //
-  // Zolang het dashboard open is:
-  //
-  // - Iedere minuut worden nieuwe reservaties opgehaald.
-  // - Bij middernacht wordt automatisch de nieuwe
-  //   restaurantdatum gebruikt.
-  // - De reservaties van de nieuwe dag worden opgehaald.
-  //
-  // Hierdoor verschijnt een nieuwe reservatie binnen
-  // maximaal ongeveer 1 minuut op het dashboard.
-  // ====================================================
 
   useEffect(() => {
     if (!accessToken) {
@@ -685,7 +831,9 @@ export default function Dashboard() {
       }, 60 * 1000);
 
     return () => {
-      clearInterval(interval);
+      clearInterval(
+        interval
+      );
     };
   }, [
     accessToken,
@@ -693,14 +841,70 @@ export default function Dashboard() {
   ]);
 
   // ====================================================
-  // Today's opening hours
+  // Navigate to previous day
   // ====================================================
 
-  const todaysOpeningHours =
+  const goToPreviousDay =
+    useCallback(() => {
+      setSelectedDate(
+        (currentDate) => {
+          return changeCalendarDay(
+            currentDate,
+            -1
+          );
+        }
+      );
+    }, []);
+
+  // ====================================================
+  // Navigate to next day
+  // ====================================================
+
+  const goToNextDay =
+    useCallback(() => {
+      setSelectedDate(
+        (currentDate) => {
+          return changeCalendarDay(
+            currentDate,
+            1
+          );
+        }
+      );
+    }, []);
+
+  // ====================================================
+  // Selected date is today?
+  // ====================================================
+
+  const isToday =
     useMemo(() => {
-      const todayKey =
-        getDayOfWeekKey(
+      const today =
+        new Date();
+
+      return (
+        formatApiDate(
+          selectedDate,
+          timezone
+        ) ===
+        formatApiDate(
           today,
+          timezone
+        )
+      );
+    }, [
+      selectedDate,
+      timezone,
+    ]);
+
+  // ====================================================
+  // Opening hours for selected day
+  // ====================================================
+
+  const selectedDayOpeningHours =
+    useMemo(() => {
+      const selectedDayKey =
+        getDayOfWeekKey(
+          selectedDate,
           timezone
         );
 
@@ -708,7 +912,7 @@ export default function Dashboard() {
         .filter(
           (openingHour) =>
             openingHour.dayOfWeek ===
-            todayKey
+            selectedDayKey
         )
         .sort(
           (a, b) =>
@@ -717,26 +921,28 @@ export default function Dashboard() {
         );
     }, [
       openingHours,
-      today,
+      selectedDate,
       timezone,
     ]);
 
   // ====================================================
-  // Today's services
+  // Services for selected day
   // ====================================================
 
-  const todaysServices =
+  const selectedDayServices =
     useMemo(() => {
       return createServicesForDay(
-        todaysOpeningHours
+        selectedDayOpeningHours
       );
-    }, [todaysOpeningHours]);
+    }, [
+      selectedDayOpeningHours,
+    ]);
 
   // ====================================================
-  // Today's reservations
+  // Selected day's reservations
   // ====================================================
 
-  const todaysReservations =
+  const selectedDayReservations =
     useMemo(() => {
       return [...reservations]
         .filter(
@@ -753,7 +959,9 @@ export default function Dashboard() {
               b.startTime
             )
         );
-    }, [reservations]);
+    }, [
+      reservations,
+    ]);
 
   // ====================================================
   // Reservations grouped by service
@@ -761,12 +969,12 @@ export default function Dashboard() {
 
   const reservationsByService =
     useMemo(() => {
-      return todaysServices.map(
+      return selectedDayServices.map(
         (service) => ({
           service,
 
           reservations:
-            todaysReservations.filter(
+            selectedDayReservations.filter(
               (reservation) =>
                 isReservationInsideService(
                   reservation,
@@ -777,21 +985,17 @@ export default function Dashboard() {
         })
       );
     }, [
-      todaysServices,
-      todaysReservations,
+      selectedDayServices,
+      selectedDayReservations,
       timezone,
     ]);
 
   // ====================================================
-  // Total today's reservations
+  // Total reservations
   // ====================================================
 
   const totalReservations =
-    todaysReservations.length;
-
-  // ====================================================
-  // Service overview
-  // ====================================================
+    selectedDayReservations.length;
 
   // ====================================================
   // Loading
@@ -809,7 +1013,9 @@ export default function Dashboard() {
         />
 
         <Text
-          style={styles.loadingText}
+          style={
+            styles.loadingText
+          }
         >
           Reservaties laden...
         </Text>
@@ -823,7 +1029,9 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView
-      style={styles.container}
+      style={
+        styles.container
+      }
     >
       <ScrollView
         contentContainerStyle={[
@@ -850,16 +1058,24 @@ export default function Dashboard() {
             Header
         ============================================ */}
 
-        <View style={styles.header}>
+        <View
+          style={
+            styles.header
+          }
+        >
           <View>
             <Text
-              style={styles.logo}
+              style={
+                styles.logo
+              }
             >
               AtrioNovo
             </Text>
 
             <Text
-              style={styles.greeting}
+              style={
+                styles.greeting
+              }
             >
               Welkom,{" "}
               {user?.firstName ||
@@ -876,38 +1092,96 @@ export default function Dashboard() {
             </Text>
           </View>
 
+          {/* ==========================================
+              Header actions
+          ========================================== */}
+
+          <View
+            style={
+              styles.headerActions
+            }
+          >
+            <TouchableOpacity
+              style={
+                styles.calendarButton
+              }
+              activeOpacity={0.7}
+              onPress={() =>
+                router.push(
+                  "/calendar"
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.calendarIcon
+                }
+              >
+                ▦
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={
+                styles.settingsButton
+              }
+              activeOpacity={0.7}
+              onPress={() =>
+                router.push(
+                  "/settings"
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.settingsIcon
+                }
+              >
+                ⚙
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ============================================
+            Date navigation
+        ============================================ */}
+
+        <View
+          style={
+            styles.dateNavigation
+          }
+        >
           <TouchableOpacity
             style={
-              styles.settingsButton
+              styles.dateNavigationButton
             }
             activeOpacity={0.7}
-            onPress={() =>
-              router.push(
-                "/settings"
-              )
+            onPress={
+              goToPreviousDay
             }
           >
             <Text
               style={
-                styles.settingsIcon
+                styles.dateNavigationArrow
               }
             >
-              ⚙
+              ‹
             </Text>
           </TouchableOpacity>
-        </View>
 
-        {/* ============================================
-            Date + total
-        ============================================ */}
-
-        <View style={styles.dateRow}>
-          <View>
+          <View
+            style={
+              styles.selectedDateContainer
+            }
+          >
             <Text
-              style={styles.date}
+              style={
+                styles.date
+              }
             >
               {formatDate(
-                today,
+                selectedDate,
                 timezone
               )}
             </Text>
@@ -917,7 +1191,49 @@ export default function Dashboard() {
                 styles.dateSubtitle
               }
             >
-              Vandaag
+              {isToday
+                ? "Vandaag"
+                : "Reservaties"}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={
+              styles.dateNavigationButton
+            }
+            activeOpacity={0.7}
+            onPress={
+              goToNextDay
+            }
+          >
+            <Text
+              style={
+                styles.dateNavigationArrow
+              }
+            >
+              ›
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ============================================
+            Date + total
+        ============================================ */}
+
+        <View
+          style={
+            styles.dateTotalRow
+          }
+        >
+          <View>
+            <Text
+              style={
+                styles.selectedDateLabel
+              }
+            >
+              {isToday
+                ? "Vandaag"
+                : "Geselecteerde dag"}
             </Text>
           </View>
 
@@ -996,7 +1312,7 @@ export default function Dashboard() {
             Service overview
         ============================================ */}
 
-        {todaysServices.length >
+        {selectedDayServices.length >
           0 && (
           <View
             style={[
@@ -1005,7 +1321,7 @@ export default function Dashboard() {
               isLandscape &&
                 styles.serviceOverviewLandscape,
 
-              todaysServices.length ===
+              selectedDayServices.length ===
                 1 &&
                 styles.serviceOverviewSingle,
             ]}
@@ -1016,14 +1332,16 @@ export default function Dashboard() {
                 reservations,
               }) => (
                 <View
-                  key={service.key}
+                  key={
+                    service.key
+                  }
                   style={[
                     styles.serviceOverviewCard,
 
                     isLandscape &&
                       styles.serviceOverviewCardLandscape,
 
-                    todaysServices.length ===
+                    selectedDayServices.length ===
                       1 &&
                       styles.serviceOverviewCardSingle,
                   ]}
@@ -1041,7 +1359,9 @@ export default function Dashboard() {
                       styles.overviewNumber
                     }
                   >
-                    {reservations.length}
+                    {
+                      reservations.length
+                    }
                   </Text>
 
                   <Text
@@ -1049,7 +1369,9 @@ export default function Dashboard() {
                       styles.overviewSubtitle
                     }
                   >
-                    {service.subtitle}
+                    {
+                      service.subtitle
+                    }
                   </Text>
                 </View>
               )
@@ -1061,7 +1383,7 @@ export default function Dashboard() {
             Closed today
         ============================================ */}
 
-        {todaysServices.length ===
+        {selectedDayServices.length ===
           0 && (
           <View
             style={
@@ -1073,7 +1395,7 @@ export default function Dashboard() {
                 styles.closedTodayTitle
               }
             >
-              Vandaag gesloten
+              Gesloten
             </Text>
 
             <Text
@@ -1081,8 +1403,10 @@ export default function Dashboard() {
                 styles.closedTodayText
               }
             >
-              Er zijn vandaag geen
-              openingstijden ingesteld.
+              Er zijn voor deze
+              dag geen
+              openingstijden
+              ingesteld.
             </Text>
           </View>
         )}
@@ -1092,10 +1416,14 @@ export default function Dashboard() {
         ============================================ */}
 
         <View
-          style={styles.sectionHeader}
+          style={
+            styles.sectionHeader
+          }
         >
           <Text
-            style={styles.sectionTitle}
+            style={
+              styles.sectionTitle
+            }
           >
             Reservaties
           </Text>
@@ -1105,7 +1433,12 @@ export default function Dashboard() {
               styles.sectionSubtitle
             }
           >
-            Vandaag
+            {isToday
+              ? "Vandaag"
+              : formatDate(
+                  selectedDate,
+                  timezone
+                )}
           </Text>
         </View>
 
@@ -1115,12 +1448,16 @@ export default function Dashboard() {
             reservations,
           }) => (
             <ServiceSection
-              key={service.key}
+              key={
+                service.key
+              }
               service={service}
               reservations={
                 reservations
               }
-              timezone={timezone}
+              timezone={
+                timezone
+              }
             />
           )
         )}
@@ -1135,13 +1472,16 @@ export default function Dashboard() {
           }
           onPress={async () => {
             await logout();
+
             router.replace(
               "/login"
             );
           }}
         >
           <Text
-            style={styles.logoutText}
+            style={
+              styles.logoutText
+            }
           >
             Uitloggen
           </Text>
@@ -1155,409 +1495,478 @@ export default function Dashboard() {
 // Styles
 // ======================================================
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
-
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-
-  scrollContentLandscape: {
-    paddingHorizontal: 40,
-    maxWidth: 1200,
-    width: "100%",
-    alignSelf: "center",
-  },
-
-  // ====================================================
-  // Loading
-  // ====================================================
-
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: "#f7f7f7",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  loadingText: {
-    marginTop: 12,
-    fontSize: 15,
-    color: "#666",
-  },
-
-  // ====================================================
-  // Header
-  // ====================================================
-
-  header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-  },
-
-  logo: {
-    fontSize: 19,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  greeting: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#111",
-    marginTop: 34,
-  },
-
-  restaurantName: {
-    fontSize: 17,
-    color: "#666",
-    marginTop: 5,
-  },
-
-  settingsButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#087FE5",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 4,
+const styles =
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:
+        "#f7f7f7",
     },
-    elevation: 5,
-  },
 
-  settingsIcon: {
-    fontSize: 25,
-    color: "#fff",
-  },
+    scrollContent: {
+      paddingHorizontal: 24,
+      paddingTop: 20,
+      paddingBottom: 40,
+    },
 
-  // ====================================================
-  // Date
-  // ====================================================
+    scrollContentLandscape: {
+      paddingHorizontal: 40,
+      maxWidth: 1200,
+      width: "100%",
+      alignSelf: "center",
+    },
 
-  dateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 34,
-  },
+    // ==================================================
+    // Loading
+    // ==================================================
 
-  date: {
-    fontSize: 21,
-    fontWeight: "700",
-    color: "#111",
-    textTransform: "capitalize",
-  },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor:
+        "#f7f7f7",
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  dateSubtitle: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 4,
-  },
+    loadingText: {
+      marginTop: 12,
+      fontSize: 15,
+      color: "#666",
+    },
 
-  totalContainer: {
-    alignItems: "flex-end",
-  },
+    // ==================================================
+    // Header
+    // ==================================================
 
-  totalNumber: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#111",
-  },
+    header: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent:
+        "space-between",
+    },
 
-  totalLabel: {
-    fontSize: 13,
-    color: "#777",
-  },
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
 
-  // ====================================================
-  // Error
-  // ====================================================
+    logo: {
+      fontSize: 19,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  errorContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 24,
-    borderWidth: 1,
-    borderColor: "#f0cccc",
-  },
+    greeting: {
+      fontSize: 30,
+      fontWeight: "700",
+      color: "#111",
+      marginTop: 34,
+    },
 
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#c62828",
-  },
+    restaurantName: {
+      fontSize: 17,
+      color: "#666",
+      marginTop: 5,
+    },
 
-  errorText: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 6,
-  },
+    calendarButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: "#fff",
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  retryButton: {
-    alignSelf: "flex-start",
-    marginTop: 14,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: "#111",
-  },
+    calendarIcon: {
+      fontSize: 25,
+      color: "#111",
+    },
 
-  retryText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
-  },
+    settingsButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: "#087FE5",
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      elevation: 5,
+    },
 
-  // ====================================================
-  // Service overview
-  // ====================================================
+    settingsIcon: {
+      fontSize: 25,
+      color: "#fff",
+    },
 
-  serviceOverview: {
-    flexDirection: "row",
-    gap: 14,
-    marginTop: 28,
-  },
+    // ==================================================
+    // Date navigation
+    // ==================================================
 
-  serviceOverviewSingle: {
-    flexDirection: "column",
-  },
+    dateNavigation: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      marginTop: 34,
+    },
 
-  serviceOverviewLandscape: {
-    gap: 20,
-  },
+    dateNavigationButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 23,
+      backgroundColor: "#fff",
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  serviceOverviewCard: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 20,
-    minHeight: 150,
-    justifyContent: "center",
-  },
+    dateNavigationArrow: {
+      fontSize: 34,
+      lineHeight: 36,
+      color: "#111",
+      marginTop: -3,
+    },
 
-  serviceOverviewCardLandscape: {
-    minHeight: 170,
-    padding: 26,
-  },
+    selectedDateContainer: {
+      flex: 1,
+      alignItems: "center",
+      paddingHorizontal: 12,
+    },
 
-  serviceOverviewCardSingle: {
-    flex: 0,
-  },
+    date: {
+      fontSize: 21,
+      fontWeight: "700",
+      color: "#111",
+      textTransform:
+        "capitalize",
+      textAlign: "center",
+    },
 
-  overviewLabel: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
-  },
+    dateSubtitle: {
+      fontSize: 14,
+      color: "#777",
+      marginTop: 4,
+    },
 
-  overviewNumber: {
-    fontSize: 42,
-    fontWeight: "700",
-    color: "#111",
-    marginTop: 8,
-  },
+    // ==================================================
+    // Date total
+    // ==================================================
 
-  overviewSubtitle: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 2,
-  },
+    dateTotalRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      marginTop: 18,
+    },
 
-  // ====================================================
-  // Closed today
-  // ====================================================
+    selectedDateLabel: {
+      fontSize: 14,
+      color: "#777",
+    },
 
-  closedToday: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 20,
-    marginTop: 28,
-  },
+    totalContainer: {
+      alignItems: "flex-end",
+    },
 
-  closedTodayTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
-  },
+    totalNumber: {
+      fontSize: 30,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  closedTodayText: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 5,
-  },
+    totalLabel: {
+      fontSize: 13,
+      color: "#777",
+    },
 
-  // ====================================================
-  // Reservations header
-  // ====================================================
+    // ==================================================
+    // Error
+    // ==================================================
 
-  sectionHeader: {
-    marginTop: 36,
-    marginBottom: 16,
-  },
+    errorContainer: {
+      backgroundColor: "#fff",
+      borderRadius: 16,
+      padding: 20,
+      marginTop: 24,
+      borderWidth: 1,
+      borderColor: "#f0cccc",
+    },
 
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111",
-  },
+    errorTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: "#c62828",
+    },
 
-  sectionSubtitle: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 3,
-  },
+    errorText: {
+      fontSize: 14,
+      color: "#666",
+      marginTop: 6,
+    },
 
-  // ====================================================
-  // Service
-  // ====================================================
+    retryButton: {
+      alignSelf: "flex-start",
+      marginTop: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: 8,
+      backgroundColor: "#111",
+    },
 
-  serviceSection: {
-    marginBottom: 30,
-  },
+    retryText: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "600",
+    },
 
-  serviceHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
+    // ==================================================
+    // Service overview
+    // ==================================================
 
-  serviceTitle: {
-    fontSize: 19,
-    fontWeight: "700",
-    color: "#111",
-  },
+    serviceOverview: {
+      flexDirection: "row",
+      gap: 14,
+      marginTop: 28,
+    },
 
-  serviceSubtitle: {
-    fontSize: 13,
-    color: "#777",
-    marginTop: 3,
-  },
+    serviceOverviewSingle: {
+      flexDirection: "column",
+    },
 
-  serviceCount: {
-    alignItems: "flex-end",
-  },
+    serviceOverviewLandscape: {
+      gap: 20,
+    },
 
-  serviceCountNumber: {
-    fontSize: 21,
-    fontWeight: "700",
-    color: "#111",
-  },
+    serviceOverviewCard: {
+      flex: 1,
+      backgroundColor: "#fff",
+      borderRadius: 18,
+      padding: 20,
+      minHeight: 150,
+      justifyContent: "center",
+    },
 
-  serviceCountLabel: {
-    fontSize: 12,
-    color: "#777",
-  },
+    serviceOverviewCardLandscape: {
+      minHeight: 170,
+      padding: 26,
+    },
 
-  // ====================================================
-  // Reservation list
-  // ====================================================
+    serviceOverviewCardSingle: {
+      flex: 0,
+    },
 
-  reservationList: {
-    gap: 10,
-  },
+    overviewLabel: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  reservationCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    minHeight: 76,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    flexDirection: "row",
-    alignItems: "center",
-  },
+    overviewNumber: {
+      fontSize: 42,
+      fontWeight: "700",
+      color: "#111",
+      marginTop: 8,
+    },
 
-  timeColumn: {
-    width: 62,
-  },
+    overviewSubtitle: {
+      fontSize: 14,
+      color: "#777",
+      marginTop: 2,
+    },
 
-  reservationTime: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
-  },
+    // ==================================================
+    // Closed
+    // ==================================================
 
-  reservationMain: {
-    flex: 1,
-    marginLeft: 8,
-  },
+    closedToday: {
+      backgroundColor: "#fff",
+      borderRadius: 18,
+      padding: 20,
+      marginTop: 28,
+    },
 
-  reservationName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-  },
+    closedTodayTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  reservationMeta: {
-    fontSize: 14,
-    color: "#777",
-    marginTop: 4,
-  },
+    closedTodayText: {
+      fontSize: 14,
+      color: "#777",
+      marginTop: 5,
+    },
 
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginLeft: 10,
-  },
+    // ==================================================
+    // Reservations header
+    // ==================================================
 
-  confirmedDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#22a06b",
-    marginRight: 6,
-  },
+    sectionHeader: {
+      marginTop: 36,
+      marginBottom: 16,
+    },
 
-  statusText: {
-    fontSize: 12,
-    color: "#777",
-  },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  // ====================================================
-  // Empty service
-  // ====================================================
+    sectionSubtitle: {
+      fontSize: 14,
+      color: "#777",
+      marginTop: 3,
+      textTransform:
+        "capitalize",
+    },
 
-  emptyService: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    alignItems: "center",
-  },
+    // ==================================================
+    // Service
+    // ==================================================
 
-  emptyServiceText: {
-    fontSize: 14,
-    color: "#999",
-  },
+    serviceSection: {
+      marginBottom: 30,
+    },
 
-  // ====================================================
-  // Logout
-  // ====================================================
+    serviceHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent:
+        "space-between",
+      marginBottom: 12,
+    },
 
-  logoutButton: {
-    backgroundColor: "#111",
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: "center",
-    marginTop: 10,
-  },
+    serviceTitle: {
+      fontSize: 19,
+      fontWeight: "700",
+      color: "#111",
+    },
 
-  logoutText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-});
+    serviceSubtitle: {
+      fontSize: 13,
+      color: "#777",
+      marginTop: 3,
+    },
+
+    serviceCount: {
+      alignItems: "flex-end",
+    },
+
+    serviceCountNumber: {
+      fontSize: 21,
+      fontWeight: "700",
+      color: "#111",
+    },
+
+    serviceCountLabel: {
+      fontSize: 12,
+      color: "#777",
+    },
+
+    // ==================================================
+    // Reservation list
+    // ==================================================
+
+    reservationList: {
+      gap: 10,
+    },
+
+    reservationCard: {
+      backgroundColor: "#fff",
+      borderRadius: 14,
+      minHeight: 76,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    timeColumn: {
+      width: 62,
+    },
+
+    reservationTime: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: "#111",
+    },
+
+    reservationMain: {
+      flex: 1,
+      marginLeft: 8,
+    },
+
+    reservationName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: "#111",
+    },
+
+    reservationMeta: {
+      fontSize: 14,
+      color: "#777",
+      marginTop: 4,
+    },
+
+    statusContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginLeft: 10,
+    },
+
+    confirmedDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#22a06b",
+      marginRight: 6,
+    },
+
+    statusText: {
+      fontSize: 12,
+      color: "#777",
+    },
+
+    // ==================================================
+    // Empty service
+    // ==================================================
+
+    emptyService: {
+      backgroundColor: "#fff",
+      borderRadius: 14,
+      paddingVertical: 24,
+      paddingHorizontal: 20,
+      alignItems: "center",
+    },
+
+    emptyServiceText: {
+      fontSize: 14,
+      color: "#999",
+    },
+
+    // ==================================================
+    // Logout
+    // ==================================================
+
+    logoutButton: {
+      backgroundColor: "#111",
+      borderRadius: 14,
+      paddingVertical: 16,
+      alignItems: "center",
+      marginTop: 10,
+    },
+
+    logoutText: {
+      color: "#fff",
+      fontSize: 16,
+      fontWeight: "600",
+    },
+  });
