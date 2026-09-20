@@ -9,6 +9,10 @@ import {
   useState,
 } from "react";
 
+import {
+  getTableReservationState,
+} from "./table-state";
+
 function formatReservationTime(
   dateString
 ) {
@@ -27,11 +31,18 @@ function formatReservationTime(
 
 function Table({
   table,
+  reservations,
   isSelected,
   onSelect,
 }) {
   const isRound =
     table.shape === "ROUND";
+
+  const reservationState =
+    getTableReservationState(
+      table,
+      reservations
+    );
 
   return (
     <TouchableOpacity
@@ -50,6 +61,11 @@ function Table({
             ? 999
             : 12,
         },
+
+        reservationState ===
+          "RESERVED" &&
+          styles.reservedTable,
+
         isSelected &&
           styles.selectedTable,
       ]}
@@ -109,6 +125,9 @@ function TableMap({
           <Table
             key={table.id}
             table={table}
+            reservations={
+              reservations
+            }
             isSelected={
               selectedTable?.id ===
               table.id
@@ -222,6 +241,11 @@ const styles = StyleSheet.create({
     borderColor: "#d0d0d0",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  reservedTable: {
+    backgroundColor: "#fff4e5",
+    borderColor: "#f0a000",
   },
 
   selectedTable: {
