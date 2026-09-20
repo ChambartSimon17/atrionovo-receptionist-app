@@ -1,5 +1,16 @@
-import { Stack, useRouter, useSegments } from "expo-router";
-import { useEffect } from "react";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+} from "expo-router";
+
+import {
+  useEffect,
+} from "react";
+
+import {
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 
 import {
   AuthProvider,
@@ -23,12 +34,18 @@ function AuthGuard() {
     const inAuthScreen =
       segments[0] === "login";
 
-    if (!isAuthenticated && !inAuthScreen) {
+    if (
+      !isAuthenticated &&
+      !inAuthScreen
+    ) {
       router.replace("/login");
       return;
     }
 
-    if (isAuthenticated && inAuthScreen) {
+    if (
+      isAuthenticated &&
+      inAuthScreen
+    ) {
       router.replace("/dashboard");
     }
   }, [
@@ -48,8 +65,12 @@ function AuthGuard() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <AuthGuard />
-    </AuthProvider>
+    <GestureHandlerRootView
+      style={{ flex: 1 }}
+    >
+      <AuthProvider>
+        <AuthGuard />
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

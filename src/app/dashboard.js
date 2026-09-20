@@ -25,6 +25,7 @@ import {
 
 import { useAuth } from "../context/auth-context";
 import { api } from "../services/api";
+import TableMap from "../components/TableMap";
 
 // ======================================================
 // Helpers
@@ -659,6 +660,11 @@ export default function Dashboard() {
   ] = useState([]);
 
   const [
+    tables,
+    setTables,
+  ] = useState([]);
+
+  const [
     isLoading,
     setIsLoading,
   ] = useState(true);
@@ -734,12 +740,13 @@ export default function Dashboard() {
             );
 
           // ==============================================
-          // Reservations + opening hours
+          // Reservations + opening hours + tables
           // ==============================================
 
           const [
             reservationsResponse,
             openingHoursResponse,
+            tablesResponse,
           ] = await Promise.all([
             api.getReservationsForDay(
               localDate,
@@ -747,6 +754,11 @@ export default function Dashboard() {
             ),
 
             api.getOpeningHours(
+              restaurantData.id,
+              accessToken
+            ),
+
+            api.getTables(
               restaurantData.id,
               accessToken
             ),
@@ -759,6 +771,11 @@ export default function Dashboard() {
           const openingHoursData =
             openingHoursResponse?.data ||
             openingHoursResponse ||
+            [];
+
+          const tablesData =
+            tablesResponse?.data ||
+            tablesResponse ||
             [];
 
           console.log(
@@ -781,6 +798,10 @@ export default function Dashboard() {
 
           setOpeningHours(
             openingHoursData
+          );
+
+          setTables(
+            tablesData
           );
         } catch (error) {
           console.error(
@@ -1412,6 +1433,45 @@ export default function Dashboard() {
         )}
 
         {/* ============================================
+            Tables
+        ============================================ */}
+
+        <View
+          style={
+            styles.tablesSection
+          }
+        >
+          <View
+            style={
+              styles.sectionHeader
+            }
+          >
+            <Text
+              style={
+                styles.sectionTitle
+              }
+            >
+              Tafels
+            </Text>
+
+            <Text
+              style={
+                styles.sectionSubtitle
+              }
+            >
+              {tables.length} tafels
+            </Text>
+          </View>
+
+          <TableMap
+            tables={tables}
+            reservations={
+              selectedDayReservations
+            }
+          />
+        </View>
+
+        {/* ============================================
             Reservations
         ============================================ */}
 
@@ -1826,6 +1886,15 @@ const styles =
       marginTop: 3,
       textTransform:
         "capitalize",
+    },
+
+    // ==================================================
+    // Tables
+    // ==================================================
+
+    tablesSection: {
+      marginTop: 36,
+      marginBottom: 10,
     },
 
     // ==================================================

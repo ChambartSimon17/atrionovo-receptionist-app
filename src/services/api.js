@@ -291,6 +291,70 @@ export const api = {
     );
   },
 
+  getTables(
+    restaurantId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/tables`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createTable(
+    restaurantId,
+    table,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/tables`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          table
+        ),
+      }
+    );
+  },
+
+  updateTable(
+    restaurantId,
+    tableId,
+    table,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/tables/${tableId}`,
+      accessToken,
+      {
+        method: "PATCH",
+
+        body: JSON.stringify(
+          table
+        ),
+      }
+    );
+  },
+
+  deleteTable(
+    restaurantId,
+    tableId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/restaurants/${restaurantId}/tables/${tableId}`,
+      accessToken,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   getOpeningHours(
     restaurantId,
     accessToken
