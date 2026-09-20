@@ -32,6 +32,7 @@ function formatReservationTime(
 function Table({
   table,
   reservations,
+  currentTime,
   isSelected,
   onSelect,
 }) {
@@ -41,7 +42,8 @@ function Table({
   const reservationState =
     getTableReservationState(
       table,
-      reservations
+      reservations,
+      currentTime
     );
 
   return (
@@ -66,6 +68,14 @@ function Table({
           "RESERVED" &&
           styles.reservedTable,
 
+        reservationState ===
+          "ARRIVING" &&
+          styles.arrivingTable,
+
+        reservationState ===
+          "SEATED" &&
+          styles.seatedTable,
+
         isSelected &&
           styles.selectedTable,
       ]}
@@ -85,6 +95,9 @@ function TableMap({
   tables,
   reservations,
 }) {
+  const currentTime =
+    new Date();
+
   const [
     selectedTable,
     setSelectedTable,
@@ -127,6 +140,9 @@ function TableMap({
             table={table}
             reservations={
               reservations
+            }
+            currentTime={
+              currentTime
             }
             isSelected={
               selectedTable?.id ===
@@ -246,6 +262,16 @@ const styles = StyleSheet.create({
   reservedTable: {
     backgroundColor: "#fff4e5",
     borderColor: "#f0a000",
+  },
+
+  arrivingTable: {
+    backgroundColor: "#fff0f0",
+    borderColor: "#d64545",
+  },
+
+  seatedTable: {
+    backgroundColor: "#e8f5e9",
+    borderColor: "#22a06b",
   },
 
   selectedTable: {

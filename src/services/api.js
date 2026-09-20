@@ -519,6 +519,34 @@ export const api = {
     );
   },
 
+  markReservationAsSeated(
+    restaurantId,
+    reservationId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/${restaurantId}/${reservationId}/seat`,
+      accessToken,
+      {
+        method: "PATCH",
+      }
+    );
+  },
+
+  markReservationAsCompleted(
+    restaurantId,
+    reservationId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/reservations/${restaurantId}/${reservationId}/complete`,
+      accessToken,
+      {
+        method: "PATCH",
+      }
+    );
+  },
+
   updateReservation(
     reservationId,
     reservation,

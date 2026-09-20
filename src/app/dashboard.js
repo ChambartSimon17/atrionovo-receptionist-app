@@ -386,87 +386,150 @@ function createServicesForDay(
 function ReservationCard({
   reservation,
   timezone,
+  onSeat,
+  onComplete,
+  isActionInProgress,
 }) {
   const startTime =
     new Date(
       reservation.startTime
     );
 
+  const isSeated =
+    reservation.status ===
+    "SEATED";
+
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
-      style={
-        styles.reservationCard
-      }
-      onPress={() =>
-        router.push(
-          `/reservation/${reservation.id}`
-        )
-      }
+    <View
+      style={[
+        styles.reservationCard,
+
+        isSeated &&
+          styles.seatedReservationCard,
+      ]}
     >
-      <View
+      <TouchableOpacity
+        activeOpacity={0.75}
         style={
-          styles.timeColumn
+          styles.reservationTouchable
         }
-      >
-        <Text
-          style={
-            styles.reservationTime
-          }
-        >
-          {formatTime(
-            startTime,
-            timezone
-          )}
-        </Text>
-      </View>
-
-      <View
-        style={
-          styles.reservationMain
-        }
-      >
-        <Text
-          style={
-            styles.reservationName
-          }
-          numberOfLines={1}
-        >
-          {reservation.firstName}{" "}
-          {reservation.lastName}
-        </Text>
-
-        <Text
-          style={
-            styles.reservationMeta
-          }
-        >
-          {formatGuestCount(
-            reservation.guestCount
-          )}
-        </Text>
-      </View>
-
-      <View
-        style={
-          styles.statusContainer
+        onPress={() =>
+          router.push(
+            `/reservation/${reservation.id}`
+          )
         }
       >
         <View
           style={
-            styles.confirmedDot
-          }
-        />
-
-        <Text
-          style={
-            styles.statusText
+            styles.timeColumn
           }
         >
-          Bevestigd
-        </Text>
+          <Text
+            style={
+              styles.reservationTime
+            }
+          >
+            {formatTime(
+              startTime,
+              timezone
+            )}
+          </Text>
+        </View>
+
+        <View
+          style={
+            styles.reservationMain
+          }
+        >
+          <Text
+            style={
+              styles.reservationName
+            }
+            numberOfLines={1}
+          >
+            {reservation.firstName}{" "}
+            {reservation.lastName}
+          </Text>
+
+          <Text
+            style={
+              styles.reservationMeta
+            }
+          >
+            {formatGuestCount(
+              reservation.guestCount
+            )}
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      <View
+        style={
+          styles.reservationAction
+        }
+      >
+        {isSeated ? (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            disabled={isActionInProgress}
+            style={[
+              styles.departedButton,
+              isActionInProgress &&
+                styles.departedButtonDisabled,
+            ]}
+            onPress={() =>
+              onComplete(
+                reservation
+              )
+            }
+          >
+            {isActionInProgress ? (
+              <ActivityIndicator
+                size="small"
+              />
+            ) : (
+              <Text
+                style={
+                  styles.departedButtonText
+                }
+              >
+                Gasten vertrokken
+              </Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.75}
+            disabled={isActionInProgress}
+            style={[
+              styles.arrivedButton,
+
+              isActionInProgress &&
+                styles.arrivedButtonDisabled,
+            ]}
+            onPress={() =>
+              onSeat(
+                reservation
+              )
+            }
+          >
+            {isActionInProgress ? (
+              <ActivityIndicator
+                size="small"
+              />
+            ) : (
+              <Text
+                style={
+                  styles.arrivedButtonText
+                }
+              >
+                Gast gearriveerd
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
@@ -478,6 +541,9 @@ function ServiceSection({
   service,
   reservations,
   timezone,
+  onSeat,
+  onComplete,
+  activeReservationActionId,
 }) {
   return (
     <View
@@ -566,6 +632,16 @@ function ServiceSection({
                 }
                 timezone={
                   timezone
+                }
+                onSeat={
+                  onSeat
+                }
+                onComplete={
+                  onComplete
+                }
+                isActionInProgress={
+                  activeReservationActionId ===
+                  reservation.id
                 }
               />
             )
@@ -678,6 +754,154 @@ export default function Dashboard() {
     error,
     setError,
   ] = useState(null);
+
+  // ====================================================
+  // Reservation action state
+  // ====================================================
+
+  const [
+    activeReservationActionId,
+    setActiveReservationActionId,
+  ] = useState(null);
+
+  // ====================================================
+  // Mark reservation as seated
+  // ====================================================
+
+  const handleSeatReservation =
+    useCallback(
+      async (reservation) => {
+        if (
+          !accessToken ||
+          !restaurant?.id ||
+          !reservation?.id
+        ) {
+          return;
+        }
+
+        if (
+          reservation.status !==
+          "CONFIRMED"
+        ) {
+          return;
+        }
+
+        try {
+          setActiveReservationActionId(
+            reservation.id
+          );
+
+          setError(null);
+
+          const response =
+            await api.markReservationAsSeated(
+              restaurant.id,
+              reservation.id,
+              accessToken
+            );
+
+          const updatedReservation =
+            response?.data ||
+            response;
+
+          setReservations(
+            (currentReservations) =>
+              currentReservations.map(
+                (
+                  currentReservation
+                ) =>
+                  currentReservation.id ===
+                  reservation.id
+                    ? {
+                        ...currentReservation,
+                        ...updatedReservation,
+                        status:
+                          "SEATED",
+                      }
+                    : currentReservation
+              )
+          );
+        } catch (error) {
+          console.error(
+            "Failed to mark reservation as seated:",
+            error
+          );
+
+          setError(
+            error?.message ||
+              "De reservatie kon niet als gearriveerd worden gemarkeerd."
+          );
+        } finally {
+          setActiveReservationActionId(
+            null
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+      ]
+    );
+
+  const handleCompleteReservation =
+    useCallback(
+      async (reservation) => {
+        if (
+          !accessToken ||
+          !restaurant?.id ||
+          !reservation?.id
+        ) {
+          return;
+        }
+
+        if (
+          reservation.status !==
+          "SEATED"
+        ) {
+          return;
+        }
+
+        try {
+          setActiveReservationActionId(
+            reservation.id
+          );
+          setError(null);
+
+          await api.markReservationAsCompleted(
+            restaurant.id,
+            reservation.id,
+            accessToken
+          );
+
+          setReservations(
+            (currentReservations) =>
+              currentReservations.filter(
+                (currentReservation) =>
+                  currentReservation.id !==
+                  reservation.id
+              )
+          );
+        } catch (error) {
+          console.error(
+            "Failed to complete reservation:",
+            error
+          );
+
+          setError(
+            error?.message ||
+              "De reservatie kon niet als voltooid worden gemarkeerd."
+          );
+        } finally {
+          setActiveReservationActionId(
+            null
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+      ]
+    );
 
   // ====================================================
   // Fetch dashboard data
@@ -969,7 +1193,9 @@ export default function Dashboard() {
         .filter(
           (reservation) =>
             reservation.status ===
-            "CONFIRMED"
+              "CONFIRMED" ||
+            reservation.status ===
+              "SEATED"
         )
         .sort(
           (a, b) =>
@@ -1518,6 +1744,15 @@ export default function Dashboard() {
               timezone={
                 timezone
               }
+              onSeat={
+                handleSeatReservation
+              }
+              onComplete={
+                handleCompleteReservation
+              }
+              activeReservationActionId={
+                activeReservationActionId
+              }
             />
           )
         )}
@@ -1958,6 +2193,17 @@ const styles =
       alignItems: "center",
     },
 
+    seatedReservationCard: {
+      borderWidth: 1,
+      borderColor: "#b7dfc8",
+    },
+
+    reservationTouchable: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
     timeColumn: {
       width: 62,
     },
@@ -1985,23 +2231,45 @@ const styles =
       marginTop: 4,
     },
 
-    statusContainer: {
-      flexDirection: "row",
-      alignItems: "center",
+    reservationAction: {
       marginLeft: 10,
+      alignItems: "flex-end",
     },
 
-    confirmedDot: {
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: "#22a06b",
-      marginRight: 6,
+    arrivedButton: {
+      backgroundColor: "#111",
+      borderRadius: 9,
+      paddingVertical: 9,
+      paddingHorizontal: 12,
     },
 
-    statusText: {
+    arrivedButtonDisabled: {
+      opacity: 0.6,
+    },
+
+    arrivedButtonText: {
+      color: "#fff",
       fontSize: 12,
-      color: "#777",
+      fontWeight: "600",
+    },
+
+    departedButton: {
+      backgroundColor: "#e8f5e9",
+      borderWidth: 1,
+      borderColor: "#22a06b",
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+    },
+
+    departedButtonDisabled: {
+      opacity: 0.6,
+    },
+
+    departedButtonText: {
+      color: "#16794f",
+      fontSize: 14,
+      fontWeight: "600",
     },
 
     // ==================================================
