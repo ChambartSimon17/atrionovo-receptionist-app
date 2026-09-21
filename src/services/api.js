@@ -72,7 +72,7 @@ async function request(
 
   if (!response.ok) {
     const error = new Error(
-      data?.error?.message ||
+      data?.message ||
         "Something went wrong."
     );
 

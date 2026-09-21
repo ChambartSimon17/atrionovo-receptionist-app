@@ -6,8 +6,20 @@ import {
 } from "react-native";
 
 import {
+  useEffect,
   useState,
 } from "react";
+
+import {
+  Gesture,
+  GestureDetector,
+} from "react-native-gesture-handler";
+
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
 
 import {
   getTableReservationState,
@@ -34,7 +46,9 @@ function Table({
   reservations,
   currentTime,
   isSelected,
+  isEditing,
   onSelect,
+  onPositionChange,
 }) {
   const isRound =
     table.shape === "ROUND";
@@ -45,6 +59,169 @@ function Table({
       reservations,
       currentTime
     );
+
+  /*
+   * These shared values handle the visual movement
+   * of the table during a drag.
+   *
+   * They live on the UI thread, which means the table
+   * can follow the finger without triggering React
+   * renders on every movement.
+   */
+  const translateX =
+    useSharedValue(0);
+
+  const translateY =
+    useSharedValue(0);
+
+  const startX =
+    useSharedValue(table.x);
+
+  const startY =
+    useSharedValue(table.y);
+
+  /*
+   * If the table position changes from the backend
+   * or parent state, reset the gesture base position.
+   */
+  useEffect(() => {
+    translateX.value = 0;
+    translateY.value = 0;
+
+    startX.value = table.x;
+    startY.value = table.y;
+  }, [
+    table.x,
+    table.y,
+  ]);
+
+  /*
+   * Called only when the drag finishes.
+   *
+   * This function runs on the JS thread because
+   * runOnJS() is used from the gesture callback.
+   */
+  const handleDragEnd = (
+    x,
+    y
+  ) => {
+    onPositionChange?.(
+      table.id,
+      {
+        x,
+        y,
+      }
+    );
+  };
+
+  const dragGesture =
+    Gesture.Pan()
+      .enabled(isEditing)
+      .minDistance(8)
+
+      .onBegin(() => {
+        startX.value = table.x;
+        startY.value = table.y;
+
+        translateX.value = 0;
+        translateY.value = 0;
+      })
+
+      .onUpdate((event) => {
+        translateX.value =
+          event.translationX;
+
+        translateY.value =
+          event.translationY;
+      })
+
+      .onEnd((event) => {
+        const newX =
+          startX.value +
+          event.translationX;
+
+        const newY =
+          startY.value +
+          event.translationY;
+
+        runOnJS(handleDragEnd)(
+          newX,
+          newY
+        );
+      });
+
+  const tapGesture =
+    Gesture.Tap()
+      .enabled(isEditing)
+      .onEnd(() => {
+        runOnJS(onSelect)(table);
+      });
+
+  const tableGesture =
+    Gesture.Exclusive(
+      tapGesture,
+      dragGesture
+    );
+
+
+
+  /*
+   * Reanimated applies the translation directly
+   * without causing React to render every frame.
+   */
+  const animatedStyle =
+    useAnimatedStyle(
+      () => ({
+        transform: [
+          {
+            translateX:
+              translateX.value,
+          },
+          {
+            translateY:
+              translateY.value,
+          },
+        ],
+      })
+    );
+
+  if (isEditing) {
+    return (
+      <GestureDetector
+        gesture={tableGesture}
+      >
+        <Animated.View
+          style={[
+            styles.table,
+            styles.editingTable,
+            {
+              width: table.width,
+              height: table.height,
+              left: table.x,
+              top: table.y,
+              borderRadius:
+                isRound
+                  ? 999
+                  : 12,
+            },
+            animatedStyle,
+          ]}
+        >
+          <Text
+            style={styles.tableName}
+          >
+            {table.name}
+          </Text>
+
+          <Text
+            style={styles.tableCapacity}
+          >
+            {table.capacity}
+          </Text>
+        </Animated.View>
+      </GestureDetector>
+    );
+  }
 
   return (
     <TouchableOpacity
@@ -80,11 +257,15 @@ function Table({
           styles.selectedTable,
       ]}
     >
-      <Text style={styles.tableName}>
+      <Text
+        style={styles.tableName}
+      >
         {table.name}
       </Text>
 
-      <Text style={styles.tableCapacity}>
+      <Text
+        style={styles.tableCapacity}
+      >
         {table.capacity}
       </Text>
     </TouchableOpacity>
@@ -94,6 +275,9 @@ function Table({
 function TableMap({
   tables,
   reservations,
+  isEditing = false,
+  onTablePositionChange,
+  onTableSelect,
 }) {
   const currentTime =
     new Date();
@@ -106,12 +290,27 @@ function TableMap({
   const handleSelectTable = (
     table
   ) => {
+    if (isEditing) {
+      onTableSelect?.(table);
+      return;
+    }
+
     setSelectedTable(table);
   };
 
   const handleClearSelection = () => {
+    if (isEditing) {
+      return;
+    }
+
     setSelectedTable(null);
   };
+
+  useEffect(() => {
+    if (isEditing) {
+      setSelectedTable(null);
+    }
+  }, [isEditing]);
 
   const selectedReservations =
     selectedTable
@@ -127,13 +326,7 @@ function TableMap({
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={
-          handleClearSelection
-        }
-        style={styles.canvas}
-      >
+      <View style={styles.canvas}>
         {tables.map((table) => (
           <Table
             key={table.id}
@@ -148,12 +341,18 @@ function TableMap({
               selectedTable?.id ===
               table.id
             }
+            isEditing={
+              isEditing
+            }
             onSelect={
               handleSelectTable
             }
+            onPositionChange={
+              onTablePositionChange
+            }
           />
         ))}
-      </TouchableOpacity>
+      </View>
 
       {selectedTable && (
         <View
@@ -257,6 +456,11 @@ const styles = StyleSheet.create({
     borderColor: "#d0d0d0",
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  editingTable: {
+    borderWidth: 2,
+    borderColor: "#111111",
   },
 
   reservedTable: {

@@ -7,11 +7,13 @@ import {
 
 import {
   ActivityIndicator,
+  Alert,
   RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -755,6 +757,16 @@ export default function Dashboard() {
     setError,
   ] = useState(null);
 
+  const [
+    isEditingFloorPlan,
+    setIsEditingFloorPlan,
+  ] = useState(false);
+
+  const [
+    selectedFloorPlanTable,
+    setSelectedFloorPlanTable,
+  ] = useState(null);
+
   // ====================================================
   // Reservation action state
   // ====================================================
@@ -901,6 +913,280 @@ export default function Dashboard() {
         accessToken,
         restaurant?.id,
       ]
+    );
+
+  const handleTablePositionChange =
+    useCallback(
+      async (tableId, position) => {
+        if (
+          !accessToken ||
+          !restaurant?.id
+        ) {
+          return;
+        }
+
+        try {
+          await api.updateTable(
+            restaurant.id,
+            tableId,
+            {
+              x: position.x,
+              y: position.y,
+            },
+            accessToken
+          );
+
+          setTables(
+            (currentTables) =>
+              currentTables.map(
+                (table) =>
+                  table.id === tableId
+                    ? {
+                        ...table,
+                        x: position.x,
+                        y: position.y,
+                      }
+                    : table
+              )
+          );
+        } catch (error) {
+          console.error(
+            "Failed to update table position:",
+            error
+          );
+
+          setError(
+            error?.message ||
+              "De tafelpositie kon niet worden opgeslagen."
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+      ]
+    );
+
+  const handleAddTable =
+    useCallback(
+      async () => {
+        if (
+          !accessToken ||
+          !restaurant?.id
+        ) {
+          return;
+        }
+
+        try {
+          setError(null);
+
+          const existingNames =
+            new Set(
+              tables.map(
+                (table) =>
+                  table.name
+              )
+            );
+
+          let tableNumber = 1;
+
+          while (
+            existingNames.has(
+              `Tafel ${tableNumber}`
+            )
+          ) {
+            tableNumber += 1;
+          }
+
+          const newTable = {
+            name: `Tafel ${tableNumber}`,
+            capacity: 2,
+            shape: "ROUND",
+            x: 40,
+            y: 40,
+            width: 70,
+            height: 70,
+            rotation: 0,
+            isActive: true,
+          };
+
+          const response =
+            await api.createTable(
+              restaurant.id,
+              newTable,
+              accessToken
+            );
+
+          const createdTable =
+            response?.data ||
+            response;
+
+          setTables(
+            (currentTables) => [
+              ...currentTables,
+              createdTable,
+            ]
+          );
+        } catch (error) {
+          console.error(
+            "Failed to create table:",
+            error
+          );
+
+          setError(
+            error?.message ||
+              "De tafel kon niet worden toegevoegd."
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+        tables,
+      ]
+    );
+
+  const handleUpdateTable =
+    useCallback(
+      async (tableId, updates) => {
+        if (
+          !accessToken ||
+          !restaurant?.id
+        ) {
+          return;
+        }
+
+        try {
+          setError(null);
+
+          const response =
+            await api.updateTable(
+              restaurant.id,
+              tableId,
+              updates,
+              accessToken
+            );
+
+          const updatedTable =
+            response?.data ||
+            response;
+
+          setTables(
+            (currentTables) =>
+              currentTables.map(
+                (table) =>
+                  table.id === tableId
+                    ? {
+                        ...table,
+                        ...updatedTable,
+                      }
+                    : table
+              )
+          );
+
+          setSelectedFloorPlanTable(
+            (currentTable) =>
+              currentTable?.id === tableId
+                ? {
+                    ...currentTable,
+                    ...updatedTable,
+                  }
+                : currentTable
+          );
+        } catch (error) {
+          console.error(
+            "Failed to update table:",
+            error
+          );
+
+          setError(
+            error?.message ||
+              "De tafel kon niet worden bijgewerkt."
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+      ]
+    );
+
+  const handleDeactivateTable =
+    useCallback(
+      async (tableId) => {
+        if (
+          !accessToken ||
+          !restaurant?.id
+        ) {
+          return;
+        }
+
+        try {
+          setError(null);
+
+          await api.deleteTable(
+            restaurant.id,
+            tableId,
+            accessToken
+          );
+
+          setTables(
+            (currentTables) =>
+              currentTables.filter(
+                (table) =>
+                  table.id !== tableId
+              )
+          );
+
+          setSelectedFloorPlanTable(
+            null
+          );
+        } catch (error) {
+          console.error(
+            "Failed to deactivate table:",
+            error
+          );
+
+          if (error?.status === 409) {
+            setError(error.message);
+            return;
+          }
+
+          setError(
+            error?.message ||
+              "De tafel kon niet worden gedeactiveerd."
+          );
+        }
+      },
+      [
+        accessToken,
+        restaurant?.id,
+      ]
+    );
+
+  const handleConfirmDeactivateTable =
+    useCallback(
+      (table) => {
+        Alert.alert(
+          "Tafel deactiveren?",
+          `Weet je zeker dat je ${table.name} wilt deactiveren? Bestaande reservaties blijven bewaard.`,
+          [
+            {
+              text: "Annuleren",
+              style: "cancel",
+            },
+            {
+              text: "Deactiveren",
+              style: "destructive",
+              onPress: () =>
+                handleDeactivateTable(
+                  table.id
+                ),
+            },
+          ]
+        );
+      },
+      [handleDeactivateTable]
     );
 
   // ====================================================
@@ -1669,24 +1955,85 @@ export default function Dashboard() {
         >
           <View
             style={
-              styles.sectionHeader
+              styles.tablesHeader
             }
           >
-            <Text
-              style={
-                styles.sectionTitle
-              }
-            >
-              Tafels
-            </Text>
+            <View>
+              <Text
+                style={
+                  styles.sectionTitle
+                }
+              >
+                Tafels
+              </Text>
 
-            <Text
+              <Text
+                style={
+                  styles.sectionSubtitle
+                }
+              >
+                {tables.length} tafels
+              </Text>
+            </View>
+
+            <View
               style={
-                styles.sectionSubtitle
+                styles.floorPlanActions
               }
             >
-              {tables.length} tafels
-            </Text>
+              {isEditingFloorPlan && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={
+                    handleAddTable
+                  }
+                  style={
+                    styles.addTableButton
+                  }
+                >
+                  <Text
+                    style={
+                      styles.addTableButtonText
+                    }
+                  >
+                    + Tafel toevoegen
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() =>
+                  setIsEditingFloorPlan(
+                    (current) => {
+                      const nextValue =
+                        !current;
+
+                      if (!nextValue) {
+                        setSelectedFloorPlanTable(
+                          null
+                        );
+                      }
+
+                      return nextValue;
+                    }
+                  )
+                }
+                style={
+                  styles.floorPlanEditButton
+                }
+              >
+                <Text
+                  style={
+                    styles.floorPlanEditButtonText
+                  }
+                >
+                  {isEditingFloorPlan
+                    ? "Klaar"
+                    : "Bewerk vloerplan"}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TableMap
@@ -1694,7 +2041,277 @@ export default function Dashboard() {
             reservations={
               selectedDayReservations
             }
+            isEditing={
+              isEditingFloorPlan
+            }
+            onTablePositionChange={
+              handleTablePositionChange
+            }
+            onTableSelect={
+              setSelectedFloorPlanTable
+            }
           />
+
+          {isEditingFloorPlan &&
+            selectedFloorPlanTable && (
+              <View
+                style={styles.tableEditor}
+              >
+                <Text
+                  style={
+                    styles.tableEditorTitle
+                  }
+                >
+                  {selectedFloorPlanTable.name}
+                </Text>
+
+                <Text
+                  style={
+                    styles.tableEditorLabel
+                  }
+                >
+                  Naam
+                </Text>
+
+                <TextInput
+                  value={
+                    selectedFloorPlanTable.name
+                  }
+                  onChangeText={(name) =>
+                    setSelectedFloorPlanTable(
+                      (current) => ({
+                        ...current,
+                        name,
+                      })
+                    )
+                  }
+                  style={
+                    styles.tableEditorInput
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.tableEditorLabel
+                  }
+                >
+                  Capaciteit
+                </Text>
+
+                <TextInput
+                  value={String(
+                    selectedFloorPlanTable.capacity
+                  )}
+                  onChangeText={(value) =>
+                    setSelectedFloorPlanTable(
+                      (current) => ({
+                        ...current,
+                        capacity: value,
+                      })
+                    )
+                  }
+                  keyboardType="number-pad"
+                  style={
+                    styles.tableEditorInput
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.tableEditorLabel
+                  }
+                >
+                  Breedte
+                </Text>
+
+                <TextInput
+                  value={String(
+                    selectedFloorPlanTable.width
+                  )}
+                  onChangeText={(value) =>
+                    setSelectedFloorPlanTable(
+                      (current) => ({
+                        ...current,
+                        width: value,
+                      })
+                    )
+                  }
+                  keyboardType="number-pad"
+                  style={
+                    styles.tableEditorInput
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.tableEditorLabel
+                  }
+                >
+                  Hoogte
+                </Text>
+
+                <TextInput
+                  value={String(
+                    selectedFloorPlanTable.height
+                  )}
+                  onChangeText={(value) =>
+                    setSelectedFloorPlanTable(
+                      (current) => ({
+                        ...current,
+                        height: value,
+                      })
+                    )
+                  }
+                  keyboardType="number-pad"
+                  style={
+                    styles.tableEditorInput
+                  }
+                />
+
+                <Text
+                  style={
+                    styles.tableEditorLabel
+                  }
+                >
+                  Vorm
+                </Text>
+
+                <View
+                  style={
+                    styles.shapeOptions
+                  }
+                >
+                  {[
+                    "ROUND",
+                    "SQUARE",
+                    "RECTANGLE",
+                  ].map((shape) => (
+                    <TouchableOpacity
+                      key={shape}
+                      activeOpacity={0.8}
+                      onPress={() =>
+                        setSelectedFloorPlanTable(
+                          (current) => ({
+                            ...current,
+                            shape,
+                          })
+                        )
+                      }
+                      style={[
+                        styles.shapeOption,
+                        selectedFloorPlanTable.shape ===
+                          shape &&
+                          styles.shapeOptionSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.shapeOptionText,
+                          selectedFloorPlanTable.shape ===
+                            shape &&
+                            styles.shapeOptionTextSelected,
+                        ]}
+                      >
+                        {shape}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={async () => {
+                    const capacity = Number(
+                      selectedFloorPlanTable.capacity
+                    );
+
+                    const width = Number(
+                      selectedFloorPlanTable.width
+                    );
+
+                    const height = Number(
+                      selectedFloorPlanTable.height
+                    );
+
+                    if (
+                      !Number.isInteger(
+                        capacity
+                      ) ||
+                      capacity <= 0
+                    ) {
+                      setError(
+                        "De capaciteit moet een positief geheel getal zijn."
+                      );
+                      return;
+                    }
+
+                    if (
+                      !Number.isFinite(width) ||
+                      width <= 0
+                    ) {
+                      setError(
+                        "De breedte moet groter zijn dan nul."
+                      );
+                      return;
+                    }
+
+                    if (
+                      !Number.isFinite(height) ||
+                      height <= 0
+                    ) {
+                      setError(
+                        "De hoogte moet groter zijn dan nul."
+                      );
+                      return;
+                    }
+
+                    await handleUpdateTable(
+                      selectedFloorPlanTable.id,
+                      {
+                        name:
+                          selectedFloorPlanTable.name.trim(),
+                        capacity,
+                        shape:
+                          selectedFloorPlanTable.shape,
+                        width,
+                        height,
+                      }
+                    );
+                  }}
+                  style={
+                    styles.saveTableButton
+                  }
+                >
+                  <Text
+                    style={
+                      styles.saveTableButtonText
+                    }
+                  >
+                    Opslaan
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    handleConfirmDeactivateTable(
+                      selectedFloorPlanTable
+                    )
+                  }
+                  style={
+                    styles.deactivateTableButton
+                  }
+                >
+                  <Text
+                    style={
+                      styles.deactivateTableButtonText
+                    }
+                  >
+                    Tafel deactiveren
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
         </View>
 
         {/* ============================================
@@ -2130,6 +2747,136 @@ const styles =
     tablesSection: {
       marginTop: 36,
       marginBottom: 10,
+    },
+
+    tablesHeader: {
+      marginTop: 36,
+      marginBottom: 16,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      justifyContent: "space-between",
+      gap: 16,
+    },
+
+    floorPlanActions: {
+      alignItems: "flex-end",
+      gap: 8,
+    },
+
+    addTableButton: {
+      backgroundColor: "#087FE5",
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+
+    addTableButtonText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "700",
+    },
+
+    tableEditor: {
+      marginTop: 12,
+      padding: 16,
+      backgroundColor: "#ffffff",
+      borderRadius: 16,
+    },
+
+    tableEditorTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: "#111827",
+      marginBottom: 16,
+    },
+
+    tableEditorLabel: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: "#6b7280",
+      marginBottom: 6,
+    },
+
+    tableEditorInput: {
+      height: 44,
+      borderWidth: 1,
+      borderColor: "#d1d5db",
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      fontSize: 15,
+      color: "#111827",
+      marginBottom: 14,
+    },
+
+    shapeOptions: {
+      flexDirection: "row",
+      gap: 8,
+      marginBottom: 16,
+    },
+
+    shapeOption: {
+      flex: 1,
+      paddingVertical: 10,
+      borderWidth: 1,
+      borderColor: "#d1d5db",
+      borderRadius: 10,
+      alignItems: "center",
+    },
+
+    shapeOptionSelected: {
+      backgroundColor: "#111827",
+      borderColor: "#111827",
+    },
+
+    shapeOptionText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: "#374151",
+    },
+
+    shapeOptionTextSelected: {
+      color: "#ffffff",
+    },
+
+    saveTableButton: {
+      backgroundColor: "#087FE5",
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+
+    saveTableButtonText: {
+      color: "#ffffff",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+
+    deactivateTableButton: {
+      marginTop: 10,
+      borderWidth: 1,
+      borderColor: "#dc2626",
+      borderRadius: 10,
+      paddingVertical: 12,
+      alignItems: "center",
+    },
+
+    deactivateTableButtonText: {
+      color: "#dc2626",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+
+    floorPlanEditButton: {
+      backgroundColor: "#111827",
+      borderRadius: 999,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+    },
+
+    floorPlanEditButtonText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "700",
     },
 
     // ==================================================
