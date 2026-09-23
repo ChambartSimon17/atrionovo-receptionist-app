@@ -451,6 +451,33 @@ export const api = {
   },
 
   // ====================================================
+  // Customers
+  // ====================================================
+
+  getCustomers(accessToken) {
+    return authenticatedRequest(
+      "/customers",
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  getCustomer(
+    id,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/customers/${id}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  // ====================================================
   // Reservations
   // ====================================================
 

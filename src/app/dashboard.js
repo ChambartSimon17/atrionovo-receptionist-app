@@ -1656,6 +1656,26 @@ export default function Dashboard() {
 
             <TouchableOpacity
               style={
+                styles.crmButton
+              }
+              activeOpacity={0.7}
+              onPress={() =>
+                router.push(
+                  "/customers"
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.crmButtonText
+                }
+              >
+                CRM
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={
                 styles.settingsButton
               }
               activeOpacity={0.7}
@@ -2489,6 +2509,22 @@ const styles =
       backgroundColor: "#fff",
       alignItems: "center",
       justifyContent: "center",
+    },
+
+    crmButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: "#111",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    crmButtonText: {
+      fontSize: 11,
+      fontWeight: "800",
+      letterSpacing: 0.5,
+      color: "#fff",
     },
 
     calendarIcon: {
