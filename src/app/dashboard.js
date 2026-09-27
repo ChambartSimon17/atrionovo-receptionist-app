@@ -1636,6 +1636,26 @@ export default function Dashboard() {
           >
             <TouchableOpacity
               style={
+                styles.addReservationButton
+              }
+              activeOpacity={0.8}
+              onPress={() =>
+                router.push(
+                  "/reservation/new"
+                )
+              }
+            >
+              <Text
+                style={
+                  styles.addReservationButtonText
+                }
+              >
+                +
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={
                 styles.calendarButton
               }
               activeOpacity={0.7}
@@ -2500,6 +2520,22 @@ const styles =
       fontSize: 17,
       color: "#666",
       marginTop: 5,
+    },
+
+    addReservationButton: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: "#087FE5",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+
+    addReservationButtonText: {
+      fontSize: 28,
+      fontWeight: "400",
+      color: "#fff",
+      lineHeight: 30,
     },
 
     calendarButton: {

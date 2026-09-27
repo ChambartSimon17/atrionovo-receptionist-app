@@ -464,6 +464,23 @@ export const api = {
     );
   },
 
+  createCustomer(
+    customer,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      "/customers",
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          customer
+        ),
+      }
+    );
+  },
+
   getCustomer(
     id,
     accessToken
@@ -477,9 +494,46 @@ export const api = {
     );
   },
 
+  searchCustomers(
+    query,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/customers/search-by-name?query=${encodeURIComponent(
+        query
+      )}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
   // ====================================================
   // Reservations
   // ====================================================
+
+  checkAvailability(
+    restaurantId,
+    guestCount,
+    startTime,
+    endTime
+  ) {
+    return request(
+      "/reservations/check-availability",
+      {
+        method: "POST",
+        headers: {
+          "x-restaurant-id": restaurantId,
+        },
+        body: JSON.stringify({
+          guestCount,
+          startTime,
+          endTime,
+        }),
+      }
+    );
+  },
 
   getReservations(accessToken) {
     return authenticatedRequest(
@@ -608,5 +662,22 @@ export const api = {
         }),
       }
     );
-  },  
+  },
+
+  createReservation(
+    reservation,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      "/reservations",
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          reservation
+        ),
+      }
+    );
+  },
 };
