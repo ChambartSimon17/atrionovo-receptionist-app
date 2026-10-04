@@ -1596,7 +1596,11 @@ export default function Dashboard() {
             styles.header
           }
         >
-          <View>
+          <View
+            style={
+              styles.headerTitleBlock
+            }
+          >
             <Text
               style={
                 styles.logo
@@ -2491,15 +2495,22 @@ const styles =
     // ==================================================
 
     header: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      justifyContent:
-        "space-between",
+      flexDirection: "column",
+      alignItems: "center",
+      width: "100%",
+    },
+
+    headerTitleBlock: {
+      alignItems: "center",
+      width: "100%",
     },
 
     headerActions: {
       flexDirection: "row",
       alignItems: "center",
+      justifyContent: "center",
+      marginTop: 12,
+      width: "100%",
       gap: 10,
     },
 
@@ -2507,6 +2518,7 @@ const styles =
       fontSize: 19,
       fontWeight: "700",
       color: "#111",
+      textAlign: "center",
     },
 
     greeting: {
