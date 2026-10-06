@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.anonymous.atrionovo-receptionist-app",
+      "bundleIdentifier": "com.atrionovo.receptionist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
