@@ -50,39 +50,48 @@ async function request(
       "application/json";
   }
 
-  const response = await fetch(
-    `${API_URL}${endpoint}`,
-    {
-      ...options,
-      headers,
-    }
-  );
-
-  const text = await response.text();
-
-  let data = null;
-
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = null;
-    }
-  }
-
-  if (!response.ok) {
-    const error = new Error(
-      data?.message ||
-        "Something went wrong."
+  try {
+    const response = await fetch(
+      `${API_URL}${endpoint}`,
+      {
+        ...options,
+        headers,
+      }
     );
 
-    error.status =
-      response.status;
+    const text = await response.text();
 
-    throw error;
+    let data = null;
+
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = null;
+      }
+    }
+
+    if (!response.ok) {
+      const error = new Error(
+        data?.message ||
+          "Er ging iets mis."
+      );
+
+      error.status = response.status;
+
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    if (error.status) {
+      throw error;
+    }
+
+    throw new Error(
+      "Kan geen verbinding maken met de server. Controleer je internetverbinding en probeer opnieuw."
+    );
   }
-
-  return data;
 }
 
 // ======================================================
