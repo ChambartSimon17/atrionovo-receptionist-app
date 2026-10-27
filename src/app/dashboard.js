@@ -757,6 +757,12 @@ export default function Dashboard() {
     setError,
   ] = useState(null);
 
+  const [voiceAgentEnabled, setVoiceAgentEnabled] =
+    useState(restaurant?.voiceAgentEnabled ?? true);
+
+  const [isUpdatingVoiceAgent, setIsUpdatingVoiceAgent] =
+    useState(false);
+
   const [
     isEditingFloorPlan,
     setIsEditingFloorPlan,
@@ -1189,6 +1195,49 @@ export default function Dashboard() {
       [handleDeactivateTable]
     );
 
+  const handleToggleVoiceAgent = useCallback(
+    async () => {
+      if (!accessToken || isUpdatingVoiceAgent) {
+        return;
+      }
+
+      const previousValue = voiceAgentEnabled;
+      const nextValue = !previousValue;
+
+      setVoiceAgentEnabled(nextValue);
+      setIsUpdatingVoiceAgent(true);
+
+      try {
+        const response = await api.setVoiceAgentEnabled(
+          nextValue,
+          accessToken
+        );
+
+        const updatedRestaurant =
+          response?.data || response;
+
+        setVoiceAgentEnabled(
+          updatedRestaurant.voiceAgentEnabled ?? nextValue
+        );
+      } catch (error) {
+        setVoiceAgentEnabled(previousValue);
+
+        Alert.alert(
+          "Instelling niet opgeslagen",
+          error?.message ||
+            "De instelling kon niet worden gewijzigd. Probeer opnieuw."
+        );
+      } finally {
+        setIsUpdatingVoiceAgent(false);
+      }
+    },
+    [
+      accessToken,
+      isUpdatingVoiceAgent,
+      voiceAgentEnabled,
+    ]
+  );
+
   // ====================================================
   // Fetch dashboard data
   // ====================================================
@@ -1226,6 +1275,10 @@ export default function Dashboard() {
           const restaurantData =
             restaurantResponse?.data ||
             restaurantResponse;
+
+          setVoiceAgentEnabled(
+            restaurantData.voiceAgentEnabled ?? true
+          );
 
           const restaurantTimezone =
             restaurantData.timezone ||
@@ -1627,6 +1680,45 @@ export default function Dashboard() {
               {restaurant?.name ||
                 ""}
             </Text>
+          </View>
+
+          <View style={styles.voiceAgentCard}>
+            <View style={styles.voiceAgentInfo}>
+              <Text style={styles.voiceAgentTitle}>
+                Telefonische AI-receptionist
+              </Text>
+
+              <Text style={styles.voiceAgentSubtitle}>
+                {voiceAgentEnabled
+                  ? "Actief — onbeantwoorde oproepen worden doorgeschakeld."
+                  : "Uitgeschakeld — de AI-receptionist neemt niet op."}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              accessibilityRole="switch"
+              accessibilityState={{
+                checked: voiceAgentEnabled,
+                disabled: isUpdatingVoiceAgent,
+              }}
+              activeOpacity={0.8}
+              disabled={isUpdatingVoiceAgent}
+              onPress={handleToggleVoiceAgent}
+              style={[
+                styles.voiceAgentSwitch,
+                voiceAgentEnabled
+                  ? styles.voiceAgentSwitchOn
+                  : styles.voiceAgentSwitchOff,
+              ]}
+            >
+              {isUpdatingVoiceAgent ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.voiceAgentSwitchText}>
+                  {voiceAgentEnabled ? "AAN" : "UIT"}
+                </Text>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* ==========================================
@@ -3136,5 +3228,58 @@ const styles =
       color: "#fff",
       fontSize: 16,
       fontWeight: "600",
+    },
+
+    voiceAgentCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: "#fff",
+      borderRadius: 16,
+      padding: 18,
+      marginTop: 24,
+      borderWidth: 1,
+      borderColor: "#e8e8e8",
+    },
+
+    voiceAgentInfo: {
+      flex: 1,
+      paddingRight: 12,
+    },
+
+    voiceAgentTitle: {
+      fontSize: 16,
+      fontWeight: "700",
+      color: "#111",
+    },
+
+    voiceAgentSubtitle: {
+      fontSize: 13,
+      color: "#666",
+      marginTop: 5,
+      lineHeight: 19,
+    },
+
+    voiceAgentSwitch: {
+      minWidth: 66,
+      height: 38,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 12,
+    },
+
+    voiceAgentSwitchOn: {
+      backgroundColor: "#16803c",
+    },
+
+    voiceAgentSwitchOff: {
+      backgroundColor: "#777",
+    },
+
+    voiceAgentSwitchText: {
+      color: "#fff",
+      fontWeight: "700",
+      fontSize: 12,
     },
   });

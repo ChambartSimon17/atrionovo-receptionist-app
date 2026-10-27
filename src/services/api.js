@@ -300,6 +300,20 @@ export const api = {
     );
   },
 
+  setVoiceAgentEnabled(enabled, accessToken) {
+    return authenticatedRequest(
+      "/restaurants/me",
+      accessToken,
+      {
+        method: "PUT",
+
+        body: JSON.stringify({
+          voiceAgentEnabled: enabled,
+        }),
+      }
+    );
+  },
+
   getTables(
     restaurantId,
     accessToken
