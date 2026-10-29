@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
 
-export default function BusinessSettingsScreen() {
+export default function RestaurantSettingsScreen() {
   const { accessToken } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -25,22 +25,22 @@ export default function BusinessSettingsScreen() {
   const [language, setLanguage] = useState("");
 
   useEffect(() => {
-    loadBusiness();
+    loadRestaurant();
   }, []);
 
-  async function loadBusiness() {
+  async function loadRestaurant() {
     try {
       const response =
-        await api.getMyBusiness(accessToken);
+        await api.getMyRestaurant(accessToken);
 
-      const business = response.data;
+      const restaurant = response.data;
 
-      setName(business.name ?? "");
+      setName(restaurant.name ?? "");
       setMaxCapacity(
-        String(business.maxCapacity ?? "")
+        String(restaurant.maxCapacity ?? "")
       );
-      setTimezone(business.timezone ?? "");
-      setLanguage(business.language ?? "");
+      setTimezone(restaurant.timezone ?? "");
+      setLanguage(restaurant.language ?? "");
     } catch (error) {
       console.error(
         "Failed to load restaurant:",
@@ -80,7 +80,7 @@ export default function BusinessSettingsScreen() {
     try {
       setIsSaving(true);
 
-      await api.updateMyBusiness(
+      await api.updateMyRestaurant(
         {
           name: name.trim(),
           maxCapacity: Number(maxCapacity),

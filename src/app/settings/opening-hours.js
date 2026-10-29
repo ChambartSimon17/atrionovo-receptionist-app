@@ -68,7 +68,7 @@ function createEmptySchedule() {
 export default function OpeningHoursScreen() {
   const { accessToken } = useAuth();
 
-  const [business, setBusiness] =
+  const [restaurant, setRestaurant] =
     useState(null);
 
   const [schedule, setSchedule] =
@@ -86,19 +86,19 @@ export default function OpeningHoursScreen() {
 
   async function loadOpeningHours() {
     try {
-      const businessResponse =
-        await api.getMyBusiness(
+      const restaurantResponse =
+        await api.getMyRestaurant(
           accessToken
         );
 
-      const businessData =
-        businessResponse.data;
+      const restaurantData =
+        restaurantResponse.data;
 
-      setBusiness(businessData);
+      setRestaurant(restaurantData);
 
       const response =
         await api.getOpeningHours(
-          businessData.id,
+          restaurantData.id,
           accessToken
         );
 
@@ -274,7 +274,7 @@ export default function OpeningHoursScreen() {
       }
 
       await api.updateOpeningHours(
-        business.id,
+        restaurant.id,
         openingHours,
         accessToken
       );

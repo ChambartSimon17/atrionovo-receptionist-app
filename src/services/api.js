@@ -270,12 +270,12 @@ export const api = {
   },
 
   // ====================================================
-  // Business
+  // Restaurant
   // ====================================================
 
-  getMyBusiness(accessToken) {
+  getMyRestaurant(accessToken) {
     return authenticatedRequest(
-      "/businesses/me",
+      "/restaurants/me",
       accessToken,
       {
         method: "GET",
@@ -283,18 +283,18 @@ export const api = {
     );
   },
 
-  updateMyBusiness(
-    businessData,
+  updateMyRestaurant(
+    restaurantData,
     accessToken
   ) {
     return authenticatedRequest(
-      "/businesses/me",
+      "/restaurants/me",
       accessToken,
       {
         method: "PUT",
 
         body: JSON.stringify(
-          businessData
+          restaurantData
         ),
       }
     );
@@ -302,7 +302,7 @@ export const api = {
 
   setVoiceAgentEnabled(enabled, accessToken) {
     return authenticatedRequest(
-      "/businesses/me",
+      "/restaurants/me",
       accessToken,
       {
         method: "PUT",
@@ -315,11 +315,11 @@ export const api = {
   },
 
   getTables(
-    businessId,
+    restaurantId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/tables`,
+      `/restaurants/${restaurantId}/tables`,
       accessToken,
       {
         method: "GET",
@@ -328,12 +328,12 @@ export const api = {
   },
 
   createTable(
-    businessId,
+    restaurantId,
     table,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/tables`,
+      `/restaurants/${restaurantId}/tables`,
       accessToken,
       {
         method: "POST",
@@ -346,13 +346,13 @@ export const api = {
   },
 
   updateTable(
-    businessId,
+    restaurantId,
     tableId,
     table,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/tables/${tableId}`,
+      `/restaurants/${restaurantId}/tables/${tableId}`,
       accessToken,
       {
         method: "PATCH",
@@ -365,12 +365,12 @@ export const api = {
   },
 
   deleteTable(
-    businessId,
+    restaurantId,
     tableId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/tables/${tableId}`,
+      `/restaurants/${restaurantId}/tables/${tableId}`,
       accessToken,
       {
         method: "DELETE",
@@ -379,11 +379,11 @@ export const api = {
   },
 
   getOpeningHours(
-    businessId,
+    restaurantId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/opening-hours`,
+      `/restaurants/${restaurantId}/opening-hours`,
       accessToken,
       {
         method: "GET",
@@ -392,12 +392,12 @@ export const api = {
   },
 
   updateOpeningHours(
-    businessId,
+    restaurantId,
     openingHours,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/opening-hours`,
+      `/restaurants/${restaurantId}/opening-hours`,
       accessToken,
       {
         method: "PUT",
@@ -410,11 +410,11 @@ export const api = {
   },
 
   getSpecialOpeningDays(
-    businessId,
+    restaurantId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/special-opening-days`,
+      `/restaurants/${restaurantId}/special-opening-days`,
       accessToken,
       {
         method: "GET",
@@ -423,12 +423,12 @@ export const api = {
   },
 
   createSpecialOpeningDay(
-    businessId,
+    restaurantId,
     data,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/special-opening-days`,
+      `/restaurants/${restaurantId}/special-opening-days`,
       accessToken,
       {
         method: "POST",
@@ -441,13 +441,13 @@ export const api = {
   },
 
   updateSpecialOpeningDay(
-    businessId,
+    restaurantId,
     id,
     data,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/special-opening-days/${id}`,
+      `/restaurants/${restaurantId}/special-opening-days/${id}`,
       accessToken,
       {
         method: "PUT",
@@ -460,12 +460,12 @@ export const api = {
   },
 
   deleteSpecialOpeningDay(
-    businessId,
+    restaurantId,
     id,
     accessToken
   ) {
     return authenticatedRequest(
-      `/businesses/${businessId}/special-opening-days/${id}`,
+      `/restaurants/${restaurantId}/special-opening-days/${id}`,
       accessToken,
       {
         method: "DELETE",
@@ -537,7 +537,7 @@ export const api = {
   // ====================================================
 
   checkAvailability(
-    businessId,
+    restaurantId,
     guestCount,
     startTime,
     endTime
@@ -547,7 +547,7 @@ export const api = {
       {
         method: "POST",
         headers: {
-          "x-business-id": businessId,
+          "x-restaurant-id": restaurantId,
         },
         body: JSON.stringify({
           guestCount,
@@ -624,12 +624,12 @@ export const api = {
   },
 
   markReservationAsSeated(
-    businessId,
+    restaurantId,
     reservationId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/reservations/${businessId}/${reservationId}/seat`,
+      `/reservations/${restaurantId}/${reservationId}/seat`,
       accessToken,
       {
         method: "PATCH",
@@ -638,12 +638,12 @@ export const api = {
   },
 
   markReservationAsCompleted(
-    businessId,
+    restaurantId,
     reservationId,
     accessToken
   ) {
     return authenticatedRequest(
-      `/reservations/${businessId}/${reservationId}/complete`,
+      `/reservations/${restaurantId}/${reservationId}/complete`,
       accessToken,
       {
         method: "PATCH",
