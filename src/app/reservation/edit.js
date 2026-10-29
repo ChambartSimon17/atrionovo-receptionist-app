@@ -26,7 +26,7 @@ export default function EditReservation() {
 
   const {
     accessToken,
-    restaurant,
+    business,
   } = useAuth();
 
   // ======================================================
@@ -342,10 +342,10 @@ export default function EditReservation() {
     }
 
     // ================================================
-    // Validate restaurant
+    // Validate business
     // ================================================
 
-    if (!restaurant?.id) {
+    if (!business?.id) {
       Alert.alert(
         "Fout",
         "Restaurantgegevens konden niet worden gevonden."
@@ -364,8 +364,8 @@ export default function EditReservation() {
       await api.updateReservation(
         id,
         {
-          restaurantId:
-            restaurant.id,
+          businessId:
+            business.id,
 
           firstName:
             firstName.trim(),

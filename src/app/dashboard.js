@@ -665,7 +665,7 @@ export default function Dashboard() {
 
   const {
     user,
-    restaurant,
+    business,
     accessToken,
     logout,
   } = useAuth();
@@ -716,11 +716,11 @@ export default function Dashboard() {
   ]);
 
   // ====================================================
-  // Restaurant timezone
+  // Business timezone
   // ====================================================
 
   const timezone =
-    restaurant?.timezone ||
+    business?.timezone ||
     "Europe/Brussels";
 
   // ====================================================
@@ -758,7 +758,7 @@ export default function Dashboard() {
   ] = useState(null);
 
   const [voiceAgentEnabled, setVoiceAgentEnabled] =
-    useState(restaurant?.voiceAgentEnabled ?? true);
+    useState(business?.voiceAgentEnabled ?? true);
 
   const [isUpdatingVoiceAgent, setIsUpdatingVoiceAgent] =
     useState(false);
@@ -791,7 +791,7 @@ export default function Dashboard() {
       async (reservation) => {
         if (
           !accessToken ||
-          !restaurant?.id ||
+          !business?.id ||
           !reservation?.id
         ) {
           return;
@@ -813,7 +813,7 @@ export default function Dashboard() {
 
           const response =
             await api.markReservationAsSeated(
-              restaurant.id,
+              business.id,
               reservation.id,
               accessToken
             );
@@ -857,7 +857,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
       ]
     );
 
@@ -866,7 +866,7 @@ export default function Dashboard() {
       async (reservation) => {
         if (
           !accessToken ||
-          !restaurant?.id ||
+          !business?.id ||
           !reservation?.id
         ) {
           return;
@@ -886,7 +886,7 @@ export default function Dashboard() {
           setError(null);
 
           await api.markReservationAsCompleted(
-            restaurant.id,
+            business.id,
             reservation.id,
             accessToken
           );
@@ -917,7 +917,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
       ]
     );
 
@@ -926,14 +926,14 @@ export default function Dashboard() {
       async (tableId, position) => {
         if (
           !accessToken ||
-          !restaurant?.id
+          !business?.id
         ) {
           return;
         }
 
         try {
           await api.updateTable(
-            restaurant.id,
+            business.id,
             tableId,
             {
               x: position.x,
@@ -969,7 +969,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
       ]
     );
 
@@ -978,7 +978,7 @@ export default function Dashboard() {
       async () => {
         if (
           !accessToken ||
-          !restaurant?.id
+          !business?.id
         ) {
           return;
         }
@@ -1018,7 +1018,7 @@ export default function Dashboard() {
 
           const response =
             await api.createTable(
-              restaurant.id,
+              business.id,
               newTable,
               accessToken
             );
@@ -1047,7 +1047,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
         tables,
       ]
     );
@@ -1057,7 +1057,7 @@ export default function Dashboard() {
       async (tableId, updates) => {
         if (
           !accessToken ||
-          !restaurant?.id
+          !business?.id
         ) {
           return;
         }
@@ -1067,7 +1067,7 @@ export default function Dashboard() {
 
           const response =
             await api.updateTable(
-              restaurant.id,
+              business.id,
               tableId,
               updates,
               accessToken
@@ -1113,7 +1113,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
       ]
     );
 
@@ -1122,7 +1122,7 @@ export default function Dashboard() {
       async (tableId) => {
         if (
           !accessToken ||
-          !restaurant?.id
+          !business?.id
         ) {
           return;
         }
@@ -1131,7 +1131,7 @@ export default function Dashboard() {
           setError(null);
 
           await api.deleteTable(
-            restaurant.id,
+            business.id,
             tableId,
             accessToken
           );
@@ -1166,7 +1166,7 @@ export default function Dashboard() {
       },
       [
         accessToken,
-        restaurant?.id,
+        business?.id,
       ]
     );
 
@@ -1213,11 +1213,11 @@ export default function Dashboard() {
           accessToken
         );
 
-        const updatedRestaurant =
+        const updatedBusiness =
           response?.data || response;
 
         setVoiceAgentEnabled(
-          updatedRestaurant.voiceAgentEnabled ?? nextValue
+          updatedBusiness.voiceAgentEnabled ?? nextValue
         );
       } catch (error) {
         setVoiceAgentEnabled(previousValue);
@@ -1264,24 +1264,24 @@ export default function Dashboard() {
           setError(null);
 
           // ==============================================
-          // Restaurant
+          // Business
           // ==============================================
 
-          const restaurantResponse =
-            await api.getMyRestaurant(
+          const businessResponse =
+            await api.getMyBusiness(
               accessToken
             );
 
-          const restaurantData =
-            restaurantResponse?.data ||
-            restaurantResponse;
+          const businessData =
+            businessResponse?.data ||
+            businessResponse;
 
           setVoiceAgentEnabled(
-            restaurantData.voiceAgentEnabled ?? true
+            businessData.voiceAgentEnabled ?? true
           );
 
-          const restaurantTimezone =
-            restaurantData.timezone ||
+          const businessTimezone =
+            businessData.timezone ||
             "Europe/Brussels";
 
           // ==============================================
@@ -1293,13 +1293,13 @@ export default function Dashboard() {
             selectedDate;
 
           // ==============================================
-          // Restaurant local date
+          // Business local date
           // ==============================================
 
           const localDate =
             formatApiDate(
               currentSelectedDate,
-              restaurantTimezone
+              businessTimezone
             );
 
           // ==============================================
@@ -1317,12 +1317,12 @@ export default function Dashboard() {
             ),
 
             api.getOpeningHours(
-              restaurantData.id,
+              businessData.id,
               accessToken
             ),
 
             api.getTables(
-              restaurantData.id,
+              businessData.id,
               accessToken
             ),
           ]);
@@ -1674,10 +1674,10 @@ export default function Dashboard() {
 
             <Text
               style={
-                styles.restaurantName
+                styles.businessName
               }
             >
-              {restaurant?.name ||
+              {business?.name ||
                 ""}
             </Text>
           </View>
@@ -2620,7 +2620,7 @@ const styles =
       marginTop: 34,
     },
 
-    restaurantName: {
+    businessName: {
       fontSize: 17,
       color: "#666",
       marginTop: 5,
