@@ -18,7 +18,7 @@ export default function SettingsScreen() {
       <Pressable
         style={styles.option}
         onPress={() =>
-          router.push("/settings/business")
+          router.push("/settings/restaurant")
         }
       >
         <View>

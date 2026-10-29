@@ -83,7 +83,7 @@ function createDefaultPeriod() {
 export default function SpecialOpeningDaysScreen() {
   const { accessToken } = useAuth();
 
-  const [businessId, setBusinessId] =
+  const [restaurantId, setRestaurantId] =
     useState(null);
 
   const [specialOpeningDays, setSpecialOpeningDays] =
@@ -129,27 +129,27 @@ export default function SpecialOpeningDaysScreen() {
 
   async function loadSpecialOpeningDays() {
     try {
-      const businessResponse =
-        await api.getMyBusiness(
+      const restaurantResponse =
+        await api.getMyRestaurant(
           accessToken
         );
 
-      const business =
-        businessResponse.data;
+      const restaurant =
+        restaurantResponse.data;
 
-      if (!business?.id) {
+      if (!restaurant?.id) {
         throw new Error(
           "Restaurant ID kon niet worden gevonden."
         );
       }
 
-      setBusinessId(
-        business.id
+      setRestaurantId(
+        restaurant.id
       );
 
       const response =
         await api.getSpecialOpeningDays(
-          business.id,
+          restaurant.id,
           accessToken
         );
 
@@ -465,7 +465,7 @@ export default function SpecialOpeningDaysScreen() {
   }
 
   async function handleSave() {
-    if (!businessId) {
+    if (!restaurantId) {
       Alert.alert(
         "Fout",
         "Restaurant kon niet worden gevonden."
@@ -512,14 +512,14 @@ export default function SpecialOpeningDaysScreen() {
 
       if (editingId) {
         await api.updateSpecialOpeningDay(
-          businessId,
+          restaurantId,
           editingId,
           payload,
           accessToken
         );
       } else {
         await api.createSpecialOpeningDay(
-          businessId,
+          restaurantId,
           payload,
           accessToken
         );
@@ -552,7 +552,7 @@ export default function SpecialOpeningDaysScreen() {
   }
 
   async function handleDelete(id) {
-    if (!businessId) {
+    if (!restaurantId) {
       Alert.alert(
         "Fout",
         "Restaurant kon niet worden gevonden."
@@ -577,7 +577,7 @@ export default function SpecialOpeningDaysScreen() {
           onPress: async () => {
             try {
               await api.deleteSpecialOpeningDay(
-                businessId,
+                restaurantId,
                 id,
                 accessToken
               );

@@ -21,7 +21,7 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [business, setBusiness] =
+  const [restaurant, setRestaurant] =
     useState(null);
 
   const [accessToken, setAccessToken] =
@@ -52,7 +52,7 @@ export function AuthProvider({ children }) {
 
         setAccessToken(null);
         setUser(null);
-        setBusiness(null);
+        setRestaurant(null);
       },
     });
   }, []);
@@ -80,8 +80,8 @@ export function AuthProvider({ children }) {
           response.data.user
         );
 
-        setBusiness(
-          response.data.business
+        setRestaurant(
+          response.data.restaurant
         );
 
         return;
@@ -129,15 +129,15 @@ export function AuthProvider({ children }) {
         meResponse.data.user
       );
 
-      setBusiness(
-        meResponse.data.business
+      setRestaurant(
+        meResponse.data.restaurant
       );
     } catch {
       await clearTokens();
 
       setAccessToken(null);
       setUser(null);
-      setBusiness(null);
+      setRestaurant(null);
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +157,7 @@ export function AuthProvider({ children }) {
       accessToken,
       refreshToken,
       user,
-      business,
+      restaurant,
     } = response.data;
 
     await saveTokens({
@@ -170,7 +170,7 @@ export function AuthProvider({ children }) {
     );
 
     setUser(user);
-    setBusiness(business);
+    setRestaurant(restaurant);
   }
 
   async function logout() {
@@ -178,14 +178,14 @@ export function AuthProvider({ children }) {
 
     setAccessToken(null);
     setUser(null);
-    setBusiness(null);
+    setRestaurant(null);
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        business,
+        restaurant,
         accessToken,
         isAuthenticated,
         isLoading,
