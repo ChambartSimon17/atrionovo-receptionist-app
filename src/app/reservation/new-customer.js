@@ -27,7 +27,7 @@ export default function NewCustomer() {
 
   const {
     accessToken,
-    restaurant,
+    business,
   } = useAuth();
 
   const [firstName, setFirstName] =
@@ -54,7 +54,7 @@ export default function NewCustomer() {
       return;
     }
 
-    if (!restaurant?.id) {
+    if (!business?.id) {
       setError("Geen restaurant gevonden.");
       return;
     }
@@ -81,7 +81,7 @@ export default function NewCustomer() {
       const response =
         await api.createCustomer(
           {
-            restaurantId: restaurant.id,
+            businessId: business.id,
 
             firstName: firstName.trim(),
             lastName: lastName.trim(),

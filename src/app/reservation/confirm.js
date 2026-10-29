@@ -28,7 +28,7 @@ export default function ReservationConfirm() {
 
   const {
     accessToken,
-    restaurant,
+    business,
   } = useAuth();
 
   const [customer, setCustomer] =
@@ -97,7 +97,7 @@ export default function ReservationConfirm() {
       return;
     }
 
-    if (!restaurant?.id) {
+    if (!business?.id) {
       setError("Geen restaurant gevonden.");
       return;
     }
@@ -117,7 +117,7 @@ export default function ReservationConfirm() {
       setError(null);
 
       const reservationData = {
-        restaurantId: restaurant.id,
+        businessId: business.id,
 
         firstName: customer.firstName,
         lastName: customer.lastName,

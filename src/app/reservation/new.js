@@ -39,7 +39,7 @@ function formatAlternativeTime(
 
 export default function NewReservation() {
   const {
-    restaurant,
+    business,
   } = useAuth();
 
   const [selectedDate, setSelectedDate] =
@@ -89,7 +89,7 @@ export default function NewReservation() {
   ]);
 
   async function handleCheckAvailability() {
-    if (!restaurant?.id) {
+    if (!business?.id) {
       setError(
         "Geen restaurant gevonden."
       );
@@ -104,7 +104,7 @@ export default function NewReservation() {
 
       const response =
         await api.checkAvailability(
-          restaurant.id,
+          business.id,
           guestCount,
           selectedStartTime.toISOString()
         );
