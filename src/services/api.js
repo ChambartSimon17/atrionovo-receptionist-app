@@ -387,6 +387,144 @@ export const api = {
     );
   },
 
+  // ====================================================
+  // Therapists (MASSAGE businesses only)
+  // ====================================================
+
+  getTherapists(
+    businessId,
+    accessToken,
+    { includeInactive = false } = {}
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/therapists${
+        includeInactive
+          ? "?includeInactive=true"
+          : ""
+      }`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createTherapist(
+    businessId,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/therapists`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  updateTherapist(
+    businessId,
+    therapistId,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/therapists/${therapistId}`,
+      accessToken,
+      {
+        method: "PATCH",
+
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  deactivateTherapist(
+    businessId,
+    therapistId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/therapists/${therapistId}`,
+      accessToken,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
+  // ====================================================
+  // Treatment rooms (MASSAGE businesses only)
+  // ====================================================
+
+  getTreatmentRooms(
+    businessId,
+    accessToken,
+    { includeInactive = false } = {}
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/treatment-rooms${
+        includeInactive
+          ? "?includeInactive=true"
+          : ""
+      }`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createTreatmentRoom(
+    businessId,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/treatment-rooms`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  updateTreatmentRoom(
+    businessId,
+    roomId,
+    data,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/treatment-rooms/${roomId}`,
+      accessToken,
+      {
+        method: "PATCH",
+
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  deactivateTreatmentRoom(
+    businessId,
+    roomId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/treatment-rooms/${roomId}`,
+      accessToken,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   getTables(
     businessId,
     accessToken

@@ -14,10 +14,9 @@ import { useAuth } from "../../context/auth-context";
 // Massage dashboard
 // ======================================================
 //
-// Home screen of a massage business. Appointments,
-// therapists and treatment rooms are added in the next
-// phases; for now the owner can manage services and
-// opening hours from here.
+// Home screen of a massage business. Appointments are
+// added in the next phase; for now the owner sets up the
+// massages, therapists, rooms and opening hours here.
 // ======================================================
 
 export default function MassageDashboardScreen() {
@@ -49,8 +48,9 @@ export default function MassageDashboardScreen() {
 
           <Text style={styles.cardText}>
             Hier verschijnen binnenkort je afspraken.
-            Stel eerst je massages en prijzen in, zodat
-            klanten ze kunnen boeken.
+            Stel eerst je massages, therapeuten en
+            behandelkamers in, zodat klanten kunnen
+            boeken.
           </Text>
         </View>
 
@@ -59,6 +59,22 @@ export default function MassageDashboardScreen() {
           description="Beheer je aanbod, duur en prijs"
           onPress={() =>
             router.push("/massage/services")
+          }
+        />
+
+        <MenuButton
+          title="Therapeuten"
+          description="Wie welke massages geeft en wanneer"
+          onPress={() =>
+            router.push("/massage/therapists")
+          }
+        />
+
+        <MenuButton
+          title="Behandelkamers"
+          description="Kamers en welke massages erin kunnen"
+          onPress={() =>
+            router.push("/massage/rooms")
           }
         />
 
