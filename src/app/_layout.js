@@ -17,10 +17,16 @@ import {
   useAuth,
 } from "../context/auth-context";
 
+import {
+  getHomeRoute,
+  isRouteAllowed,
+} from "../utils/business-type";
+
 function AuthGuard() {
   const {
     isAuthenticated,
     isLoading,
+    businessType,
   } = useAuth();
 
   const router = useRouter();
@@ -46,11 +52,30 @@ function AuthGuard() {
       isAuthenticated &&
       inAuthScreen
     ) {
-      router.replace("/dashboard");
+      router.replace(
+        getHomeRoute(businessType)
+      );
+      return;
+    }
+
+    // A business can only open the screens of its own
+    // type, so a massage owner never lands on a
+    // restaurant screen and the other way around.
+    if (
+      isAuthenticated &&
+      !isRouteAllowed(
+        businessType,
+        segments
+      )
+    ) {
+      router.replace(
+        getHomeRoute(businessType)
+      );
     }
   }, [
     isAuthenticated,
     isLoading,
+    businessType,
     segments,
   ]);
 

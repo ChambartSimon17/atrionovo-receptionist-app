@@ -58,7 +58,8 @@ export default function LoginScreen() {
         password
       );
 
-      router.replace("/dashboard");
+      // "/" redirects to the dashboard of the business type.
+      router.replace("/");
     } catch (error) {
       setError(
         error?.message ||

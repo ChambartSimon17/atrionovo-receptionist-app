@@ -5,11 +5,13 @@ import {
 } from "react-native";
 
 import { useAuth } from "../context/auth-context";
+import { getHomeRoute } from "../utils/business-type";
 
 export default function Index() {
   const {
     isAuthenticated,
     isLoading,
+    businessType,
   } = useAuth();
 
   if (isLoading) {
@@ -28,7 +30,7 @@ export default function Index() {
 
   if (isAuthenticated) {
     return (
-      <Redirect href="/dashboard" />
+      <Redirect href={getHomeRoute(businessType)} />
     );
   }
 

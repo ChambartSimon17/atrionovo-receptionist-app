@@ -314,6 +314,79 @@ export const api = {
     );
   },
 
+  // ====================================================
+  // Massage services (MASSAGE businesses only)
+  // ====================================================
+
+  getMassageServices(
+    businessId,
+    accessToken,
+    { includeInactive = false } = {}
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/massage-services${
+        includeInactive
+          ? "?includeInactive=true"
+          : ""
+      }`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createMassageService(
+    businessId,
+    serviceData,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/massage-services`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          serviceData
+        ),
+      }
+    );
+  },
+
+  updateMassageService(
+    businessId,
+    serviceId,
+    serviceData,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/massage-services/${serviceId}`,
+      accessToken,
+      {
+        method: "PATCH",
+
+        body: JSON.stringify(
+          serviceData
+        ),
+      }
+    );
+  },
+
+  deactivateMassageService(
+    businessId,
+    serviceId,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/massage-services/${serviceId}`,
+      accessToken,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
   getTables(
     businessId,
     accessToken

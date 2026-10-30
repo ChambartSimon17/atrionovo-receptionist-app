@@ -11,6 +11,10 @@ import {
 } from "../services/api";
 
 import {
+  normalizeBusinessType,
+} from "../utils/business-type";
+
+import {
   saveTokens,
   getAccessToken,
   getRefreshToken,
@@ -32,6 +36,13 @@ export function AuthProvider({ children }) {
 
   const isAuthenticated =
     !!accessToken && !!user;
+
+  // RESTAURANT or MASSAGE. Defaults to RESTAURANT while
+  // logged out or when the backend sends no type.
+  const businessType =
+    normalizeBusinessType(
+      business?.businessType
+    );
 
   useEffect(() => {
     restoreSession();
@@ -186,6 +197,7 @@ export function AuthProvider({ children }) {
       value={{
         user,
         business,
+        businessType,
         accessToken,
         isAuthenticated,
         isLoading,
