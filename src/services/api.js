@@ -525,6 +525,79 @@ export const api = {
     );
   },
 
+  // ====================================================
+  // Massage appointments (MASSAGE businesses only)
+  // ====================================================
+
+  getMassageAvailability(
+    businessId,
+    { date, serviceId },
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/massage-availability?date=${encodeURIComponent(
+        date
+      )}&serviceId=${encodeURIComponent(serviceId)}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  getMassageAppointments(
+    businessId,
+    date,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/appointments?date=${encodeURIComponent(
+        date
+      )}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+  createMassageAppointment(
+    businessId,
+    appointmentData,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/appointments`,
+      accessToken,
+      {
+        method: "POST",
+
+        body: JSON.stringify(
+          appointmentData
+        ),
+      }
+    );
+  },
+
+  updateMassageAppointment(
+    businessId,
+    appointmentId,
+    appointmentData,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/appointments/${appointmentId}`,
+      accessToken,
+      {
+        method: "PATCH",
+
+        body: JSON.stringify(
+          appointmentData
+        ),
+      }
+    );
+  },
+
   getTables(
     businessId,
     accessToken

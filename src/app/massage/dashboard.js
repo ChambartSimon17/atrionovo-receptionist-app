@@ -9,14 +9,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 
 import { useAuth } from "../../context/auth-context";
+import MassageAgenda from "../../components/MassageAgenda";
 
 // ======================================================
 // Massage dashboard
 // ======================================================
 //
-// Home screen of a massage business. Appointments are
-// added in the next phase; for now the owner sets up the
-// massages, therapists, rooms and opening hours here.
+// Home screen of a massage business: the agenda of the
+// day with a button for a new appointment, and the menu
+// for massages, therapists, rooms and settings.
 // ======================================================
 
 export default function MassageDashboardScreen() {
@@ -41,18 +42,18 @@ export default function MassageDashboardScreen() {
           </Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Afspraken van vandaag
+        <TouchableOpacity
+          style={styles.newButton}
+          onPress={() =>
+            router.push("/massage/new-appointment")
+          }
+        >
+          <Text style={styles.newButtonText}>
+            Nieuwe afspraak
           </Text>
+        </TouchableOpacity>
 
-          <Text style={styles.cardText}>
-            Hier verschijnen binnenkort je afspraken.
-            Stel eerst je massages, therapeuten en
-            behandelkamers in, zodat klanten kunnen
-            boeken.
-          </Text>
-        </View>
+        <MassageAgenda />
 
         <MenuButton
           title="Massages en prijzen"
@@ -162,24 +163,18 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
+  newButton: {
+    backgroundColor: "#111",
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 20,
   },
 
-  cardTitle: {
-    fontSize: 17,
+  newButtonText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "600",
-    color: "#111",
-    marginBottom: 6,
-  },
-
-  cardText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#666",
   },
 
   menuButton: {
