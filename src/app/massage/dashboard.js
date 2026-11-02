@@ -1,35 +1,85 @@
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { useAuth } from "../../context/auth-context";
 import MassageAgenda from "../../components/MassageAgenda";
+import {
+  addDays,
+  formatLongDate,
+  todayString,
+} from "../../utils/date";
 
 // ======================================================
 // Massage dashboard
 // ======================================================
 //
-// Home screen of a massage business: the agenda of the
-// day with a button for a new appointment, and the menu
-// for massages, therapists, rooms and settings.
+// Home screen of a massage business, built like the
+// restaurant dashboard: four buttons at the top (new
+// appointment, calendar, customers, settings), the day
+// navigation and the agenda of the selected day.
+//
+// The calendar opens this screen with a ?date=YYYY-MM-DD
+// parameter to show another day.
+//
+// Massages, therapists, rooms and opening hours live in
+// the settings.
 // ======================================================
+
+function isValidDateParam(value) {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value)
+  );
+}
 
 export default function MassageDashboardScreen() {
   const router = useRouter();
 
   const { user, business, logout } = useAuth();
 
+  const { date: dateParam } = useLocalSearchParams();
+
+  const { width } = useWindowDimensions();
+
+  const isLandscape = width > 700;
+
+  const [date, setDate] = useState(() =>
+    isValidDateParam(dateParam)
+      ? dateParam
+      : todayString()
+  );
+
+  const [total, setTotal] = useState(0);
+
+  // Follow the day chosen in the calendar.
+  useEffect(() => {
+    if (isValidDateParam(dateParam)) {
+      setDate(dateParam);
+    }
+  }, [dateParam]);
+
+  const isToday = date === todayString();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          isLandscape && styles.contentLandscape,
+        ]}
+        showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
+
         <View style={styles.header}>
           <Text style={styles.logo}>AtrioNovo</Text>
 
@@ -40,52 +90,119 @@ export default function MassageDashboardScreen() {
           <Text style={styles.businessName}>
             {business?.name || ""}
           </Text>
+
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.addButton}
+              activeOpacity={0.8}
+              accessibilityLabel="Nieuwe afspraak"
+              onPress={() =>
+                router.push("/massage/new-appointment")
+              }
+            >
+              <Text style={styles.addButtonText}>+</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.calendarButton}
+              activeOpacity={0.7}
+              accessibilityLabel="Kalender"
+              onPress={() => router.push("/calendar")}
+            >
+              <Text style={styles.calendarIcon}>▦</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.crmButton}
+              activeOpacity={0.7}
+              accessibilityLabel="Klanten"
+              onPress={() => router.push("/customers")}
+            >
+              <Text style={styles.crmButtonText}>CRM</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.settingsButton}
+              activeOpacity={0.7}
+              accessibilityLabel="Instellingen"
+              onPress={() =>
+                router.push("/massage/settings")
+              }
+            >
+              <Text style={styles.settingsIcon}>⚙</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.newButton}
-          onPress={() =>
-            router.push("/massage/new-appointment")
-          }
-        >
-          <Text style={styles.newButtonText}>
-            Nieuwe afspraak
+        {/* Day navigation */}
+
+        <View style={styles.dateNavigation}>
+          <TouchableOpacity
+            style={styles.dateNavigationButton}
+            activeOpacity={0.7}
+            accessibilityLabel="Vorige dag"
+            onPress={() =>
+              setDate((current) => addDays(current, -1))
+            }
+          >
+            <Text style={styles.dateNavigationArrow}>‹</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.selectedDateContainer}
+            activeOpacity={0.7}
+            disabled={isToday}
+            onPress={() => setDate(todayString())}
+          >
+            <Text style={styles.date}>
+              {formatLongDate(date)}
+            </Text>
+
+            <Text style={styles.dateSubtitle}>
+              {isToday ? "Vandaag" : "Tik voor vandaag"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dateNavigationButton}
+            activeOpacity={0.7}
+            accessibilityLabel="Volgende dag"
+            onPress={() =>
+              setDate((current) => addDays(current, 1))
+            }
+          >
+            <Text style={styles.dateNavigationArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Total */}
+
+        <View style={styles.dateTotalRow}>
+          <Text style={styles.selectedDateLabel}>
+            {isToday ? "Vandaag" : "Geselecteerde dag"}
           </Text>
-        </TouchableOpacity>
 
-        <MassageAgenda />
+          <View style={styles.totalContainer}>
+            <Text style={styles.totalNumber}>{total}</Text>
 
-        <MenuButton
-          title="Massages en prijzen"
-          description="Beheer je aanbod, duur en prijs"
-          onPress={() =>
-            router.push("/massage/services")
-          }
+            <Text style={styles.totalLabel}>
+              {total === 1 ? "afspraak" : "afspraken"}
+            </Text>
+          </View>
+        </View>
+
+        {/* Agenda */}
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Afspraken</Text>
+        </View>
+
+        <MassageAgenda
+          date={date}
+          onCountChange={setTotal}
         />
 
-        <MenuButton
-          title="Therapeuten"
-          description="Wie welke massages geeft en wanneer"
-          onPress={() =>
-            router.push("/massage/therapists")
-          }
-        />
-
-        <MenuButton
-          title="Behandelkamers"
-          description="Kamers en welke massages erin kunnen"
-          onPress={() =>
-            router.push("/massage/rooms")
-          }
-        />
-
-        <MenuButton
-          title="Instellingen"
-          description="Openingstijden en speciale dagen"
-          onPress={() =>
-            router.push("/massage/settings")
-          }
-        />
+        {/* Logout */}
 
         <TouchableOpacity
           style={styles.logoutButton}
@@ -95,35 +212,10 @@ export default function MassageDashboardScreen() {
             router.replace("/login");
           }}
         >
-          <Text style={styles.logoutText}>
-            Uitloggen
-          </Text>
+          <Text style={styles.logoutText}>Uitloggen</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function MenuButton({
-  title,
-  description,
-  onPress,
-}) {
-  return (
-    <TouchableOpacity
-      style={styles.menuButton}
-      onPress={onPress}
-    >
-      <View style={styles.menuTextBlock}>
-        <Text style={styles.menuTitle}>{title}</Text>
-
-        <Text style={styles.menuDescription}>
-          {description}
-        </Text>
-      </View>
-
-      <Text style={styles.arrow}>›</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -139,15 +231,25 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
+  contentLandscape: {
+    paddingHorizontal: 40,
+    maxWidth: 1200,
+    width: "100%",
+    alignSelf: "center",
+  },
+
+  // Header
+
   header: {
     alignItems: "center",
-    marginBottom: 28,
+    width: "100%",
   },
 
   logo: {
     fontSize: 19,
     fontWeight: "700",
     color: "#111",
+    textAlign: "center",
   },
 
   greeting: {
@@ -160,55 +262,174 @@ const styles = StyleSheet.create({
   businessName: {
     fontSize: 17,
     color: "#666",
-    marginTop: 6,
+    marginTop: 5,
   },
 
-  newButton: {
-    backgroundColor: "#111",
-    borderRadius: 14,
-    paddingVertical: 16,
+  headerActions: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "center",
+    marginTop: 12,
+    width: "100%",
+    gap: 10,
   },
 
-  newButtonText: {
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#087FE5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  addButtonText: {
+    fontSize: 28,
+    fontWeight: "400",
     color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+    lineHeight: 30,
   },
 
-  menuButton: {
-    minHeight: 80,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    marginBottom: 12,
-    borderRadius: 16,
+  calendarButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  calendarIcon: {
+    fontSize: 25,
+    color: "#111",
+  },
+
+  crmButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#111",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  crmButtonText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    color: "#fff",
+  },
+
+  settingsButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#087FE5",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    elevation: 5,
+  },
+
+  settingsIcon: {
+    fontSize: 25,
+    color: "#fff",
+  },
+
+  // Day navigation
+
+  dateNavigation: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginTop: 34,
   },
 
-  menuTextBlock: {
-    flex: 1,
+  dateNavigationButton: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  menuTitle: {
-    fontSize: 17,
-    fontWeight: "600",
+  dateNavigationArrow: {
+    fontSize: 34,
+    lineHeight: 36,
     color: "#111",
-    marginBottom: 4,
+    marginTop: -3,
   },
 
-  menuDescription: {
+  selectedDateContainer: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+
+  date: {
+    fontSize: 21,
+    fontWeight: "700",
+    color: "#111",
+    textTransform: "capitalize",
+    textAlign: "center",
+  },
+
+  dateSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: "#777",
+    marginTop: 4,
   },
 
-  arrow: {
-    fontSize: 28,
-    color: "#888",
+  // Total
+
+  dateTotalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 18,
   },
+
+  selectedDateLabel: {
+    fontSize: 14,
+    color: "#777",
+  },
+
+  totalContainer: {
+    alignItems: "flex-end",
+  },
+
+  totalNumber: {
+    fontSize: 30,
+    fontWeight: "700",
+    color: "#111",
+  },
+
+  totalLabel: {
+    fontSize: 13,
+    color: "#777",
+  },
+
+  // Agenda
+
+  sectionHeader: {
+    marginTop: 28,
+    marginBottom: 16,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111",
+  },
+
+  // Logout
 
   logoutButton: {
     backgroundColor: "#111",

@@ -43,7 +43,8 @@ const SHARED_SETTINGS_SCREENS = [
  *
  * - Restaurants may open everything except /massage/...
  * - Massage businesses may only open /massage/..., the
- *   shared settings screens and the login screen.
+ *   calendar, the customers (CRM), the shared settings
+ *   screens and the login screen.
  */
 export function isRouteAllowed(type, segments) {
   const first = segments[0];
@@ -56,7 +57,12 @@ export function isRouteAllowed(type, segments) {
       return true;
     }
 
-    if (first === "massage" || first === "login") {
+    if (
+      first === "massage" ||
+      first === "login" ||
+      first === "calendar" ||
+      first === "customers"
+    ) {
       return true;
     }
 

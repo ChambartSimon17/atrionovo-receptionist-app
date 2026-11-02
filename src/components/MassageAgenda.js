@@ -11,21 +11,20 @@ import { useFocusEffect } from "expo-router";
 
 import { api } from "../services/api";
 import { useAuth } from "../context/auth-context";
-import {
-  addDays,
-  formatLongDate,
-  formatTime,
-  todayString,
-} from "../utils/date";
+import { formatTime } from "../utils/date";
 import { formatDuration, formatPrice } from "../utils/price";
 
 // ======================================================
 // MassageAgenda
 // ======================================================
 //
-// The appointments of one day, with arrows to browse to
-// other days. A confirmed appointment can be marked as
-// completed, no-show or cancelled.
+// The appointments of the given day ("YYYY-MM-DD"). The
+// screen that shows it owns the day and its navigation.
+// A confirmed appointment can be marked as completed,
+// no-show or cancelled.
+//
+// onCountChange receives the number of appointments of the
+// day that still count (not cancelled, not a no-show).
 // ======================================================
 
 const STATUS_LABELS = {
@@ -35,12 +34,14 @@ const STATUS_LABELS = {
   NO_SHOW: "Niet verschenen",
 };
 
-export default function MassageAgenda() {
+export default function MassageAgenda({
+  date,
+  onCountChange,
+}) {
   const { accessToken, business } = useAuth();
 
   const businessId = business?.id;
 
-  const [date, setDate] = useState(todayString());
   const [appointments, setAppointments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,6 +59,14 @@ export default function MassageAgenda() {
           );
 
         setAppointments(response.data);
+
+        onCountChange?.(
+          response.data.filter(
+            (appointment) =>
+              appointment.status !== "CANCELLED" &&
+              appointment.status !== "NO_SHOW"
+          ).length
+        );
       } catch (loadError) {
         setError(
           loadError.message ||
@@ -67,7 +76,7 @@ export default function MassageAgenda() {
         setIsLoading(false);
       }
     },
-    [businessId, accessToken]
+    [businessId, accessToken, onCountChange]
   );
 
   // Reload when the screen comes back into view (for
@@ -113,42 +122,8 @@ export default function MassageAgenda() {
     ]);
   }
 
-  const isToday = date === todayString();
-
   return (
     <View style={styles.container}>
-      <View style={styles.dayRow}>
-        <Pressable
-          style={styles.arrowButton}
-          onPress={() => setDate(addDays(date, -1))}
-          accessibilityLabel="Vorige dag"
-        >
-          <Text style={styles.arrow}>‹</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.dayLabelBlock}
-          onPress={() => setDate(todayString())}
-          disabled={isToday}
-        >
-          <Text style={styles.dayLabel}>
-            {formatLongDate(date)}
-          </Text>
-
-          <Text style={styles.daySubLabel}>
-            {isToday ? "Vandaag" : "Tik voor vandaag"}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.arrowButton}
-          onPress={() => setDate(addDays(date, 1))}
-          accessibilityLabel="Volgende dag"
-        >
-          <Text style={styles.arrow}>›</Text>
-        </Pressable>
-      </View>
-
       {isLoading ? (
         <ActivityIndicator style={styles.loading} />
       ) : error ? (
@@ -257,45 +232,6 @@ export default function MassageAgenda() {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 16,
-  },
-
-  dayRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-
-  arrowButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  arrow: {
-    fontSize: 26,
-    color: "#111",
-    marginTop: -2,
-  },
-
-  dayLabelBlock: {
-    flex: 1,
-    alignItems: "center",
-  },
-
-  dayLabel: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  daySubLabel: {
-    fontSize: 13,
-    color: "#888",
-    marginTop: 2,
   },
 
   loading: {

@@ -28,6 +28,11 @@ import {
   api,
 } from "../services/api";
 
+import {
+  BUSINESS_TYPES,
+  getHomeRoute,
+} from "../utils/business-type";
+
 // ======================================================
 // Helpers
 // ======================================================
@@ -125,7 +130,13 @@ export default function Calendar() {
 
   const {
     accessToken,
+    business,
+    businessType,
   } = useAuth();
+
+  const isMassage =
+    businessType ===
+    BUSINESS_TYPES.MASSAGE;
 
   const todayKey =
     useMemo(
@@ -179,12 +190,20 @@ export default function Calendar() {
         setLoading(true);
         setError(null);
 
-        const response =
-          await api.getReservationCountsForMonth(
-            displayedYear,
-            displayedMonth,
-            accessToken
-          );
+        // Reservations for restaurants, appointments for
+        // massage businesses: both give { "YYYY-MM-DD": n }.
+        const response = isMassage
+          ? await api.getMassageAppointmentCountsForMonth(
+              business?.id,
+              displayedYear,
+              displayedMonth,
+              accessToken
+            )
+          : await api.getReservationCountsForMonth(
+              displayedYear,
+              displayedMonth,
+              accessToken
+            );
 
         setReservationCounts(
           response?.data || {}
@@ -207,6 +226,8 @@ export default function Calendar() {
     loadMonth();
   }, [
     accessToken,
+    business?.id,
+    isMassage,
     displayedYear,
     displayedMonth,
   ]);
@@ -330,8 +351,9 @@ export default function Calendar() {
       );
 
     router.push({
-      pathname:
-        "/dashboard",
+      pathname: getHomeRoute(
+        businessType
+      ),
       params: {
         date,
       },

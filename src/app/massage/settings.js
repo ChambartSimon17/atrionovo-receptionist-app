@@ -18,6 +18,10 @@ import { useAuth } from "../../context/auth-context";
 // Massage settings
 // ======================================================
 //
+// Everything a massage business sets up lives here: the
+// massages and prices, the therapists, the treatment rooms,
+// the buffer and the opening hours.
+//
 // Opening hours and special opening days are shared with
 // restaurants. Restaurant-only settings (capacity, tables)
 // are not shown here.
@@ -113,6 +117,24 @@ export default function MassageSettingsScreen() {
     >
       <Text style={styles.title}>Instellingen</Text>
 
+      <Option
+        title="Massages en prijzen"
+        description="Beheer je aanbod, duur en prijs"
+        onPress={() => router.push("/massage/services")}
+      />
+
+      <Option
+        title="Therapeuten"
+        description="Wie welke massages geeft en wanneer"
+        onPress={() => router.push("/massage/therapists")}
+      />
+
+      <Option
+        title="Behandelkamers"
+        description="Kamers en welke massages erin kunnen"
+        onPress={() => router.push("/massage/rooms")}
+      />
+
       <View style={styles.card}>
         <Text style={styles.cardTitle}>
           Pauze tussen afspraken
@@ -174,7 +196,7 @@ export default function MassageSettingsScreen() {
 function Option({ title, description, onPress }) {
   return (
     <Pressable style={styles.option} onPress={onPress}>
-      <View>
+      <View style={styles.optionTextBlock}>
         <Text style={styles.optionTitle}>{title}</Text>
 
         <Text style={styles.optionDescription}>
@@ -281,6 +303,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+
+  optionTextBlock: {
+    flex: 1,
   },
 
   optionTitle: {

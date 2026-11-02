@@ -561,6 +561,21 @@ export const api = {
     );
   },
 
+  getMassageAppointmentCountsForMonth(
+    businessId,
+    year,
+    month,
+    accessToken
+  ) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/appointments/month?year=${year}&month=${month}`,
+      accessToken,
+      {
+        method: "GET",
+      }
+    );
+  },
+
   createMassageAppointment(
     businessId,
     appointmentData,

@@ -21,6 +21,18 @@ import {
 
 import { api } from "../../../src/services/api";
 import { useAuth } from "../../../src/context/auth-context";
+import { BUSINESS_TYPES } from "../../../src/utils/business-type";
+import {
+  formatDuration,
+  formatPrice,
+} from "../../../src/utils/price";
+
+const APPOINTMENT_STATUS_LABELS = {
+  CONFIRMED: "Bevestigd",
+  COMPLETED: "Afgerond",
+  CANCELLED: "Geannuleerd",
+  NO_SHOW: "Niet verschenen",
+};
 
 
 // ======================================================
@@ -77,7 +89,12 @@ export default function CustomerDetail() {
 
   const {
     accessToken,
+    businessType,
   } = useAuth();
+
+  const isMassage =
+    businessType ===
+    BUSINESS_TYPES.MASSAGE;
 
   const [customer, setCustomer] =
     useState(null);
@@ -120,6 +137,8 @@ export default function CustomerDetail() {
           ...data.customer,
           reservations:
             data.reservations || [],
+          appointments:
+            data.appointments || [],
         });
       } catch (error) {
         console.error(
@@ -337,8 +356,97 @@ export default function CustomerDetail() {
         </View>
 
 
-        {/* Reservations */}
+        {/* Appointments (massage) / Reservations (restaurant) */}
 
+        {isMassage ? (
+          <View style={styles.card}>
+            <View
+              style={
+                styles.reservationHeader
+              }
+            >
+              <Text
+                style={styles.sectionTitle}
+              >
+                Afspraken
+              </Text>
+
+              <Text
+                style={styles.reservationCount}
+              >
+                {customer.appointments
+                  ?.length || 0}
+              </Text>
+            </View>
+
+            {!customer.appointments ||
+            customer.appointments.length ===
+              0 ? (
+              <Text
+                style={
+                  styles.emptyReservations
+                }
+              >
+                Geen afspraken gevonden.
+              </Text>
+            ) : (
+              customer.appointments.map(
+                (appointment) => (
+                  <View
+                    key={appointment.id}
+                    style={
+                      styles.reservationRow
+                    }
+                  >
+                    <View>
+                      <Text
+                        style={
+                          styles.reservationDate
+                        }
+                      >
+                        {formatDate(
+                          appointment.startTime
+                        )}
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.reservationMeta
+                        }
+                      >
+                        {formatTime(
+                          appointment.startTime
+                        )}{" "}
+                        ·{" "}
+                        {appointment.serviceName}{" "}
+                        ·{" "}
+                        {formatDuration(
+                          appointment.durationMinutes
+                        )}{" "}
+                        ·{" "}
+                        {formatPrice(
+                          appointment.priceCents
+                        )}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={
+                        styles.reservationMeta
+                      }
+                    >
+                      {
+                        APPOINTMENT_STATUS_LABELS[
+                          appointment.status
+                        ]
+                      }
+                    </Text>
+                  </View>
+                )
+              )
+            )}
+          </View>
+        ) : (
         <View style={styles.card}>
 
           <View
@@ -428,6 +536,7 @@ export default function CustomerDetail() {
           )}
 
         </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
