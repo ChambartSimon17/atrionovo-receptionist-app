@@ -1,16 +1,19 @@
-import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { useFocusEffect } from "expo-router";
 
-import { api } from "../services/api";
-import { useAuth } from "../context/auth-context";
+import { Badge } from "./ui";
+import { isInProgress } from "../hooks/useDayAppointments";
+import {
+  colors,
+  fonts,
+  radius,
+  spacing,
+} from "../theme";
 import { formatTime } from "../utils/date";
 import { formatDuration, formatPrice } from "../utils/price";
 
@@ -18,309 +21,311 @@ import { formatDuration, formatPrice } from "../utils/price";
 // MassageAgenda
 // ======================================================
 //
-// The appointments of the given day ("YYYY-MM-DD"). The
-// screen that shows it owns the day and its navigation.
-// A confirmed appointment can be marked as completed,
-// no-show or cancelled.
-//
-// onCountChange receives the number of appointments of the
-// day that still count (not cancelled, not a no-show).
+// The appointments of one day as a list of rows. The
+// screen loads them (useDayAppointments) and passes them
+// in. A confirmed appointment can be marked as completed,
+// no-show or cancelled through onChangeStatus.
 // ======================================================
 
 const STATUS_LABELS = {
   CONFIRMED: "Bevestigd",
+  IN_PROGRESS: "Bezig",
   COMPLETED: "Afgerond",
   CANCELLED: "Geannuleerd",
   NO_SHOW: "Niet verschenen",
 };
 
 export default function MassageAgenda({
-  date,
-  onCountChange,
+  appointments,
+  isLoading,
+  error,
+  onChangeStatus,
+  emptyText = "Geen afspraken op deze dag.",
 }) {
-  const { accessToken, business } = useAuth();
-
-  const businessId = business?.id;
-
-  const [appointments, setAppointments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const load = useCallback(
-    async (day) => {
-      try {
-        setError(null);
-
-        const response =
-          await api.getMassageAppointments(
-            businessId,
-            day,
-            accessToken
-          );
-
-        setAppointments(response.data);
-
-        onCountChange?.(
-          response.data.filter(
-            (appointment) =>
-              appointment.status !== "CANCELLED" &&
-              appointment.status !== "NO_SHOW"
-          ).length
-        );
-      } catch (loadError) {
-        setError(
-          loadError.message ||
-            "De afspraken konden niet worden geladen."
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [businessId, accessToken, onCountChange]
-  );
-
-  // Reload when the screen comes back into view (for
-  // example after creating an appointment) and when the
-  // day changes.
-  useFocusEffect(
-    useCallback(() => {
-      setIsLoading(true);
-      load(date);
-    }, [load, date])
-  );
-
-  async function changeStatus(appointment, status) {
-    try {
-      await api.updateMassageAppointment(
-        businessId,
-        appointment.id,
-        { status },
-        accessToken
-      );
-
-      await load(date);
-    } catch (updateError) {
-      Alert.alert(
-        "Fout",
-        updateError.message ||
-          "De wijziging kon niet worden opgeslagen."
-      );
-    }
+  if (isLoading) {
+    return <ActivityIndicator style={styles.loading} />;
   }
 
-  function confirmStatus(appointment, status, title, text) {
-    Alert.alert(title, text, [
-      { text: "Terug", style: "cancel" },
-      {
-        text: "Bevestigen",
-        style:
-          status === "CANCELLED"
-            ? "destructive"
-            : "default",
-        onPress: () => changeStatus(appointment, status),
-      },
-    ]);
+  if (error) {
+    return <Text style={styles.error}>{error}</Text>;
   }
+
+  if (appointments.length === 0) {
+    return (
+      <View style={styles.emptyBox}>
+        <Text style={styles.empty}>{emptyText}</Text>
+      </View>
+    );
+  }
+
+  const now = new Date();
 
   return (
-    <View style={styles.container}>
-      {isLoading ? (
-        <ActivityIndicator style={styles.loading} />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : appointments.length === 0 ? (
-        <Text style={styles.empty}>
-          Geen afspraken op deze dag.
-        </Text>
-      ) : (
-        appointments.map((appointment) => (
+    <View style={styles.list}>
+      {appointments.map((appointment, index) => {
+        const status = isInProgress(appointment, now)
+          ? "IN_PROGRESS"
+          : appointment.status;
+
+        const inactive =
+          appointment.status === "CANCELLED" ||
+          appointment.status === "NO_SHOW";
+
+        return (
           <View
             key={appointment.id}
             style={[
-              styles.card,
-              (appointment.status === "CANCELLED" ||
-                appointment.status === "NO_SHOW") &&
-                styles.inactiveCard,
+              styles.row,
+              index > 0 && styles.rowDivider,
             ]}
           >
-            <View style={styles.cardHeader}>
-              <Text style={styles.time}>
-                {formatTime(appointment.startTime)} –{" "}
-                {formatTime(appointment.endTime)}
+            <View style={styles.timeColumn}>
+              <Text
+                style={[
+                  styles.time,
+                  inactive && styles.inactiveText,
+                ]}
+              >
+                {formatTime(appointment.startTime)}
               </Text>
-
-              <Text style={styles.status}>
-                {STATUS_LABELS[appointment.status]}
+              <Text style={styles.endTime}>
+                {formatTime(appointment.endTime)}
               </Text>
             </View>
 
-            <Text style={styles.service}>
-              {appointment.serviceName} ·{" "}
-              {formatDuration(appointment.durationMinutes)} ·{" "}
-              {formatPrice(appointment.priceCents)}
-            </Text>
-
-            <Text style={styles.customer}>
-              {appointment.firstName} {appointment.lastName}{" "}
-              · {appointment.phoneNumber}
-            </Text>
-
-            <Text style={styles.meta}>
-              {appointment.therapistName} ·{" "}
-              {appointment.roomName}
-            </Text>
-
-            {!!appointment.notes && (
-              <Text style={styles.notes}>
-                Notitie: {appointment.notes}
-              </Text>
-            )}
-
-            {appointment.status === "CONFIRMED" && (
-              <View style={styles.actions}>
-                <Pressable
-                  onPress={() =>
-                    confirmStatus(
-                      appointment,
-                      "COMPLETED",
-                      "Afspraak afronden?",
-                      "De massage heeft plaatsgevonden."
-                    )
-                  }
+            <View style={styles.details}>
+              <View style={styles.titleRow}>
+                <Text
+                  style={[
+                    styles.customer,
+                    inactive && styles.inactiveText,
+                  ]}
+                  numberOfLines={1}
                 >
-                  <Text style={styles.link}>Afgerond</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() =>
-                    confirmStatus(
-                      appointment,
-                      "NO_SHOW",
-                      "Niet verschenen?",
-                      "De klant is niet komen opdagen."
-                    )
-                  }
-                >
-                  <Text style={styles.link}>
-                    Niet verschenen
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={() =>
-                    confirmStatus(
-                      appointment,
-                      "CANCELLED",
-                      "Afspraak annuleren?",
-                      "Het tijdstip komt weer vrij."
-                    )
-                  }
-                >
-                  <Text style={styles.dangerLink}>
-                    Annuleren
-                  </Text>
-                </Pressable>
+                  {appointment.firstName}{" "}
+                  {appointment.lastName}
+                </Text>
+                <Badge
+                  label={STATUS_LABELS[status]}
+                  status={status}
+                />
               </View>
-            )}
+
+              <Text style={styles.meta}>
+                {appointment.serviceName} ·{" "}
+                {formatDuration(
+                  appointment.durationMinutes
+                )}{" "}
+                · {formatPrice(appointment.priceCents)}
+              </Text>
+
+              <Text style={styles.meta}>
+                {appointment.therapistName} ·{" "}
+                {appointment.roomName} ·{" "}
+                {appointment.phoneNumber}
+              </Text>
+
+              {!!appointment.notes && (
+                <Text style={styles.notes}>
+                  {appointment.notes}
+                </Text>
+              )}
+
+              {appointment.status === "CONFIRMED" && (
+                <View style={styles.actions}>
+                  <ActionButton
+                    label="Afgerond"
+                    onPress={() =>
+                      onChangeStatus(
+                        appointment,
+                        "COMPLETED"
+                      )
+                    }
+                  />
+                  <ActionButton
+                    label="Niet verschenen"
+                    onPress={() =>
+                      onChangeStatus(
+                        appointment,
+                        "NO_SHOW"
+                      )
+                    }
+                  />
+                  <ActionButton
+                    label="Annuleren"
+                    danger
+                    onPress={() =>
+                      onChangeStatus(
+                        appointment,
+                        "CANCELLED"
+                      )
+                    }
+                  />
+                </View>
+              )}
+            </View>
           </View>
-        ))
-      )}
+        );
+      })}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
+function ActionButton({ label, onPress, danger = false }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      hitSlop={6}
+      style={({ pressed }) => [
+        styles.action,
+        pressed && styles.actionPressed,
+      ]}
+    >
+      <Text
+        style={[
+          styles.actionLabel,
+          danger && styles.actionDanger,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
+const styles = StyleSheet.create({
   loading: {
-    marginVertical: 24,
+    marginVertical: spacing.xxl,
   },
 
   error: {
-    textAlign: "center",
-    color: "#b3261e",
-    marginVertical: 16,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.danger,
+    marginVertical: spacing.lg,
   },
 
-  empty: {
-    textAlign: "center",
-    color: "#888",
-    fontSize: 15,
-    marginVertical: 20,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 10,
-  },
-
-  inactiveCard: {
-    opacity: 0.55,
-  },
-
-  cardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  emptyBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    paddingVertical: spacing.xxl,
     alignItems: "center",
   },
 
+  empty: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+
+  list: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing.md + 2,
+  },
+
+  row: {
+    flexDirection: "row",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+
+  rowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+
+  timeColumn: {
+    width: 46,
+  },
+
   time: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    color: colors.text,
   },
 
-  status: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#666",
+  endTime: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
   },
 
-  service: {
-    fontSize: 15,
-    color: "#111",
-    marginTop: 6,
+  details: {
+    flex: 1,
+    gap: 3,
+  },
+
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
   },
 
   customer: {
-    fontSize: 15,
-    color: "#111",
-    marginTop: 4,
+    flexShrink: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.text,
+  },
+
+  inactiveText: {
+    color: colors.textDisabled,
+    textDecorationLine: "line-through",
   },
 
   meta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
   },
 
   notes: {
-    fontSize: 14,
-    color: "#444",
-    marginTop: 8,
-    fontStyle: "italic",
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.text,
+    backgroundColor: colors.sandSoft,
+    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    marginTop: 2,
+    overflow: "hidden",
   },
 
   actions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 18,
-    marginTop: 14,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
 
-  link: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a58ca",
+  action: {
+    minHeight: 32,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
   },
 
-  dangerLink: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#b3261e",
+  actionPressed: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  actionLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.text,
+  },
+
+  actionDanger: {
+    color: colors.danger,
   },
 });
