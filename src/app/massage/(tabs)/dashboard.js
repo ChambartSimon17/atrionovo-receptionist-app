@@ -10,13 +10,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import { useAuth } from "../../context/auth-context";
-import MassageAgenda from "../../components/MassageAgenda";
+import { useAuth } from "../../../context/auth-context";
+import MassageAgenda from "../../../components/MassageAgenda";
 import {
   addDays,
   formatLongDate,
   todayString,
-} from "../../utils/date";
+} from "../../../utils/date";
 
 // ======================================================
 // Massage dashboard
