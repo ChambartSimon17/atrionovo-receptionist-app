@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 
-import { colors, fonts } from "../../theme";
+import { settingsHeader } from "../../theme/settingsHeader";
 
 // ======================================================
 // Massage screens
@@ -13,30 +13,13 @@ import { colors, fonts } from "../../theme";
 // content.
 // ======================================================
 
-const SETTINGS_HEADER = {
-  headerShown: true,
-  title: "",
-  headerBackTitle: "Terug",
-  headerTintColor: colors.primary,
-  headerShadowVisible: false,
-  headerStyle: {
-    backgroundColor: colors.background,
-  },
-  headerBackTitleStyle: {
-    fontFamily: fonts.medium,
-  },
-  contentStyle: {
-    backgroundColor: colors.background,
-  },
-};
-
 export default function MassageLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="services" options={SETTINGS_HEADER} />
-      <Stack.Screen name="therapists" options={SETTINGS_HEADER} />
-      <Stack.Screen name="rooms" options={SETTINGS_HEADER} />
-      <Stack.Screen name="settings" options={SETTINGS_HEADER} />
+      <Stack.Screen name="services" options={settingsHeader} />
+      <Stack.Screen name="therapists" options={settingsHeader} />
+      <Stack.Screen name="rooms" options={settingsHeader} />
+      <Stack.Screen name="settings" options={settingsHeader} />
     </Stack>
   );
 }

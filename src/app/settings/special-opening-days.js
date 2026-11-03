@@ -13,6 +13,13 @@ import { useEffect, useState } from "react";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import {
+  massageSkin,
+  useBusinessStyles,
+  useIsMassage,
+} from "../../theme/massageSkin";
+import { colors } from "../../theme";
+import { switchColors } from "../../theme/settingsStyles";
 
 function minutesToTime(minutes) {
   const hours = Math.floor(minutes / 60);
@@ -81,6 +88,13 @@ function createDefaultPeriod() {
 }
 
 export default function SpecialOpeningDaysScreen() {
+  const isMassage = useIsMassage();
+
+  const styles = useBusinessStyles(
+    restaurantStyles,
+    massageStyles
+  );
+
   const { accessToken } = useAuth();
 
   const [businessId, setBusinessId] =
@@ -673,12 +687,13 @@ export default function SpecialOpeningDaysScreen() {
             <Text
               style={styles.helperText}
             >
-              Staat het restaurant deze dag
-              volledig dicht?
+              Staat {isMassage ? "de zaak" : "het restaurant"}{" "}
+              deze dag volledig dicht?
             </Text>
           </View>
 
           <Switch
+            {...(isMassage ? switchColors : {})}
             value={isClosed}
             onValueChange={
               setIsClosed
@@ -1002,7 +1017,9 @@ export default function SpecialOpeningDaysScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// Restaurants keep this look; massage businesses get the
+// same layout in the Eucalyptus colours (massageSkin).
+const styleDefs = {
   container: {
     flex: 1,
     backgroundColor: "#fff",
@@ -1243,4 +1260,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#666",
   },
-});
+};
+
+const restaurantStyles = StyleSheet.create(styleDefs);
+
+const massageStyles = StyleSheet.create(
+  massageSkin(styleDefs, {
+    container: {
+      backgroundColor: colors.background,
+    },
+  })
+);

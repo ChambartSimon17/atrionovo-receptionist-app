@@ -27,9 +27,12 @@ import {
 } from "../context/auth-context";
 
 import {
+  BUSINESS_TYPES,
   getHomeRoute,
   isRouteAllowed,
 } from "../utils/business-type";
+
+import { settingsHeader } from "../theme/settingsHeader";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -90,12 +93,29 @@ function AuthGuard() {
     segments,
   ]);
 
+  // Massage businesses open the shared opening-hours
+  // screens from "Meer"; give them a back button there.
+  // Restaurants keep these screens as they were.
+  const sharedSettingsOptions =
+    businessType === BUSINESS_TYPES.MASSAGE
+      ? settingsHeader
+      : {};
+
   return (
     <Stack
       screenOptions={{
         headerShown: false,
       }}
-    />
+    >
+      <Stack.Screen
+        name="settings/opening-hours"
+        options={sharedSettingsOptions}
+      />
+      <Stack.Screen
+        name="settings/special-opening-days"
+        options={sharedSettingsOptions}
+      />
+    </Stack>
   );
 }
 

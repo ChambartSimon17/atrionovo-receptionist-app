@@ -32,6 +32,11 @@ import {
   BUSINESS_TYPES,
   getHomeRoute,
 } from "../utils/business-type";
+import {
+  massageSkin,
+  useBusinessStyles,
+} from "../theme/massageSkin";
+import { colors, spacing } from "../theme";
 
 // ======================================================
 // Helpers
@@ -125,6 +130,11 @@ function formatMonthTitle(
 // ======================================================
 
 export default function Calendar() {
+  const styles = useBusinessStyles(
+    restaurantStyles,
+    massageStyles
+  );
+
   const router =
     useRouter();
 
@@ -659,8 +669,9 @@ export default function Calendar() {
 // Styles
 // ======================================================
 
-const styles =
-  StyleSheet.create({
+// Restaurants keep this look; massage businesses get the
+// same layout in the Eucalyptus colours (massageSkin).
+const styleDefs = {
     container: {
       flex: 1,
       backgroundColor:
@@ -894,4 +905,15 @@ const styles =
       color: "#777",
       marginTop: 6,
     },
-  });
+};
+
+const restaurantStyles = StyleSheet.create(styleDefs);
+
+const massageStyles = StyleSheet.create(
+  massageSkin(styleDefs, {
+    container: {
+      backgroundColor: colors.background,
+      paddingHorizontal: spacing.xl,
+    },
+  })
+);
