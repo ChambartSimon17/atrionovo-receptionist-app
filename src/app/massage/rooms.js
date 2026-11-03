@@ -14,6 +14,8 @@ import {
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { colors, spacing } from "../../theme";
+import { settingsStyles } from "../../theme/settingsStyles";
 import MassageChoice from "../../components/MassageChoice";
 
 // ======================================================
@@ -240,7 +242,7 @@ export default function TreatmentRoomsScreen() {
                 setForm({ ...form, name })
               }
               placeholder="Bijvoorbeeld Kamer 1"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textDisabled}
             />
 
             <Text style={styles.sectionLabel}>
@@ -359,160 +361,10 @@ export default function TreatmentRoomsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
-
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  content: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  description: {
-    fontSize: 15,
-    color: "#666",
-    marginTop: 6,
-    marginBottom: 20,
-  },
-
-  addButton: {
-    marginBottom: 20,
-  },
-
-  formCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-  },
-
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 14,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-  },
-
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#111",
-  },
+  ...settingsStyles,
 
   row: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-
-  button: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-
-  primaryButton: {
-    backgroundColor: "#111",
-  },
-
-  primaryText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  secondaryButton: {
-    backgroundColor: "#eee",
-  },
-
-  secondaryText: {
-    color: "#111",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  disabled: {
-    opacity: 0.6,
-  },
-
-  empty: {
-    textAlign: "center",
-    color: "#888",
-    marginTop: 24,
-    fontSize: 15,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  inactiveCard: {
-    opacity: 0.55,
-  },
-
-  cardName: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  cardMeta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-
-  cardActions: {
-    flexDirection: "row",
-    gap: 24,
-    marginTop: 14,
-  },
-
-  link: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a58ca",
-  },
-
-  dangerLink: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#b3261e",
+    ...settingsStyles.row,
+    marginTop: spacing.xl,
   },
 });

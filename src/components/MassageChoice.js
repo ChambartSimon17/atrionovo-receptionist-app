@@ -5,6 +5,13 @@ import {
   View,
 } from "react-native";
 
+import {
+  colors,
+  fonts,
+  radius,
+  spacing,
+} from "../theme";
+
 // ======================================================
 // MassageChoice
 // ======================================================
@@ -73,35 +80,39 @@ const styles = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
 
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 20,
+    minHeight: 36,
+    justifyContent: "center",
+    paddingHorizontal: spacing.md + 2,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
   chipSelected: {
-    backgroundColor: "#111",
-    borderColor: "#111",
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
 
   chipText: {
-    fontSize: 14,
-    color: "#111",
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.text,
   },
 
   chipTextSelected: {
-    color: "#fff",
-    fontWeight: "600",
+    fontFamily: fonts.semibold,
+    color: colors.primary,
   },
 
   empty: {
+    fontFamily: fonts.regular,
     fontSize: 14,
-    color: "#888",
+    color: colors.textMuted,
   },
 });

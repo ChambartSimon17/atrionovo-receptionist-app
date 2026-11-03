@@ -15,6 +15,8 @@ import {
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { colors, fonts, spacing } from "../../theme";
+import { settingsStyles, switchColors } from "../../theme/settingsStyles";
 import MassageChoice from "../../components/MassageChoice";
 import {
   DAYS,
@@ -300,7 +302,7 @@ export default function TherapistsScreen() {
                 setForm({ ...form, name })
               }
               placeholder="Bijvoorbeeld Anna"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textDisabled}
             />
 
             <Text style={styles.sectionLabel}>
@@ -336,6 +338,7 @@ export default function TherapistsScreen() {
                       </Text>
 
                       <Switch
+                        {...switchColors}
                         value={isWorking}
                         onValueChange={(value) =>
                           toggleDay(day.key, value)
@@ -364,7 +367,7 @@ export default function TherapistsScreen() {
                           )
                         }
                         placeholder="09:00"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textDisabled}
                         keyboardType="numbers-and-punctuation"
                         maxLength={5}
                       />
@@ -386,7 +389,7 @@ export default function TherapistsScreen() {
                           )
                         }
                         placeholder="17:00"
-                        placeholderTextColor="#999"
+                        placeholderTextColor={colors.textDisabled}
                         keyboardType="numbers-and-punctuation"
                         maxLength={5}
                       />
@@ -407,7 +410,7 @@ export default function TherapistsScreen() {
                     <Pressable
                       onPress={() => addPeriod(day.key)}
                     >
-                      <Text style={styles.link}>
+                      <Text style={styles.addPeriodLink}>
                         + Periode toevoegen
                       </Text>
                     </Pressable>
@@ -532,82 +535,17 @@ export default function TherapistsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
+  ...settingsStyles,
 
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  content: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  description: {
-    fontSize: 15,
-    color: "#666",
-    marginTop: 6,
-    marginBottom: 20,
-  },
-
-  addButton: {
-    marginBottom: 20,
-  },
-
-  formCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-  },
-
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 14,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-  },
-
-  sectionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginTop: 20,
-    marginBottom: 10,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#111",
+  row: {
+    ...settingsStyles.row,
+    marginTop: spacing.xl,
   },
 
   day: {
-    paddingVertical: 10,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.divider,
   },
 
   dayHeader: {
@@ -617,27 +555,28 @@ const styles = StyleSheet.create({
   },
 
   dayTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.text,
   },
 
   dayToggle: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
 
   dayState: {
-    fontSize: 14,
-    color: "#666",
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
   },
 
   periodRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginTop: 10,
+    gap: spacing.sm,
+    marginTop: spacing.sm + 2,
   },
 
   timeInput: {
@@ -646,93 +585,13 @@ const styles = StyleSheet.create({
   },
 
   until: {
-    fontSize: 14,
-    color: "#666",
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
   },
 
-  row: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 20,
-  },
-
-  button: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-
-  primaryButton: {
-    backgroundColor: "#111",
-  },
-
-  primaryText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  secondaryButton: {
-    backgroundColor: "#eee",
-  },
-
-  secondaryText: {
-    color: "#111",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  disabled: {
-    opacity: 0.6,
-  },
-
-  empty: {
-    textAlign: "center",
-    color: "#888",
-    marginTop: 24,
-    fontSize: 15,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  inactiveCard: {
-    opacity: 0.55,
-  },
-
-  cardName: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  cardMeta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
-
-  cardActions: {
-    flexDirection: "row",
-    gap: 24,
-    marginTop: 14,
-  },
-
-  link: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a58ca",
-    marginTop: 8,
-  },
-
-  dangerLink: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#b3261e",
+  addPeriodLink: {
+    ...settingsStyles.link,
+    marginTop: spacing.sm,
   },
 });

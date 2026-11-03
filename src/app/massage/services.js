@@ -14,6 +14,8 @@ import {
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { colors, fonts, spacing } from "../../theme";
+import { settingsStyles } from "../../theme/settingsStyles";
 import {
   centsToInputText,
   formatDuration,
@@ -421,7 +423,7 @@ function Field({ label, ...inputProps }) {
           styles.input,
           inputProps.multiline && styles.multiline,
         ]}
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textDisabled}
         {...inputProps}
       />
     </View>
@@ -429,185 +431,39 @@ function Field({ label, ...inputProps }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
+  ...settingsStyles,
 
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  content: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  description: {
-    fontSize: 15,
-    color: "#666",
-    marginTop: 6,
-    marginBottom: 20,
-  },
-
-  addButton: {
-    marginBottom: 20,
-  },
-
-  formCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 20,
-  },
-
-  formTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 14,
-  },
-
-  field: {
-    marginBottom: 14,
-  },
-
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
-  },
-
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#111",
-  },
-
-  multiline: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-
-  row: {
-    flexDirection: "row",
-    gap: 12,
-  },
-
-  rowItem: {
-    flex: 1,
-  },
-
-  button: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-
-  primaryButton: {
-    backgroundColor: "#111",
-  },
-
-  primaryText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  secondaryButton: {
-    backgroundColor: "#eee",
-  },
-
-  secondaryText: {
-    color: "#111",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  disabled: {
-    opacity: 0.6,
-  },
-
-  empty: {
-    textAlign: "center",
-    color: "#888",
-    marginTop: 24,
-    fontSize: 15,
-  },
-
-  serviceCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  inactiveCard: {
-    opacity: 0.55,
-  },
+  serviceCard: settingsStyles.card,
 
   serviceHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
+    gap: spacing.md,
   },
 
   serviceName: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
   },
 
   servicePrice: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111",
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.primary,
   },
 
-  serviceMeta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 4,
-  },
+  serviceMeta: settingsStyles.cardMeta,
 
   serviceDescription: {
-    fontSize: 14,
-    color: "#444",
-    marginTop: 8,
-    lineHeight: 20,
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.text,
+    marginTop: spacing.sm,
   },
 
-  serviceActions: {
-    flexDirection: "row",
-    gap: 24,
-    marginTop: 14,
-  },
-
-  link: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#0a58ca",
-  },
-
-  dangerLink: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#b3261e",
-  },
+  serviceActions: settingsStyles.cardActions,
 });

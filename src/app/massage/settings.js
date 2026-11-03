@@ -13,6 +13,8 @@ import { useRouter } from "expo-router";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { colors, fonts, radius, spacing } from "../../theme";
+import { settingsStyles } from "../../theme/settingsStyles";
 
 // ======================================================
 // Massage settings
@@ -210,96 +212,70 @@ function Option({ title, description, onPress }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-
-  content: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  ...settingsStyles,
 
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 24,
-  },
-
-  card: {
-    padding: 18,
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
+    ...settingsStyles.title,
+    marginBottom: spacing.xl,
   },
 
   cardTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 6,
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: spacing.xs + 2,
   },
 
   cardText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#666",
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textMuted,
   },
 
   bufferRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 14,
+    gap: spacing.sm + 2,
+    marginTop: spacing.md + 2,
   },
 
   input: {
+    ...settingsStyles.input,
     width: 72,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    backgroundColor: "#fff",
     textAlign: "center",
   },
 
   unit: {
     flex: 1,
-    fontSize: 15,
-    color: "#444",
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.text,
   },
 
   saveButton: {
-    backgroundColor: "#111",
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    minHeight: 44,
+    justifyContent: "center",
+    backgroundColor: colors.primary,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.lg + 2,
   },
 
   saveText: {
-    color: "#fff",
+    fontFamily: fonts.medium,
     fontSize: 15,
-    fontWeight: "600",
-  },
-
-  disabled: {
-    opacity: 0.6,
+    color: colors.onPrimary,
   },
 
   option: {
-    minHeight: 80,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    marginBottom: 12,
-    borderRadius: 12,
-    backgroundColor: "#f5f5f5",
+    minHeight: 72,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md + 2,
+    marginBottom: spacing.md,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -310,18 +286,20 @@ const styles = StyleSheet.create({
   },
 
   optionTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: 2,
   },
 
   optionDescription: {
-    fontSize: 14,
-    color: "#666",
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
   },
 
   arrow: {
-    fontSize: 28,
-    color: "#888",
+    fontSize: 26,
+    color: colors.textMuted,
   },
 });
