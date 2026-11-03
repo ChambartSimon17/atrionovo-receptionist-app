@@ -11,10 +11,23 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Check, X } from "lucide-react-native";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { Button } from "../../components/ui";
+import {
+  colors,
+  fonts,
+  radius,
+  spacing,
+  touchTarget,
+} from "../../theme";
 import {
   addDays,
   formatLongDate,
@@ -30,12 +43,15 @@ import { formatDuration, formatPrice } from "../../utils/price";
 // then enter the customer. The backend chooses the
 // therapist and the room; the customer cannot pick them.
 // A note (for example a preferred therapist) is optional.
+// The bar at the bottom sums up the choice and confirms.
 // ======================================================
 
 export default function NewAppointmentScreen() {
   const router = useRouter();
 
   const { accessToken, business } = useAuth();
+
+  const insets = useSafeAreaInsets();
 
   const businessId = business?.id;
 
@@ -200,195 +216,306 @@ export default function NewAppointmentScreen() {
 
   const today = todayString();
 
+  // The next two weeks to pick a day from.
+  const days = Array.from({ length: 14 }, (_, index) =>
+    addDays(today, index)
+  );
+
+  const service = services.find(
+    (candidate) => candidate.id === serviceId
+  );
+
+  const step = !serviceId
+    ? 1
+    : !slot
+      ? 2
+      : !firstName.trim() ||
+          !lastName.trim() ||
+          !phoneNumber.trim()
+        ? 3
+        : 4;
+
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={
-        Platform.OS === "ios" ? "padding" : undefined
-      }
-    >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={styles.title}>Nieuwe afspraak</Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.topBar}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Sluiten"
+          onPress={() => router.back()}
+          style={styles.closeButton}
+        >
+          <X size={18} color={colors.text} strokeWidth={1.8} />
+        </Pressable>
+        <Text style={styles.topTitle}>Nieuwe afspraak</Text>
+        <View style={styles.closeButtonSpacer} />
+      </View>
 
-        <Text style={styles.sectionLabel}>1. Massage</Text>
-
-        {services.length === 0 && (
-          <Text style={styles.empty}>
-            Je hebt nog geen massages. Voeg ze eerst toe bij
-            "Massages en prijzen".
-          </Text>
-        )}
-
-        {services.map((service) => {
-          const selected = service.id === serviceId;
-
-          return (
-            <Pressable
-              key={service.id}
-              style={[
-                styles.serviceCard,
-                selected && styles.serviceCardSelected,
-              ]}
-              onPress={() => setServiceId(service.id)}
-            >
-              <Text
-                style={[
-                  styles.serviceName,
-                  selected && styles.selectedText,
-                ]}
-              >
-                {service.name}
-              </Text>
-
-              <Text
-                style={[
-                  styles.serviceMeta,
-                  selected && styles.selectedText,
-                ]}
-              >
-                {formatDuration(service.durationMinutes)} ·{" "}
-                {formatPrice(service.priceCents)}
-              </Text>
-            </Pressable>
-          );
-        })}
-
-        <Text style={styles.sectionLabel}>2. Dag</Text>
-
-        <View style={styles.dayRow}>
-          <Pressable
+      <View style={styles.progress}>
+        {[1, 2, 3, 4].map((index) => (
+          <View
+            key={index}
             style={[
-              styles.arrowButton,
-              date <= today && styles.disabled,
+              styles.progressStep,
+              index <= step && styles.progressStepDone,
             ]}
-            onPress={() => setDate(addDays(date, -1))}
-            disabled={date <= today}
-          >
-            <Text style={styles.arrow}>‹</Text>
-          </Pressable>
+          />
+        ))}
+      </View>
 
-          <Text style={styles.dayLabel}>
-            {formatLongDate(date)}
-          </Text>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={
+          Platform.OS === "ios" ? "padding" : undefined
+        }
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <SectionLabel number={1} title="Massage" />
 
-          <Pressable
-            style={styles.arrowButton}
-            onPress={() => setDate(addDays(date, 1))}
-          >
-            <Text style={styles.arrow}>›</Text>
-          </Pressable>
-        </View>
+          {services.length === 0 && (
+            <Text style={styles.empty}>
+              Je hebt nog geen massages. Voeg ze eerst toe
+              bij "Massages en prijzen".
+            </Text>
+          )}
 
-        <Text style={styles.sectionLabel}>3. Tijdstip</Text>
-
-        {!serviceId ? (
-          <Text style={styles.empty}>
-            Kies eerst een massage.
-          </Text>
-        ) : isLoadingSlots ? (
-          <ActivityIndicator style={styles.slotLoading} />
-        ) : slots.length === 0 ? (
-          <Text style={styles.empty}>
-            Geen vrije momenten op deze dag.
-          </Text>
-        ) : (
-          <View style={styles.slotWrap}>
-            {slots.map((candidate) => {
-              const selected =
-                slot?.startTime === candidate.startTime;
+          <View style={styles.services}>
+            {services.map((candidate) => {
+              const selected = candidate.id === serviceId;
 
               return (
                 <Pressable
-                  key={candidate.startTime}
+                  key={candidate.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
                   style={[
-                    styles.slot,
-                    selected && styles.slotSelected,
+                    styles.serviceCard,
+                    selected && styles.serviceCardSelected,
                   ]}
-                  onPress={() => setSlot(candidate)}
+                  onPress={() => setServiceId(candidate.id)}
                 >
-                  <Text
+                  <View style={styles.serviceText}>
+                    <Text style={styles.serviceName}>
+                      {candidate.name}
+                    </Text>
+                    <Text style={styles.serviceMeta}>
+                      {formatDuration(
+                        candidate.durationMinutes
+                      )}
+                    </Text>
+                  </View>
+                  <Text style={styles.servicePrice}>
+                    {formatPrice(candidate.priceCents)}
+                  </Text>
+                  <View
                     style={[
-                      styles.slotText,
-                      selected && styles.selectedText,
+                      styles.radio,
+                      selected && styles.radioSelected,
                     ]}
                   >
-                    {candidate.time}
-                  </Text>
+                    {selected && (
+                      <Check
+                        size={14}
+                        color={colors.onPrimary}
+                        strokeWidth={2.5}
+                      />
+                    )}
+                  </View>
                 </Pressable>
               );
             })}
           </View>
-        )}
 
-        <Text style={styles.sectionLabel}>4. Klant</Text>
+          <SectionLabel number={2} title="Dag en tijd" />
 
-        <View style={styles.card}>
-          <Field
-            label="Voornaam"
-            value={firstName}
-            onChangeText={setFirstName}
-            autoCapitalize="words"
-          />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.dayStrip}
+          >
+            {days.map((day) => {
+              const selected = day === date;
+              const [weekday, number] = formatLongDate(day)
+                .split(" ");
 
-          <Field
-            label="Achternaam"
-            value={lastName}
-            onChangeText={setLastName}
-            autoCapitalize="words"
-          />
+              return (
+                <Pressable
+                  key={day}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setDate(day)}
+                  style={[
+                    styles.day,
+                    selected && styles.daySelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayName,
+                      selected && styles.onPrimary,
+                    ]}
+                  >
+                    {day === today
+                      ? "Vandaag"
+                      : weekday.slice(0, 2)}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.dayNumber,
+                      selected && styles.onPrimary,
+                    ]}
+                  >
+                    {number}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
 
-          <Field
-            label="Telefoonnummer"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-          />
+          {!serviceId ? (
+            <Text style={styles.empty}>
+              Kies eerst een massage.
+            </Text>
+          ) : isLoadingSlots ? (
+            <ActivityIndicator style={styles.slotLoading} />
+          ) : slots.length === 0 ? (
+            <Text style={styles.empty}>
+              Geen vrije momenten op{" "}
+              {formatLongDate(date)}.
+            </Text>
+          ) : (
+            <View style={styles.slotGrid}>
+              {slots.map((candidate) => {
+                const selected =
+                  slot?.startTime === candidate.startTime;
 
-          <Field
-            label="E-mailadres (optioneel)"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+                return (
+                  <Pressable
+                    key={candidate.startTime}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    style={[
+                      styles.slot,
+                      selected && styles.slotSelected,
+                    ]}
+                    onPress={() => setSlot(candidate)}
+                  >
+                    <Text
+                      style={[
+                        styles.slotText,
+                        selected && styles.slotTextSelected,
+                      ]}
+                    >
+                      {candidate.time}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
-          <Field
-            label="Notitie (optioneel)"
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Bijvoorbeeld: liefst bij Anna"
-            multiline
+          <Text style={styles.hint}>
+            De therapeut en de kamer worden automatisch
+            gekozen. Een voorkeur kun je in de notitie
+            zetten.
+          </Text>
+
+          <SectionLabel number={3} title="Klant" />
+
+          <View style={styles.card}>
+            <View style={styles.nameRow}>
+              <Field
+                label="Voornaam"
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+                style={styles.flex}
+              />
+              <Field
+                label="Achternaam"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                style={styles.flex}
+              />
+            </View>
+
+            <Field
+              label="Telefoonnummer"
+              value={phoneNumber}
+              onChangeText={setPhoneNumber}
+              keyboardType="phone-pad"
+              placeholder="+32 470 12 34 56"
+            />
+
+            <Field
+              label="E-mailadres (optioneel)"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="naam@voorbeeld.be"
+            />
+
+            <Field
+              label="Notitie (optioneel)"
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Bijvoorbeeld: liefst bij Anna"
+              multiline
+            />
+          </View>
+        </ScrollView>
+
+        <View
+          style={[
+            styles.footer,
+            { paddingBottom: insets.bottom + spacing.sm },
+          ]}
+        >
+          <View style={styles.summary}>
+            <Text style={styles.summaryTop} numberOfLines={1}>
+              {slot
+                ? `${formatLongDate(date)} · ${slot.time}`
+                : "Kies een massage en tijd"}
+            </Text>
+            <Text style={styles.summaryMain} numberOfLines={1}>
+              {service
+                ? `${service.name} · ${formatPrice(
+                    service.priceCents
+                  )}`
+                : "–"}
+            </Text>
+          </View>
+          <Button
+            label="Bevestigen"
+            variant="primary"
+            loading={isSaving}
+            disabled={!serviceId || !slot}
+            onPress={handleSave}
           />
         </View>
-
-        <Pressable
-          style={[
-            styles.saveButton,
-            (!serviceId || !slot || isSaving) &&
-              styles.disabled,
-          ]}
-          onPress={handleSave}
-          disabled={!serviceId || !slot || isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveText}>
-              Afspraak bevestigen
-            </Text>
-          )}
-        </Pressable>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-function Field({ label, ...inputProps }) {
+function SectionLabel({ number, title }) {
   return (
-    <View style={styles.field}>
+    <View style={styles.sectionLabel}>
+      <View style={styles.sectionNumber}>
+        <Text style={styles.sectionNumberText}>{number}</Text>
+      </View>
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
+  );
+}
+
+function Field({ label, style, ...inputProps }) {
+  return (
+    <View style={[styles.field, style]}>
       <Text style={styles.label}>{label}</Text>
 
       <TextInput
@@ -396,7 +523,7 @@ function Field({ label, ...inputProps }) {
           styles.input,
           inputProps.multiline && styles.multiline,
         ]}
-        placeholderTextColor="#999"
+        placeholderTextColor={colors.textDisabled}
         {...inputProps}
       />
     </View>
@@ -406,152 +533,289 @@ function Field({ label, ...inputProps }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
+    backgroundColor: colors.background,
+  },
+
+  flex: {
+    flex: 1,
   },
 
   loading: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: colors.background,
   },
 
-  content: {
-    padding: 24,
-    paddingBottom: 48,
-  },
-
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  sectionLabel: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#333",
-    marginTop: 24,
-    marginBottom: 10,
-  },
-
-  empty: {
-    fontSize: 14,
-    color: "#888",
-  },
-
-  serviceCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#fff",
-  },
-
-  serviceCardSelected: {
-    backgroundColor: "#111",
-    borderColor: "#111",
-  },
-
-  serviceName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  serviceMeta: {
-    fontSize: 14,
-    color: "#666",
-    marginTop: 3,
-  },
-
-  selectedText: {
-    color: "#fff",
-  },
-
-  dayRow: {
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
   },
 
-  arrowButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#fff",
+  closeButton: {
+    width: touchTarget,
+    height: touchTarget,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
 
-  arrow: {
-    fontSize: 26,
-    color: "#111",
-    marginTop: -2,
+  closeButtonSpacer: {
+    width: touchTarget,
   },
 
-  dayLabel: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#111",
+  topTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+  },
+
+  progress: {
+    flexDirection: "row",
+    gap: 4,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
+  },
+
+  progressStep: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D8D3C9",
+  },
+
+  progressStepDone: {
+    backgroundColor: colors.primary,
+  },
+
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+    gap: spacing.md,
+  },
+
+  sectionLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+
+  sectionNumber: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  sectionNumberText: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: colors.onPrimary,
+  },
+
+  sectionTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
+  },
+
+  empty: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+
+  hint: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+  },
+
+  services: {
+    gap: spacing.sm,
+  },
+
+  serviceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    minHeight: 60,
+    padding: spacing.md + 2,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  serviceCardSelected: {
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+
+  serviceText: {
+    flex: 1,
+    gap: 2,
+  },
+
+  serviceName: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.text,
+  },
+
+  serviceMeta: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  servicePrice: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    color: colors.text,
+  },
+
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  radioSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  dayStrip: {
+    gap: 6,
+  },
+
+  day: {
+    minWidth: 58,
+    height: 60,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 3,
+  },
+
+  daySelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  dayName: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+
+  dayNumber: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    color: colors.text,
+  },
+
+  onPrimary: {
+    color: colors.onPrimary,
   },
 
   slotLoading: {
-    marginVertical: 12,
+    marginVertical: spacing.md,
   },
 
-  slotWrap: {
+  slotGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: spacing.sm,
   },
 
   slot: {
-    paddingHorizontal: 16,
-    paddingVertical: 11,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    flexBasis: "22%",
+    flexGrow: 1,
+    minHeight: touchTarget,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   slotSelected: {
-    backgroundColor: "#111",
-    borderColor: "#111",
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
 
   slotText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.text,
+  },
+
+  slotTextSelected: {
+    fontFamily: fonts.semibold,
+    color: colors.primary,
   },
 
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md + 2,
+  },
+
+  nameRow: {
+    flexDirection: "row",
+    gap: spacing.md,
   },
 
   field: {
-    marginBottom: 14,
+    gap: 6,
   },
 
   label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 6,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.text,
   },
 
   input: {
+    minHeight: touchTarget,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
-    color: "#111",
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    backgroundColor: colors.surface,
+    color: colors.text,
   },
 
   multiline: {
@@ -559,21 +823,31 @@ const styles = StyleSheet.create({
     textAlignVertical: "top",
   },
 
-  saveButton: {
-    backgroundColor: "#111",
-    borderRadius: 14,
-    paddingVertical: 16,
+  footer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 24,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
-  saveText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  summary: {
+    flex: 1,
+    gap: 2,
   },
 
-  disabled: {
-    opacity: 0.4,
+  summaryTop: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  summaryMain: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
   },
 });
