@@ -782,7 +782,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "right",
     paddingRight: spacing.sm,
-    marginTop: -7,
+    // Centre the label on its hour line without moving the
+    // labels below it.
+    top: -7,
   },
 
   column: {
