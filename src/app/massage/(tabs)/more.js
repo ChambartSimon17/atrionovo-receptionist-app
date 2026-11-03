@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import {
   BedDouble,
   CalendarClock,
+  ChartColumn,
   ChevronRight,
   Clock,
   HandHeart,
@@ -104,6 +105,34 @@ export default function MassageMoreScreen() {
             </Text>
           </View>
         </Card>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/massage/analytics")}
+          style={({ pressed }) => [
+            styles.analytics,
+            pressed && styles.analyticsPressed,
+          ]}
+        >
+          <View style={styles.analyticsIcon}>
+            <ChartColumn
+              size={20}
+              color={colors.onPrimary}
+              strokeWidth={1.8}
+            />
+          </View>
+          <View style={styles.rowText}>
+            <Text style={styles.analyticsTitle}>Analyse</Text>
+            <Text style={styles.analyticsSubtitle}>
+              Omzet, no-shows, terugkerende klanten
+            </Text>
+          </View>
+          <ChevronRight
+            size={18}
+            color={colors.onPrimaryMuted}
+            strokeWidth={1.8}
+          />
+        </Pressable>
 
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>
@@ -211,6 +240,40 @@ const styles = StyleSheet.create({
   profileText: {
     flex: 1,
     gap: 2,
+  },
+
+  analytics: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primary,
+  },
+
+  analyticsPressed: {
+    backgroundColor: colors.primaryPressed,
+  },
+
+  analyticsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.lg,
+    backgroundColor: "#2C7466",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  analyticsTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.onPrimary,
+  },
+
+  analyticsSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.onPrimaryMuted,
   },
 
   section: {
