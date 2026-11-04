@@ -17,7 +17,7 @@ import en from "./en";
 // argument: t("calls.callBack", { name: "Lisa" }).
 //
 // The language is chosen in Instellingen and stored on
-// the phone; without a choice it follows the phone.
+// the phone; without a choice the app is in Dutch.
 // Changing it reloads the app.
 // ======================================================
 
@@ -31,17 +31,6 @@ export const LANGUAGES = [
   { value: "en", label: "EN" },
 ];
 
-function deviceLanguage() {
-  try {
-    const locale = Intl.DateTimeFormat().resolvedOptions().locale || "nl";
-    const code = locale.slice(0, 2).toLowerCase();
-
-    return DICTIONARIES[code] ? code : "nl";
-  } catch {
-    return "nl";
-  }
-}
-
 function storedLanguage() {
   try {
     const stored = SecureStore.getItem(KEY);
@@ -52,7 +41,7 @@ function storedLanguage() {
   }
 }
 
-export const language = storedLanguage() ?? deviceLanguage();
+export const language = storedLanguage() ?? "nl";
 
 // The locale for dates and numbers.
 export const locale = { nl: "nl-BE", fr: "fr-BE", en: "en-GB" }[language];

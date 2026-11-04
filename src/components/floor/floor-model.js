@@ -339,15 +339,18 @@ export function tableLiveState(table, reservations, now = new Date()) {
 }
 
 /**
- * What a treatment room is doing right now.
+ * What a treatment room ({ id, name }) is doing right
+ * now. Appointments carry the room's id or only its name.
  *
  * free | busy | soon (ends within 10 minutes) | cleaning
  */
-export function roomLiveState(roomId, appointments, now = new Date(), bufferMinutes = 0) {
+export function roomLiveState(room, appointments, now = new Date(), bufferMinutes = 0) {
   const own = appointments
     .filter(
       (appointment) =>
-        appointment.roomId === roomId &&
+        (appointment.roomId
+          ? appointment.roomId === room.id
+          : appointment.roomName === room.name) &&
         appointment.status !== "CANCELLED" &&
         appointment.status !== "NO_SHOW"
     )

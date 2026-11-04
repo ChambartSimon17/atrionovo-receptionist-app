@@ -1,8 +1,7 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
+  Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -25,7 +24,7 @@ import {
   type,
 } from "../../theme";
 import { formatTime, todayString } from "../../utils/date";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { ScrollView } from "react-native-gesture-handler";
 import { SkeletonList } from "../../components/ui";
 import { t } from "../../i18n";
 
@@ -67,9 +66,9 @@ export default function RestaurantAgendaScreen() {
     moveTo,
   } = useRestaurantDay(date);
 
-  // A reservation being dragged to another table:
-  // { id, fromIndex, dy }.
-  const [drag, setDrag] = useState(null);
+  // A reservation being moved to another table, picked
+  // up with a long press: { reservation, fromIndex }.
+  const [moving, setMoving] = useState(null);
 
   // The hours shown: the opening hours of the week,
   // widened to fit every reservation of the day.
@@ -148,26 +147,12 @@ export default function RestaurantAgendaScreen() {
     nowMinutes >= startMinutes &&
     nowMinutes <= endMinutes;
 
-  const targetIndex = drag
-    ? Math.max(
-        0,
-        Math.min(
-          rows.length - 1,
-          drag.fromIndex + Math.round(drag.dy / ROW_HEIGHT)
-        )
-      )
-    : null;
+  // Moves the held reservation to the tapped row's
+  // table, after a confirmation.
+  function moveToRow(target, toIndex) {
+    const { reservation, fromIndex } = moving;
 
-  // Drops a dragged reservation on the row under it and,
-  // after a confirmation, moves it to that table.
-  function dropOnRow(reservation, fromIndex, dy) {
-    const toIndex = Math.max(
-      0,
-      Math.min(rows.length - 1, fromIndex + Math.round(dy / ROW_HEIGHT))
-    );
-    const target = rows[toIndex];
-
-    setDrag(null);
+    setMoving(null);
 
     if (toIndex === fromIndex || !target || target.id === UNASSIGNED) {
       return;
@@ -251,19 +236,45 @@ export default function RestaurantAgendaScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          scrollEnabled={!drag}
         >
+          {moving ? (
+            <View style={styles.moving}>
+              <Text style={styles.movingText} numberOfLines={2}>
+                {t("agenda.movingHint", {
+                  name: `${moving.reservation.firstName} ${moving.reservation.lastName}`.trim(),
+                })}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setMoving(null)}
+                hitSlop={8}
+              >
+                <Text style={styles.movingCancel}>{t("common.cancel")}</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           <Card style={styles.grid}>
             {/* Table names */}
 
             <View style={styles.names}>
               <View style={{ height: HEADER_HEIGHT }} />
               {rows.map((row, index) => (
-                <View
+                <Pressable
                   key={row.id}
+                  disabled={
+                    !moving ||
+                    index === moving.fromIndex ||
+                    row.id === UNASSIGNED
+                  }
+                  onPress={() => moveToRow(row, index)}
                   style={[
                     styles.nameCell,
                     index > 0 && styles.rowDivider,
+                    moving &&
+                      index !== moving.fromIndex &&
+                      row.id !== UNASSIGNED &&
+                      styles.dropTarget,
                   ]}
                 >
                   <Text
@@ -277,7 +288,7 @@ export default function RestaurantAgendaScreen() {
                     {row.name}
                   </Text>
                   <Text style={type.caption}>{row.meta}</Text>
-                </View>
+                </Pressable>
               ))}
             </View>
 
@@ -285,7 +296,6 @@ export default function RestaurantAgendaScreen() {
 
             <ScrollView
               horizontal
-              scrollEnabled={!drag}
               showsHorizontalScrollIndicator={false}
               contentOffset={{
                 x: showNow
@@ -315,11 +325,10 @@ export default function RestaurantAgendaScreen() {
                     style={[
                       styles.timelineRow,
                       index > 0 && styles.rowDivider,
-                      drag &&
-                        targetIndex === index &&
-                        index !== drag.fromIndex &&
+                      moving &&
+                        index !== moving.fromIndex &&
+                        row.id !== UNASSIGNED &&
                         styles.dropTarget,
-                      drag?.fromIndex === index && styles.dragRow,
                     ]}
                   >
                     {hours.map((minutes) => (
@@ -331,6 +340,7 @@ export default function RestaurantAgendaScreen() {
                         ]}
                       />
                     ))}
+
 
                     {row.reservations.map((reservation) => {
                       const start = minutesOfDay(
@@ -345,17 +355,16 @@ export default function RestaurantAgendaScreen() {
                       const palette = seated
                         ? statusColors.SEATED
                         : statusColors.CONFIRMED;
-                      const isDragged =
-                        drag?.id === reservation.id &&
-                        drag.fromIndex === index;
+                      const isMoving =
+                        moving?.reservation.id === reservation.id &&
+                        moving.fromIndex === index;
 
                       return (
                         <AgendaBlock
                           key={reservation.id}
                           reservation={reservation}
                           palette={palette}
-                          dragged={isDragged}
-                          dy={isDragged ? drag.dy : 0}
+                          lifted={isMoving}
                           style={{
                             left: x(start) + 2,
                             width: Math.max(
@@ -364,24 +373,14 @@ export default function RestaurantAgendaScreen() {
                             ),
                           }}
                           onOpen={() =>
-                            router.push(
-                              `/reservation/${reservation.id}`
-                            )
+                            moving
+                              ? setMoving(null)
+                              : router.push(
+                                  `/reservation/${reservation.id}`
+                                )
                           }
-                          onDragStart={() =>
-                            setDrag({
-                              id: reservation.id,
-                              fromIndex: index,
-                              dy: 0,
-                            })
-                          }
-                          onDrag={(dy) =>
-                            setDrag((current) =>
-                              current ? { ...current, dy } : current
-                            )
-                          }
-                          onDrop={(dy) =>
-                            dropOnRow(reservation, index, dy)
+                          onHold={() =>
+                            setMoving({ reservation, fromIndex: index })
                           }
                         />
                       );
@@ -423,63 +422,38 @@ export default function RestaurantAgendaScreen() {
   );
 }
 
-// A reservation on the timeline. Tap to open it; hold
-// and drag up or down to move it to another table.
-function AgendaBlock({
-  reservation,
-  palette,
-  style,
-  dragged,
-  dy,
-  onOpen,
-  onDragStart,
-  onDrag,
-  onDrop,
-}) {
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .activateAfterLongPress(300)
-    .onStart(() => onDragStart())
-    .onUpdate((event) => onDrag(event.translationY))
-    .onEnd((event) => onDrop(event.translationY))
-    .onFinalize((event, success) => {
-      if (!success) {
-        onDrag(0);
-      }
-    });
-
-  const tap = Gesture.Tap()
-    .runOnJS(true)
-    .onEnd((event, success) => success && onOpen());
-
+// A reservation on the timeline. Tap to open it; hold it
+// to pick it up and then tap the row of another table.
+function AgendaBlock({ reservation, palette, style, lifted, onOpen, onHold }) {
   return (
-    <GestureDetector gesture={Gesture.Exclusive(pan, tap)}>
-      <View
-        accessibilityRole="button"
-        accessibilityHint={t("agenda.dragHint")}
-        style={[
-          styles.block,
-          style,
-          { backgroundColor: palette.background },
-          dragged && styles.blockDragged,
-          dragged && { transform: [{ translateY: dy }] },
-        ]}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityHint={t("agenda.dragHint")}
+      onPress={onOpen}
+      onLongPress={onHold}
+      delayLongPress={300}
+      style={({ pressed }) => [
+        styles.block,
+        style,
+        { backgroundColor: palette.background },
+        pressed && styles.blockPressed,
+        lifted && styles.blockLifted,
+      ]}
+    >
+      <Text
+        style={[styles.blockName, { color: palette.text }]}
+        numberOfLines={1}
       >
-        <Text
-          style={[styles.blockName, { color: palette.text }]}
-          numberOfLines={1}
-        >
-          {reservation.lastName || reservation.firstName}
-        </Text>
-        <Text
-          style={[styles.blockMeta, { color: palette.text }]}
-          numberOfLines={1}
-        >
-          {reservation.guestCount} p.
-          {reservation.notes ? " · ✎" : ""}
-        </Text>
-      </View>
-    </GestureDetector>
+        {reservation.lastName || reservation.firstName}
+      </Text>
+      <Text
+        style={[styles.blockMeta, { color: palette.text }]}
+        numberOfLines={1}
+      >
+        {reservation.guestCount} p.
+        {reservation.notes ? " · ✎" : ""}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -502,18 +476,33 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
 
-  dragRow: {
-    zIndex: 10,
+  blockLifted: {
+    borderWidth: 2,
+    borderColor: colors.warning,
   },
 
-  blockDragged: {
-    zIndex: 20,
-    opacity: 0.92,
-    shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 6,
+  moving: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+  },
+
+  movingText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.warning,
+  },
+
+  movingCancel: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.warning,
   },
 
   dragHint: {

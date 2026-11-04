@@ -153,26 +153,33 @@ describe("room state", () => {
   });
 
   test("busy with the minutes left and the progress", () => {
-    const state = roomLiveState("room1", [appointment("a", "14:00", "15:00")], at("14:15"));
+    const state = roomLiveState({ id: "room1", name: "Kamer 1" }, [appointment("a", "14:00", "15:00")], at("14:15"));
 
     expect(state).toMatchObject({ state: "busy", minutesLeft: 45 });
     expect(state.progress).toBeCloseTo(0.25);
   });
 
   test("soon in the last ten minutes", () => {
-    expect(roomLiveState("room1", [appointment("a", "14:00", "15:00")], at("14:52")).state).toBe("soon");
+    expect(roomLiveState({ id: "room1", name: "Kamer 1" }, [appointment("a", "14:00", "15:00")], at("14:52")).state).toBe("soon");
   });
 
   test("cleaning during the break after an appointment", () => {
-    const state = roomLiveState("room1", [appointment("a", "13:00", "14:00")], at("14:05"), 15);
+    const state = roomLiveState({ id: "room1", name: "Kamer 1" }, [appointment("a", "13:00", "14:00")], at("14:05"), 15);
 
     expect(state.state).toBe("cleaning");
     expect(state.freeAt.getTime()).toBe(at("14:15").getTime());
   });
 
+  test("matches on the room name when there is no room id", () => {
+    const byName = { id: "x", status: "CONFIRMED", roomName: "Kamer 1", startTime: at("14:00").toISOString(), endTime: at("15:00").toISOString() };
+
+    expect(roomLiveState({ id: "room1", name: "Kamer 1" }, [byName], at("14:15")).state).toBe("busy");
+    expect(roomLiveState({ id: "room2", name: "Kamer 2" }, [byName], at("14:15")).state).toBe("free");
+  });
+
   test("free with the next appointment; cancelled ones do not count", () => {
     const state = roomLiveState(
-      "room1",
+      { id: "room1", name: "Kamer 1" },
       [appointment("x", "14:00", "15:00", "CANCELLED"), appointment("b", "16:00", "17:00")],
       at("14:30")
     );

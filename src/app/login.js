@@ -149,7 +149,7 @@ export default function LoginScreen() {
               }}
               onFocus={() => setFocus("password")}
               onBlur={() => setFocus(null)}
-              placeholder="••••••••"
+              placeholder={t("login.passwordPlaceholder")}
               placeholderTextColor={colors.textDisabled}
               secureTextEntry={!showPassword}
               autoComplete="password"

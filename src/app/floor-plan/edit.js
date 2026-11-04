@@ -632,7 +632,11 @@ export default function FloorPlanEditor() {
           </Pressable>
         ) : null}
       </View>
-      <View style={styles.tools}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tools}
+      >
         {toolbar.map((tool) => {
           const Icon = tool.icon ?? ICONS[tool.key] ?? Square;
 
@@ -653,7 +657,7 @@ export default function FloorPlanEditor() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
       <Text style={styles.tip}>{t("editor.tip")}</Text>
     </View>
   );
@@ -1020,13 +1024,12 @@ const styles = StyleSheet.create({
   },
 
   tools: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    rowGap: spacing.md,
+    gap: spacing.xs,
+    paddingRight: spacing.lg,
   },
 
   tool: {
-    width: "20%",
+    width: 66,
     alignItems: "center",
     gap: 4,
     borderRadius: radius.md,
@@ -1060,7 +1063,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     color: colors.textMuted,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     textAlign: "center",
   },
 

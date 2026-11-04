@@ -38,6 +38,7 @@ export default {
     email: "Adresse e-mail",
     emailPlaceholder: "nom@etablissement.be",
     password: "Mot de passe",
+    passwordPlaceholder: "Votre mot de passe",
     showPassword: "Afficher le mot de passe",
     hidePassword: "Masquer le mot de passe",
     submit: "Se connecter",
@@ -178,6 +179,8 @@ export default {
     emptyText: "Dessinez votre salle avec les tables, le bar et les murs pour voir en direct qui est où.",
     walkIn: "Sans réservation",
     walkInHere: "Installer ici sans réservation",
+    notMoved: "Pas déplacée",
+    tableTakenThen: "Cette table est déjà réservée à ce moment. Choisissez-en une autre.",
     move: "Déplacer",
     noShow: "Pas venus",
     noShowTitle: "Pas venus ?",
@@ -300,6 +303,7 @@ export default {
   },
 
   walkIn: {
+    failed: "Installation impossible",
     title: "Sans réservation",
     titleAt: "Sans réservation à {table}",
     guests: "Nombre de clients",
@@ -314,7 +318,8 @@ export default {
   },
 
   agenda: {
-    dragHint: "Maintenez une réservation et glissez-la vers une autre table.",
+    dragHint: "Maintenez une réservation, puis touchez la table où elle doit aller.",
+    movingHint: "Touchez la table pour {name}",
     moveTitle: "Vers {table} ?",
     moveMessage: "{name} à {time} passe à cette table.",
     moveSmall: "{name} vient à {count}, cette table a {seats} places.",

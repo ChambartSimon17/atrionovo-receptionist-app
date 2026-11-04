@@ -173,8 +173,24 @@ export default function LiveRoomsScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const bufferMinutes =
-    business?.appointmentBufferMinutes ?? 0;
+  // The break between appointments (cleaning) is not in
+  // the login answer, so it comes from the business.
+  const [bufferMinutes, setBufferMinutes] = useState(
+    business?.appointmentBufferMinutes ?? 0
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      api
+        .getMyBusiness(accessToken)
+        .then((response) =>
+          setBufferMinutes(
+            (response?.data ?? response)?.appointmentBufferMinutes ?? 0
+          )
+        )
+        .catch(() => {});
+    }, [accessToken])
+  );
 
   const states = rooms.map((room) => ({
     room,

@@ -28,16 +28,16 @@ export default function Sheet({ visible, onClose, title, children, footer }) {
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType="fade"
       onRequestClose={onClose}
       statusBarTranslucent
     >
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, styles.backdrop]}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Pressable
-          style={styles.backdrop}
+          style={styles.flex}
           accessibilityLabel="Sluiten"
           onPress={onClose}
         />
@@ -61,11 +61,9 @@ export default function Sheet({ visible, onClose, title, children, footer }) {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    justifyContent: "flex-end",
   },
 
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay,
   },
 

@@ -50,10 +50,17 @@ export default function MassageFloorView({ plan, appointments, now, bufferMinute
           .filter((element) => element.type === "ROOM" && element.treatmentRoomId)
           .map((element) => [
             element.id,
-            roomLiveState(element.treatmentRoomId, appointments, now, bufferMinutes),
+            roomLiveState(
+              plan.rooms.find((room) => room.id === element.treatmentRoomId) ?? {
+                id: element.treatmentRoomId,
+              },
+              appointments,
+              now,
+              bufferMinutes
+            ),
           ])
       ),
-    [plan.elements, appointments, now, bufferMinutes]
+    [plan.elements, plan.rooms, appointments, now, bufferMinutes]
   );
 
   const counts = LEGEND.reduce((result, item) => {

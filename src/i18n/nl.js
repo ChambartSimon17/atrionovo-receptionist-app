@@ -38,6 +38,7 @@ export default {
     email: "E-mailadres",
     emailPlaceholder: "naam@zaak.be",
     password: "Wachtwoord",
+    passwordPlaceholder: "Je wachtwoord",
     showPassword: "Wachtwoord tonen",
     hidePassword: "Wachtwoord verbergen",
     submit: "Inloggen",
@@ -178,6 +179,8 @@ export default {
     emptyText: "Teken je zaal met tafels, de bar en de muren. Dan zie je hier live wie waar zit.",
     walkIn: "Walk-in",
     walkInHere: "Walk-in aan deze tafel",
+    notMoved: "Niet verplaatst",
+    tableTakenThen: "Die tafel is op dat moment al gereserveerd. Kies een andere tafel.",
     move: "Verplaats",
     noShow: "Niet gekomen",
     noShowTitle: "Niet gekomen?",
@@ -300,6 +303,7 @@ export default {
   },
 
   walkIn: {
+    failed: "Walk-in niet gelukt",
     title: "Walk-in",
     titleAt: "Walk-in aan {table}",
     guests: "Aantal gasten",
@@ -314,7 +318,8 @@ export default {
   },
 
   agenda: {
-    dragHint: "Houd een reservatie ingedrukt en sleep ze naar een andere tafel.",
+    dragHint: "Houd een reservatie ingedrukt en tik daarna op de tafel waar ze naartoe moet.",
+    movingHint: "Tik op de tafel voor {name}",
     moveTitle: "Naar {table}?",
     moveMessage: "{name} om {time} verhuist naar deze tafel.",
     moveSmall: "{name} komt met {count}, deze tafel heeft {seats} plaatsen.",

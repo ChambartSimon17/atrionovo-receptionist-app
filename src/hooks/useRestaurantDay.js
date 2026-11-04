@@ -11,6 +11,7 @@ import { useFocusEffect } from "expo-router";
 import { useAuth } from "../context/auth-context";
 import { api } from "../services/api";
 import { minutesToTime } from "../utils/time";
+import { t } from "../i18n";
 
 // ======================================================
 // One restaurant day
@@ -320,9 +321,10 @@ export default function useRestaurantDay(date) {
         return true;
       } catch (moveError) {
         Alert.alert(
-          "Niet verplaatst",
-          moveError?.message ||
-            "De reservatie kon niet worden verplaatst."
+          t("floor.notMoved"),
+          moveError?.status === 409
+            ? t("floor.tableTakenThen")
+            : moveError?.message || t("common.tryAgain")
         );
 
         return false;
@@ -350,9 +352,10 @@ export default function useRestaurantDay(date) {
         return created;
       } catch (walkInError) {
         Alert.alert(
-          "Walk-in niet gelukt",
-          walkInError?.message ||
-            "De gasten konden niet aan tafel worden gezet."
+          t("walkIn.failed"),
+          walkInError?.status === 409
+            ? t("floor.tableTakenThen")
+            : walkInError?.message || t("common.tryAgain")
         );
 
         return null;

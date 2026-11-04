@@ -38,6 +38,7 @@ export default {
     email: "Email",
     emailPlaceholder: "name@business.com",
     password: "Password",
+    passwordPlaceholder: "Your password",
     showPassword: "Show password",
     hidePassword: "Hide password",
     submit: "Log in",
@@ -178,6 +179,8 @@ export default {
     emptyText: "Draw your room with tables, the bar and walls to see live who sits where.",
     walkIn: "Walk-in",
     walkInHere: "Walk-in at this table",
+    notMoved: "Not moved",
+    tableTakenThen: "That table is already booked at that time. Pick another table.",
     move: "Move",
     noShow: "Didn't come",
     noShowTitle: "Didn't come?",
@@ -300,6 +303,7 @@ export default {
   },
 
   walkIn: {
+    failed: "Walk-in failed",
     title: "Walk-in",
     titleAt: "Walk-in at {table}",
     guests: "Number of guests",
@@ -314,7 +318,8 @@ export default {
   },
 
   agenda: {
-    dragHint: "Hold a reservation and drag it to another table.",
+    dragHint: "Hold a reservation, then tap the table it should move to.",
+    movingHint: "Tap the table for {name}",
     moveTitle: "Move to {table}?",
     moveMessage: "{name} at {time} moves to this table.",
     moveSmall: "{name} comes with {count}, this table has {seats} seats.",

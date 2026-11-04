@@ -283,11 +283,13 @@ export default function BusinessSettingsScreen() {
             onPress={() => setPickingTimezone(true)}
           />
           <SettingsRow label={t("business.language")} hint={t("business.languageHint")}>
+            <View style={styles.segment}>
             <SegmentedControl
               options={LANGUAGES}
               value={language}
               onChange={setBusinessLanguage}
             />
+            </View>
           </SettingsRow>
         </SettingsGroup>
 
@@ -308,6 +310,7 @@ export default function BusinessSettingsScreen() {
 
         <SettingsGroup label={t("business.app")} footer={t("business.appFooter")}>
           <SettingsRow label={t("business.appearance")}>
+            <View style={styles.segment}>
             <SegmentedControl
               options={[
                 { value: "automatic", label: t("business.appearanceAuto") },
@@ -317,13 +320,16 @@ export default function BusinessSettingsScreen() {
               value={getAppearance()}
               onChange={setAppearance}
             />
+            </View>
           </SettingsRow>
           <SettingsRow label={t("business.appLanguage")}>
+            <View style={styles.segment}>
             <SegmentedControl
               options={LANGUAGES}
               value={appLanguage}
               onChange={setLanguage}
             />
+            </View>
           </SettingsRow>
         </SettingsGroup>
 
@@ -448,6 +454,10 @@ const styles = StyleSheet.create({
 
   save: {
     marginTop: spacing.xxl,
+  },
+
+  segment: {
+    width: 176,
   },
 
   zone: {

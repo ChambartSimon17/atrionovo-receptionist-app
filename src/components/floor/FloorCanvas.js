@@ -77,13 +77,13 @@ const ROOM_STATE_COLORS = {
   cleaning: floorColors.cleaning,
 };
 
-function shortName(reservation) {
+function shortName(reservation, max = 11) {
   const name =
     reservation.source === "WALK_IN" && !reservation.lastName
       ? t("floor.walkIn")
       : reservation.lastName || reservation.firstName || "";
 
-  return name.length > 11 ? `${name.slice(0, 10)}…` : name;
+  return name.length > max ? `${name.slice(0, max - 1)}…` : name;
 }
 
 function itemTransform(item) {
@@ -325,7 +325,8 @@ export default function FloorCanvas({
       scale,
       base: scale,
       tx: (size.width - bounds.width * scale) / 2 - bounds.x * scale,
-      ty: (size.height - bounds.height * scale) / 2 - bounds.y * scale,
+      // Top aligned, so a panel below covers no tables.
+      ty: padding - bounds.y * scale,
     };
   }
 
@@ -633,7 +634,7 @@ export default function FloorCanvas({
                     }
                   }
 
-                  const maxChars = Math.max(4, Math.floor((screenWidth - 14) / 6.2));
+                  const maxChars = Math.max(4, Math.floor((screenWidth - 12) / 5.4));
                   const fit = (text) => (text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text);
 
                   return (
@@ -704,29 +705,33 @@ export default function FloorCanvas({
                 const reservation = !isEdit ? live?.reservation : null;
                 const dimmed = highlightIds ? !highlightIds.includes(table.id) : false;
 
-                if (reservation && screenSize >= 38) {
+                const nameSize = Math.max(8, Math.min(11, screenSize * 0.3));
+
+                if (reservation && screenSize >= 30) {
                   return (
                     <G key={`label-${table.id}`} opacity={dimmed ? 0.45 : 1}>
                       <SvgText
                         x={center.x}
                         y={center.y - 2}
                         textAnchor="middle"
-                        fontSize={11}
+                        fontSize={nameSize}
                         fontFamily={fonts.semibold}
                         fill={colors.text}
                       >
-                        {shortName(reservation)}
+                        {shortName(reservation, screenSize < 44 ? 7 : 11)}
                       </SvgText>
                       <SvgText
                         x={center.x}
                         y={center.y + 11}
                         textAnchor="middle"
-                        fontSize={9.5}
+                        fontSize={nameSize - 1.5}
                         fontFamily={fonts.regular}
                         fill={colors.text}
                         opacity={0.85}
                       >
-                        {`${table.name} · ${formatTime(reservation.startTime)}`}
+                        {screenSize < 44
+                          ? formatTime(reservation.startTime)
+                          : `${table.name} · ${formatTime(reservation.startTime)}`}
                       </SvgText>
                     </G>
                   );
@@ -738,7 +743,7 @@ export default function FloorCanvas({
                       x={center.x}
                       y={center.y + (screenSize >= 34 ? 0 : 4)}
                       textAnchor="middle"
-                      fontSize={screenSize >= 26 ? 12 : 9}
+                      fontSize={Math.max(7.5, Math.min(12, screenSize * 0.34))}
                       fontFamily={fonts.semibold}
                       fill={colors.text}
                     >

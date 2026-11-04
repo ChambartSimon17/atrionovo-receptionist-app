@@ -9,9 +9,9 @@ import { colors, fonts, radius, spacing } from "../../theme";
 // DateRangePicker
 // ======================================================
 //
-// A month calendar. The first tap picks the start, the
-// second tap the end (or the same day for one day); a
-// third tap starts over. Dates are "YYYY-MM-DD" strings.
+// A month calendar. The first tap picks the start (one
+// day), a second tap the end of a period; the next tap
+// starts over. Dates are "YYYY-MM-DD" strings.
 // ======================================================
 
 function toKey(date) {
@@ -48,6 +48,9 @@ const WEEKDAYS = Array.from({ length: 7 }, (_, index) =>
 
 export default function DateRangePicker({ start, end, onChange, minDate }) {
   const initial = fromKey(start || toKey(new Date()));
+  // The next tap picks the start, or the end.
+  const [pickingEnd, setPickingEnd] = useState(false);
+
   const [month, setMonth] = useState({
     year: initial.getFullYear(),
     month: initial.getMonth(),
@@ -67,16 +70,14 @@ export default function DateRangePicker({ start, end, onChange, minDate }) {
   }
 
   function pick(key) {
-    if (!start || (start && end && start !== end) || key < start) {
+    if (!pickingEnd || key < start) {
       onChange({ start: key, end: key });
-      return;
-    }
-
-    if (start === end && key === start) {
+      setPickingEnd(true);
       return;
     }
 
     onChange({ start, end: key });
+    setPickingEnd(false);
   }
 
   return (

@@ -70,6 +70,10 @@ function dateOf(key) {
   return new Date(year, month - 1, day, 12);
 }
 
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function signature(day) {
   return JSON.stringify([
     day.name ?? "",
@@ -515,13 +519,15 @@ export default function SpecialOpeningDaysScreen() {
               maxLength={60}
             />
 
-            <Text style={[styles.label, styles.labelGap]}>
+            <Text style={[styles.label, styles.labelGap, styles.noCaps]}>
               {form.start === form.end
-                ? dateOf(form.start).toLocaleDateString(locale, {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })
+                ? capitalize(
+                    dateOf(form.start).toLocaleDateString(locale, {
+                      weekday: "long",
+                      day: "numeric",
+                      month: "long",
+                    })
+                  )
                 : `${dateOf(form.start).toLocaleDateString(locale, {
                     day: "numeric",
                     month: "short",
@@ -766,6 +772,10 @@ const styles = StyleSheet.create({
 
   labelGap: {
     marginTop: spacing.lg,
+  },
+
+  noCaps: {
+    textTransform: "none",
   },
 
   input: {
