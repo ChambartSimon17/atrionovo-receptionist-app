@@ -31,6 +31,8 @@ import {
   spacing,
   type,
 } from "../../../theme";
+import { RefreshControl } from "react-native";
+import { SkeletonList } from "../../../components/ui";
 
 // ======================================================
 // Klanten
@@ -58,6 +60,9 @@ export default function MassageClientsScreen() {
   const [search, setSearch] = useState("");
   const [vipOnly, setVipOnly] = useState(false);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       if (!accessToken) {
@@ -77,8 +82,11 @@ export default function MassageClientsScreen() {
               "De klanten konden niet worden geladen."
           )
         )
-        .finally(() => setIsLoading(false));
-    }, [accessToken])
+        .finally(() => {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        });
+    }, [accessToken, refreshKey])
   );
 
   const query = search.trim().toLowerCase();
@@ -155,7 +163,9 @@ export default function MassageClientsScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loading} />
+        <View style={styles.list}>
+          <SkeletonList rows={7} />
+        </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -164,6 +174,16 @@ export default function MassageClientsScreen() {
           keyExtractor={(customer) => customer.id}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => {
+                setIsRefreshing(true);
+                setRefreshKey((key) => key + 1);
+              }}
+              tintColor={colors.primary}
+            />
+          }
           ListEmptyComponent={
             <Text style={styles.empty}>
               {query || vipOnly
@@ -212,7 +232,7 @@ export default function MassageClientsScreen() {
                     <Badge
                       label="VIP"
                       background={colors.sandSoft}
-                      color="#6B5326"
+                      color={colors.noteText}
                     />
                   )}
                 </View>
@@ -348,7 +368,7 @@ const styles = StyleSheet.create({
   },
 
   vipAvatarText: {
-    color: "#6B5326",
+    color: colors.noteText,
   },
 
   rowText: {

@@ -27,6 +27,8 @@ import {
   spacing,
   type,
 } from "../../theme";
+import { RefreshControl } from "react-native";
+import { SkeletonList } from "../../components/ui";
 
 // ======================================================
 // Gasten
@@ -85,7 +87,8 @@ function initials(customer) {
 export default function RestaurantGuestsScreen() {
   const router = useRouter();
 
-  const { guests, list, error } = useGuestHistory();
+  const { guests, list, error, reload } = useGuestHistory();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
@@ -201,10 +204,9 @@ export default function RestaurantGuestsScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator
-          color={colors.primary}
-          style={styles.loading}
-        />
+        <View style={styles.list}>
+          <SkeletonList rows={7} />
+        </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : (
@@ -213,6 +215,17 @@ export default function RestaurantGuestsScreen() {
           keyExtractor={(customer) => customer.id}
           contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={async () => {
+                setIsRefreshing(true);
+                await reload();
+                setIsRefreshing(false);
+              }}
+              tintColor={colors.primary}
+            />
+          }
           ListEmptyComponent={
             <Text style={styles.empty}>
               {query || filter !== "all"
@@ -264,7 +277,7 @@ export default function RestaurantGuestsScreen() {
                       <Badge
                         label="VIP"
                         background={colors.sandSoft}
-                        color="#6B5326"
+                        color={colors.noteText}
                       />
                     )}
                     {summary?.missed > 0 && (
@@ -428,7 +441,7 @@ const styles = StyleSheet.create({
   },
 
   vipAvatarText: {
-    color: "#6B5326",
+    color: colors.noteText,
   },
 
   rowText: {

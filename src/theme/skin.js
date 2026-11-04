@@ -1,7 +1,7 @@
 import { useAuth } from "../context/auth-context";
 import { BUSINESS_TYPES } from "../utils/business-type";
 
-import { colors, fonts } from "./index";
+import { colors, fonts, isDark } from "./index";
 
 // ======================================================
 // Skin
@@ -76,6 +76,50 @@ const BORDER_KEYS = [
   "borderRightColor",
 ];
 
+// In dark mode, a hard-coded colour that is not in the
+// maps above follows its lightness: light backgrounds and
+// borders become dark surfaces, dark text becomes light.
+function lightness(hex) {
+  const value = hex.replace("#", "");
+  const full =
+    value.length === 3
+      ? value
+          .split("")
+          .map((char) => char + char)
+          .join("")
+      : value.slice(0, 6);
+
+  if (!/^[0-9a-f]{6}$/i.test(full)) {
+    return null;
+  }
+
+  const [r, g, b] = [0, 2, 4].map((index) => parseInt(full.slice(index, index + 2), 16) / 255);
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function darkFallback(key, value) {
+  if (!isDark || typeof value !== "string" || !value.startsWith("#")) {
+    return value;
+  }
+
+  const light = lightness(value);
+
+  if (light === null) {
+    return value;
+  }
+
+  if (key === "backgroundColor") {
+    return light > 0.8 ? colors.surface : value;
+  }
+
+  if (key === "color") {
+    return light < 0.45 ? colors.text : value;
+  }
+
+  return light > 0.7 ? colors.border : value;
+}
+
 function fontFor(weight) {
   if (weight === "700" || weight === "600" || weight === "bold") {
     return fonts.semibold;
@@ -90,11 +134,15 @@ function skinStyle(style) {
   const background = result.backgroundColor?.toLowerCase?.();
   if (background && BACKGROUNDS[background]) {
     result.backgroundColor = BACKGROUNDS[background];
+  } else if (background) {
+    result.backgroundColor = darkFallback("backgroundColor", result.backgroundColor);
   }
 
   const color = result.color?.toLowerCase?.();
   if (color && TEXT[color]) {
     result.color = TEXT[color];
+  } else if (color) {
+    result.color = darkFallback("color", result.color);
   }
 
   BORDER_KEYS.forEach((key) => {
@@ -102,6 +150,8 @@ function skinStyle(style) {
 
     if (border && BORDERS[border]) {
       result[key] = BORDERS[border];
+    } else if (border) {
+      result[key] = darkFallback(key, result[key]);
     }
   });
 

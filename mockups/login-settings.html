@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login en instellingen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+body{margin:0;background:#E9E6DF;font-family:Inter,system-ui,sans-serif;padding:32px 16px}
+.grid{display:flex;flex-wrap:wrap;gap:32px;justify-content:center}
+.ph{width:320px;min-height:660px;background:#F6F4EF;border-radius:36px;border:8px solid #1C2421;padding:18px 18px 22px;color:#1C2421;box-sizing:border-box;display:flex;flex-direction:column}
+.cap{font-size:13px;color:#5B6661;text-align:center;margin:10px 0 0}
+.card{background:#fff;border:1px solid #E4E0D8;border-radius:16px}
+.row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;font-size:13px}
+.row+.row{border-top:1px solid #EFECE6}
+.lbl{font-size:11px;color:#5B6661;letter-spacing:.05em;margin:16px 4px 6px;font-weight:500}
+.mut{color:#5B6661}
+.btn{background:#1F5F55;color:#fff;border-radius:12px;text-align:center;padding:13px;font-size:14px;font-weight:600}
+.top{display:flex;align-items:center;gap:10px;margin:8px 0 4px}
+.back{width:32px;height:32px;border-radius:10px;background:#fff;border:1px solid #E4E0D8;display:flex;align-items:center;justify-content:center;font-size:16px;box-sizing:border-box}
+.sw{width:36px;height:22px;border-radius:11px;background:#1F5F55;position:relative;flex:none}
+.sw:after{content:"";position:absolute;right:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+.sw.off{background:#E4E0D8}.sw.off:after{right:auto;left:2px}
+.pill{display:inline-block;background:#E3EEEA;color:#1F5F55;border-radius:999px;padding:3px 9px;font-size:12px;margin:4px 4px 0 0;font-weight:500}
+.add{display:inline-block;border:1px dashed #B9D5CB;color:#1F5F55;border-radius:999px;padding:2px 9px;font-size:12px;margin-top:4px}
+.tile{width:42px;text-align:center;border-radius:10px;padding:5px 0;flex:none}
+.tile small{display:block;font-size:10px;font-weight:600}
+.tile b{font-weight:600}
+.spacer{flex:1}
+.badge{font-size:11px;border-radius:999px;padding:2px 8px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="grid">
+
+<div><div class="ph">
+<div style="height:48px"></div>
+<div style="width:56px;height:56px;border-radius:18px;background:#1F5F55;color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px"><i class="ti ti-phone-call"></i></div>
+<div style="font-size:13px;color:#1F5F55;font-weight:600;margin-top:16px">AtrioNovo</div>
+<div style="font-size:26px;font-weight:600;margin:4px 0">Welkom terug</div>
+<div class="mut" style="font-size:14px;margin-bottom:24px">Log in om je zaak te beheren.</div>
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">E-mailadres</div>
+<div class="card row" style="border-radius:12px;justify-content:flex-start;gap:8px"><i class="ti ti-mail mut"></i><span style="color:#8A918D">naam@zaak.be</span></div>
+<div style="font-size:12px;font-weight:600;margin:14px 0 6px">Wachtwoord</div>
+<div class="card row" style="border-radius:12px;border-color:#1F5F55"><span style="display:flex;gap:8px;align-items:center"><i class="ti ti-lock mut"></i><span>••••••••</span></span><i class="ti ti-eye mut"></i></div>
+<div style="margin-top:22px" class="btn">Inloggen</div>
+<div style="background:#FCEBEB;color:#A32D2D;border-radius:10px;font-size:12px;padding:9px 11px;margin-top:12px;display:flex;gap:6px;align-items:center"><i class="ti ti-alert-circle"></i>Dit e-mailadres of wachtwoord klopt niet.</div>
+<div class="spacer"></div>
+<div class="mut" style="font-size:11px;text-align:center">Je AI-receptionist voor restaurants en salons</div>
+</div><p class="cap">Login</p></div>
+
+<div><div class="ph">
+<div class="top"><div class="back"><i class="ti ti-chevron-left"></i></div><div style="font-size:16px;font-weight:600">Restaurantgegevens</div></div>
+<div class="card" style="display:flex;gap:12px;align-items:center;padding:14px;margin-top:14px"><div style="width:46px;height:46px;border-radius:12px;background:#E3EEEA;color:#1F5F55;display:flex;align-items:center;justify-content:center;font-weight:600">RF</div><div><div style="font-weight:600;font-size:15px">Refter</div><div class="mut" style="font-size:12px">Restaurant · 4 tafels, 18 plaatsen</div></div></div>
+<div class="lbl">ALGEMEEN</div>
+<div class="card"><div class="row"><span class="mut">Naam</span><span>Refter</span></div><div class="row"><span class="mut">Maximale capaciteit</span><span style="display:flex;align-items:center;gap:10px"><span class="back" style="width:26px;height:26px">−</span>40<span class="back" style="width:26px;height:26px">+</span></span></div></div>
+<div class="lbl">REGIO</div>
+<div class="card"><div class="row"><span class="mut">Tijdzone</span><span>Brussel <i class="ti ti-chevron-right mut"></i></span></div>
+<div class="row"><span class="mut">Taal</span><span style="display:flex;background:#ECE8E0;border-radius:8px;padding:2px;font-size:12px"><span style="background:#fff;border-radius:6px;padding:3px 10px;font-weight:600">NL</span><span style="padding:3px 10px" class="mut">FR</span><span style="padding:3px 10px" class="mut">EN</span></span></div></div>
+<div class="lbl">AI-RECEPTIONIST</div>
+<div class="card"><div class="row"><span>Neemt oproepen op</span><span class="sw"></span></div></div>
+<div class="spacer"></div>
+<div class="btn">Wijzigingen opslaan</div>
+</div><p class="cap">Restaurantgegevens</p></div>
+
+<div><div class="ph">
+<div class="top"><div class="back"><i class="ti ti-chevron-left"></i></div><div style="font-size:16px;font-weight:600">Openingsuren</div></div>
+<div class="mut" style="font-size:12px;margin:8px 4px 12px">De AI neemt enkel reservaties binnen deze uren.</div>
+<div class="card">
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Maandag</div><div class="mut" style="font-size:12px;margin-top:2px">Gesloten</div></div><span class="sw off"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Dinsdag</div><span class="pill">12:00 – 14:30</span><span class="pill">18:00 – 22:00</span></div><span class="sw"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Woensdag</div><span class="pill">12:00 – 14:30</span><span class="pill">18:00 – 22:00</span></div><span class="sw"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Donderdag</div><span class="pill">18:00 – 22:00</span><span class="add">+ periode</span></div><span class="sw"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Vrijdag</div><span class="pill">12:00 – 14:30</span><span class="pill">18:00 – 23:00</span></div><span class="sw"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Zaterdag</div><span class="pill">18:00 – 23:00</span></div><span class="sw"></span></div>
+<div class="row" style="align-items:flex-start"><div><div style="font-weight:600">Zondag</div><div class="mut" style="font-size:12px;margin-top:2px">Gesloten</div></div><span class="sw off"></span></div>
+</div>
+<div style="text-align:center;color:#1F5F55;font-size:13px;margin:12px 0;font-weight:500"><i class="ti ti-copy"></i> Dinsdag naar alle dagen kopiëren</div>
+<div class="spacer"></div>
+<div class="btn">Opslaan</div>
+</div><p class="cap">Openingsuren · tik op een uur om het te wijzigen</p></div>
+
+<div><div class="ph">
+<div class="top"><div class="back"><i class="ti ti-chevron-left"></i></div><div style="font-size:16px;font-weight:600">Speciale openingsdagen</div></div>
+<div class="mut" style="font-size:12px;margin:8px 4px 4px">Feestdagen, vakantie of een privéfeest.</div>
+<div class="lbl">KOMEND</div>
+<div class="card">
+<div class="row" style="justify-content:flex-start;gap:12px"><div class="tile" style="background:#F3ECDF;color:#633806"><small>DEC</small><b>24</b></div><div style="flex:1"><div style="font-weight:600">Kerstavond</div><div class="mut" style="font-size:12px">Open 18:00 – 23:00</div></div><i class="ti ti-chevron-right mut"></i></div>
+<div class="row" style="justify-content:flex-start;gap:12px"><div class="tile" style="background:#FCEBEB;color:#A32D2D"><small>DEC</small><b>25</b></div><div style="flex:1"><div style="font-weight:600;margin-bottom:3px">Kerstmis</div><span class="badge" style="background:#FCEBEB;color:#A32D2D">Gesloten</span></div><i class="ti ti-chevron-right mut"></i></div>
+<div class="row" style="justify-content:flex-start;gap:12px"><div class="tile" style="background:#FCEBEB;color:#A32D2D"><small>JAN</small><b>5–12</b></div><div style="flex:1"><div style="font-weight:600;margin-bottom:3px">Wintervakantie</div><span class="badge" style="background:#FCEBEB;color:#A32D2D">Gesloten · 8 dagen</span></div><i class="ti ti-chevron-right mut"></i></div>
+</div>
+<div class="lbl">VOORBIJ</div>
+<div class="card"><div class="row mut" style="justify-content:flex-start;gap:12px"><div class="tile" style="background:#EFECE6"><small>NOV</small><b>1</b></div>Allerheiligen · gesloten</div></div>
+<div class="spacer"></div>
+<div class="btn"><i class="ti ti-plus"></i> Dag toevoegen</div>
+</div><p class="cap">Speciale openingsdagen · tik op een dag om te bewerken</p></div>
+
+<div><div class="ph" style="background:#BDB9B1;padding:0;justify-content:flex-end;overflow:hidden">
+<div style="background:#F6F4EF;border-radius:24px 24px 0 0;padding:10px 18px 22px">
+<div style="width:36px;height:4px;border-radius:2px;background:#D6D2CA;margin:0 auto 14px"></div>
+<div style="font-size:17px;font-weight:600;margin-bottom:14px">Dag toevoegen</div>
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">Naam</div>
+<div class="card row" style="border-radius:12px">Kerstavond</div>
+<div style="display:flex;gap:10px;margin-top:12px">
+<div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:6px">Van</div><div class="card row" style="border-radius:12px">24 dec</div></div>
+<div style="flex:1"><div style="font-size:12px;font-weight:600;margin-bottom:6px">Tot</div><div class="card row" style="border-radius:12px">24 dec</div></div></div>
+<div style="display:flex;background:#ECE8E0;border-radius:10px;padding:3px;font-size:13px;margin:16px 0 12px"><span style="flex:1;text-align:center;padding:7px" class="mut">Gesloten</span><span style="flex:1;text-align:center;padding:7px;background:#fff;border-radius:8px;font-weight:600">Andere uren</span></div>
+<div class="card row"><span class="pill" style="margin:0">18:00 – 23:00</span><span class="add" style="margin:0">+ periode</span></div>
+<div style="margin-top:18px" class="btn">Opslaan</div>
+<div style="text-align:center;color:#A32D2D;font-size:13px;margin-top:12px;font-weight:500">Verwijderen</div>
+</div>
+</div><p class="cap">Bewerkscherm voor een speciale dag</p></div>
+
+</div>
+</body>
+</html>

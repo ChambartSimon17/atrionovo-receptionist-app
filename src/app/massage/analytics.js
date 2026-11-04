@@ -17,6 +17,8 @@ import {
 import {
   Card,
   SegmentedControl,
+  Skeleton,
+  SkeletonTiles,
   StatTile,
 } from "../../components/ui";
 import useMassageAnalytics from "../../hooks/useMassageAnalytics";
@@ -32,6 +34,7 @@ import {
   addDays,
   todayString,
 } from "../../utils/date";
+import AiInsightsCard from "../../components/AiInsightsCard";
 
 // ======================================================
 // Analyse
@@ -63,6 +66,19 @@ const MONTHS = [
   "november",
   "december",
 ];
+
+
+// The period as ISO instants for the AI numbers: from the
+// start of the first day to the end of the last.
+function periodRange(days) {
+  const [startYear, startMonth, startDay] = days[0].split("-").map(Number);
+  const [endYear, endMonth, endDay] = days[days.length - 1].split("-").map(Number);
+
+  return {
+    from: new Date(startYear, startMonth - 1, startDay).toISOString(),
+    to: new Date(endYear, endMonth - 1, endDay + 1).toISOString(),
+  };
+}
 
 function parseDay(dateString) {
   const [year, month, day] = dateString
@@ -263,7 +279,10 @@ export default function MassageAnalyticsScreen() {
         </View>
 
         {isLoading ? (
-          <ActivityIndicator style={styles.loading} />
+          <View style={styles.skeletons}>
+            <Skeleton height={190} style={styles.skeletonCard} />
+            <SkeletonTiles />
+          </View>
         ) : error ? (
           <Text style={styles.error}>{error}</Text>
         ) : (
@@ -387,6 +406,8 @@ export default function MassageAnalyticsScreen() {
                 note="afspraken"
               />
             </View>
+
+            <AiInsightsCard {...periodRange(days)} />
 
             {/* Massages */}
 
@@ -523,6 +544,15 @@ function BarList({ title, caption, items, empty }) {
 }
 
 const styles = StyleSheet.create({
+  skeletons: {
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+
+  skeletonCard: {
+    borderRadius: radius.xl,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -678,8 +708,8 @@ const styles = StyleSheet.create({
   },
 
   warningTile: {
-    backgroundColor: "#FBF6EC",
-    borderColor: "#EADCC0",
+    backgroundColor: colors.noteBackground,
+    borderColor: colors.noteBorder,
   },
 
   section: {
@@ -760,6 +790,6 @@ const styles = StyleSheet.create({
   noShowCount: {
     fontFamily: fonts.semibold,
     fontSize: 14,
-    color: "#633806",
+    color: colors.warning,
   },
 });

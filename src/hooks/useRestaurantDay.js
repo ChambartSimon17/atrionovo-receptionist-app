@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -15,17 +16,22 @@ import { minutesToTime } from "../utils/time";
 // One restaurant day
 // ======================================================
 //
-// Loads what the restaurant screens need for one day: the
-// reservations still open (confirmed or seated), the
-// opening hours split into services and the tables. It
-// reloads when the screen gets focus and every minute, and
-// offers the two status changes of a reservation:
+// Loads what the restaurant screens need for one day:
+// every reservation of the day, the opening hours split
+// into services and the tables. It reloads when the
+// screen gets focus and every minute, and offers what a
+// host does during the service:
 //
 //   seat      CONFIRMED -> SEATED     (guests arrived)
 //   complete  SEATED    -> COMPLETED  (guests left)
+//   noShow    CONFIRMED -> NO_SHOW    (guests never came)
+//   undo      one step back, for a tap by mistake
+//   moveTo    put a reservation at other tables
+//   walkIn    seat guests without a booking
 //
-// The backend only returns open reservations for a day, so
-// a completed reservation leaves the list.
+// reservations holds the open ones (confirmed or seated);
+// allReservations also the completed, cancelled and
+// no-show ones, so they can be shown and undone.
 // ======================================================
 
 const WEEKDAY_KEYS = [
@@ -117,7 +123,7 @@ export function tableNames(reservation, tables) {
 export default function useRestaurantDay(date) {
   const { business, accessToken } = useAuth();
 
-  const [reservations, setReservations] = useState([]);
+  const [allReservations, setReservations] = useState([]);
   const [openingHours, setOpeningHours] = useState([]);
   const [tables, setTables] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,7 +153,7 @@ export default function useRestaurantDay(date) {
           openingHoursResponse,
           tablesResponse,
         ] = await Promise.all([
-          api.getReservationsForDay(
+          api.getAllReservationsForDay(
             requestedDate,
             accessToken
           ),
@@ -214,29 +220,33 @@ export default function useRestaurantDay(date) {
       try {
         setActionId(reservation.id);
 
-        await request(
+        const response = await request(
           business.id,
           reservation.id,
           accessToken
         );
+        const updated = response?.data ?? response;
 
         setReservations((current) =>
-          nextStatus === "COMPLETED"
-            ? current.filter(
-                (item) => item.id !== reservation.id
-              )
-            : current.map((item) =>
-                item.id === reservation.id
-                  ? { ...item, status: nextStatus }
-                  : item
-              )
+          current.map((item) =>
+            item.id === reservation.id
+              ? {
+                  ...item,
+                  status: updated?.status ?? nextStatus,
+                }
+              : item
+          )
         );
+
+        return true;
       } catch (actionError) {
         Alert.alert(
           "Niet gelukt",
           actionError?.message ||
             "De reservatie kon niet worden bijgewerkt."
         );
+
+        return false;
       } finally {
         setActionId(null);
       }
@@ -264,8 +274,106 @@ export default function useRestaurantDay(date) {
     [runAction]
   );
 
+  const noShow = useCallback(
+    (reservation) =>
+      runAction(
+        reservation,
+        api.markReservationAsNoShow,
+        "NO_SHOW"
+      ),
+    [runAction]
+  );
+
+  const undo = useCallback(
+    (reservation) =>
+      runAction(
+        reservation,
+        api.undoReservationStatus,
+        { SEATED: "CONFIRMED", COMPLETED: "SEATED", NO_SHOW: "CONFIRMED" }[
+          reservation.status
+        ]
+      ),
+    [runAction]
+  );
+
+  const moveTo = useCallback(
+    async (reservation, tableIds) => {
+      try {
+        setActionId(reservation.id);
+
+        const response = await api.moveReservationToTables(
+          business.id,
+          reservation.id,
+          tableIds,
+          accessToken
+        );
+        const updated = response?.data ?? response;
+
+        setReservations((current) =>
+          current.map((item) =>
+            item.id === reservation.id
+              ? { ...item, tables: updated?.tables ?? item.tables }
+              : item
+          )
+        );
+
+        return true;
+      } catch (moveError) {
+        Alert.alert(
+          "Niet verplaatst",
+          moveError?.message ||
+            "De reservatie kon niet worden verplaatst."
+        );
+
+        return false;
+      } finally {
+        setActionId(null);
+      }
+    },
+    [accessToken, business?.id]
+  );
+
+  const walkIn = useCallback(
+    async ({ guestCount, tableIds, durationMinutes, name }) => {
+      try {
+        const response = await api.createWalkIn(
+          business.id,
+          { guestCount, tableIds, durationMinutes, name },
+          accessToken
+        );
+        const created = response?.data ?? response;
+
+        if (created?.id) {
+          setReservations((current) => [...current, created]);
+        }
+
+        return created;
+      } catch (walkInError) {
+        Alert.alert(
+          "Walk-in niet gelukt",
+          walkInError?.message ||
+            "De gasten konden niet aan tafel worden gezet."
+        );
+
+        return null;
+      }
+    },
+    [accessToken, business?.id]
+  );
+
+  const reservations = useMemo(
+    () =>
+      allReservations.filter(
+        (reservation) =>
+          reservation.status === "CONFIRMED" ||
+          reservation.status === "SEATED"
+      ),
+    [allReservations]
+  );
+
   return {
     reservations,
+    allReservations,
     openingHours,
     services: servicesForDay(openingHours, date),
     tables,
@@ -277,6 +385,10 @@ export default function useRestaurantDay(date) {
     reload: load,
     seat,
     complete,
+    noShow,
+    undo,
+    moveTo,
+    walkIn,
     actionId,
   };
 }

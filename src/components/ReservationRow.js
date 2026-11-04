@@ -141,7 +141,7 @@ export default function ReservationRow({
             <View style={styles.note}>
               <StickyNote
                 size={13}
-                color="#8A5A14"
+                color={colors.warning}
                 strokeWidth={1.8}
               />
               <Text style={styles.noteText} numberOfLines={2}>
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 12,
     lineHeight: 16,
-    color: "#6B5326",
+    color: colors.noteText,
   },
 
   action: {

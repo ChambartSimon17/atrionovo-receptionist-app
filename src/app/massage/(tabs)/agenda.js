@@ -45,6 +45,7 @@ import {
   todayString,
 } from "../../../utils/date";
 import { formatPrice } from "../../../utils/price";
+import { SkeletonList } from "../../../components/ui";
 
 // ======================================================
 // Agenda
@@ -351,7 +352,9 @@ export default function MassageAgendaScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator style={styles.loading} />
+        <View style={styles.loading}>
+          <SkeletonList rows={5} />
+        </View>
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : columnNames.length === 0 ? (

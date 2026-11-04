@@ -12,6 +12,7 @@ import {
   colors,
   fonts,
 } from "../../../theme";
+import { t } from "../../../i18n";
 
 // ======================================================
 // Massage tabs
@@ -56,35 +57,35 @@ export default function MassageTabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Vandaag",
+          title: t("tabs.today"),
           tabBarIcon: tabIcon(House),
         }}
       />
       <Tabs.Screen
         name="agenda"
         options={{
-          title: "Agenda",
+          title: t("tabs.agenda"),
           tabBarIcon: tabIcon(CalendarDays),
         }}
       />
       <Tabs.Screen
         name="live-rooms"
         options={{
-          title: "Kamers",
+          title: t("tabs.rooms"),
           tabBarIcon: tabIcon(DoorOpen),
         }}
       />
       <Tabs.Screen
         name="clients"
         options={{
-          title: "Klanten",
+          title: t("tabs.clients"),
           tabBarIcon: tabIcon(Users),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
-          title: "Meer",
+          title: t("tabs.more"),
           tabBarIcon: tabIcon(Ellipsis),
         }}
       />

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vloerplan mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+body{margin:0;background:#E9E6DF;font-family:Inter,system-ui,sans-serif;padding:32px 16px;color:#1C2421}
+h2{font-size:18px;font-weight:600;margin:40px auto 4px;max-width:1180px}
+p.sub{font-size:13px;color:#5B6661;margin:0 auto 18px;max-width:1180px}
+.grid{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;align-items:flex-start;max-width:1180px;margin:0 auto}
+.ph{width:330px;height:700px;background:#F6F4EF;border-radius:38px;border:8px solid #1C2421;color:#1C2421;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.tab{width:860px;height:600px;background:#F6F4EF;border-radius:28px;border:10px solid #1C2421;box-sizing:border-box;display:flex;overflow:hidden}
+.cap{font-size:13px;color:#5B6661;text-align:center;margin:10px 0 0}
+.hd{padding:14px 16px 8px}
+.ttl{font-size:20px;font-weight:600}
+.mut{color:#5B6661}
+.seg{display:flex;background:#ECE8E0;border-radius:10px;padding:3px;font-size:12px}
+.seg span{flex:1;text-align:center;padding:6px 4px;border-radius:8px;color:#5B6661}
+.seg span.on{background:#fff;color:#1C2421;font-weight:600}
+.legend{display:flex;gap:10px;font-size:11px;color:#5B6661;padding:6px 16px 8px;flex-wrap:wrap}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.canvas{background:#1E2A27;flex:1;position:relative;overflow:hidden}
+.canvas svg{display:block}
+.sheet{background:#fff;border-radius:20px 20px 0 0;padding:10px 16px 16px;box-shadow:0 -6px 20px rgba(0,0,0,.18)}
+.grab{width:36px;height:4px;border-radius:2px;background:#D6D2CA;margin:0 auto 10px}
+.btn{background:#1F5F55;color:#fff;border-radius:12px;text-align:center;padding:11px;font-size:13px;font-weight:600}
+.btn2{background:#fff;border:1px solid #E4E0D8;border-radius:12px;text-align:center;padding:10px;font-size:13px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;border-radius:999px;padding:3px 8px;font-weight:500}
+.tool{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:#5B6661;width:54px}
+.tool b{width:42px;height:42px;border-radius:12px;background:#fff;border:1px solid #E4E0D8;display:flex;align-items:center;justify-content:center;font-size:20px;color:#1C2421;font-weight:400}
+.field{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:9px 0;border-top:1px solid #EFECE6}
+.step{display:flex;align-items:center;gap:8px}
+.step span{width:26px;height:26px;border-radius:8px;border:1px solid #E4E0D8;display:flex;align-items:center;justify-content:center}
+.notes{max-width:1180px;margin:10px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{background:#fff;border:1px solid #E4E0D8;border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.55}
+.note b{display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<h2>Restaurant · Zaal tijdens de service</h2>
+<p class="sub">Tafels met stoelen eromheen, muren, bar en deuren. Elke tafel toont wie er zit of wie er komt. Ruimtes als tabs (Zaal, Terras). Tik op een tafel voor de details.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd"><div style="display:flex;justify-content:space-between;align-items:center"><div class="ttl">Zaal</div><div class="mut" style="font-size:12px">Avondservice · 19:42</div></div>
+<div class="seg" style="margin-top:10px"><span class="on">Binnen</span><span>Terras</span><span>Serre</span></div></div>
+<div class="legend"><span><i style="background:#E9E4DA"></i>Vrij 5</span><span><i style="background:#9CC3B5"></i>Gereserveerd 3</span><span><i style="background:#F0C978"></i>Komt nu 2</span><span><i style="background:#2F7A6C"></i>Aan tafel 4</span></div>
+<div class="canvas"><svg id="r1" width="314" height="430"></svg></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;color:#5B6661;font-weight:600;letter-spacing:.05em">T6 · 4 PLAATSEN</div><div style="font-size:18px;font-weight:600">Lisa Janssens</div><div class="mut" style="font-size:12px">20:00 · 4 personen · binnen 18 min</div></div><span class="chip" style="background:#FAEEDA;color:#633806">Komt nu</span></div>
+<div style="display:flex;gap:6px;margin:8px 0 10px"><span class="chip" style="background:#F3ECDF;color:#633806">Vegetarisch</span><span class="chip" style="background:#E3EEEA;color:#1F5F55">Vaste gast · 7×</span></div>
+<div style="display:flex;gap:8px"><div class="btn" style="flex:1">Aan tafel</div><div class="btn2" style="flex:1">Walk-in</div></div>
+</div>
+</div><p class="cap">Telefoon · tafel geselecteerd</p></div>
+
+<div><div class="tab">
+<div style="width:270px;border-right:1px solid #E4E0D8;display:flex;flex-direction:column;background:#F6F4EF">
+<div class="hd"><div class="ttl" style="font-size:17px">Vandaag</div><div class="mut" style="font-size:12px">Woensdag 4 november · 42 couverts</div></div>
+<div style="padding:0 12px;display:flex;flex-direction:column;gap:8px;font-size:12px" id="list"></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px"><div class="seg" style="width:240px"><span class="on">Binnen</span><span>Terras</span><span>Serre</span></div><div style="display:flex;gap:8px"><div class="btn2" style="padding:7px 12px"><i class="ti ti-user-plus"></i> Walk-in</div><div class="btn2" style="padding:7px 12px"><i class="ti ti-pencil"></i> Bewerk</div></div></div>
+<div class="canvas"><svg id="r2" width="570" height="520"></svg></div>
+</div>
+</div><p class="cap">iPad · reservaties naast het vloerplan, sleep een reservatie naar een tafel</p></div>
+
+</div>
+
+<h2>Restaurant · Vloerplan bewerken</h2>
+<p class="sub">Raster om netjes uit te lijnen, slepen om te verplaatsen, hoek slepen om te vergroten, draaien per 45°. Onderaan een gereedschapsbalk met tafels en decor.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd" style="display:flex;justify-content:space-between;align-items:center"><div class="mut" style="font-size:14px"><i class="ti ti-arrow-back-up"></i>&nbsp; <i class="ti ti-arrow-forward-up" style="opacity:.4"></i></div><div style="font-weight:600">Vloerplan bewerken</div><div style="color:#1F5F55;font-weight:600;font-size:14px">Klaar</div></div>
+<div style="padding:0 16px 8px"><div class="seg"><span class="on">Binnen</span><span>Terras</span><span>+ Ruimte</span></div></div>
+<div class="canvas"><svg id="e1" width="314" height="400"></svg></div>
+<div class="sheet" style="padding-bottom:12px">
+<div class="grab"></div>
+<div style="font-size:11px;color:#5B6661;font-weight:600;letter-spacing:.05em;margin-bottom:8px">TOEVOEGEN</div>
+<div style="display:flex;justify-content:space-between">
+<div class="tool"><b><i class="ti ti-circle"></i></b>Rond 2</div>
+<div class="tool"><b><i class="ti ti-square"></i></b>Vierkant 4</div>
+<div class="tool"><b><i class="ti ti-rectangle"></i></b>Lang 6</div>
+<div class="tool"><b><i class="ti ti-glass-full"></i></b>Bar</div>
+<div class="tool"><b><i class="ti ti-wall"></i></b>Muur</div>
+</div>
+<div style="display:flex;justify-content:space-between;margin-top:10px">
+<div class="tool"><b><i class="ti ti-door"></i></b>Deur</div>
+<div class="tool"><b><i class="ti ti-plant-2"></i></b>Plant</div>
+<div class="tool"><b><i class="ti ti-window"></i></b>Raam</div>
+<div class="tool"><b><i class="ti ti-tools-kitchen-2"></i></b>Keuken</div>
+<div class="tool"><b><i class="ti ti-typography"></i></b>Label</div>
+</div>
+</div>
+</div><p class="cap">Niets geselecteerd · gereedschap</p></div>
+
+<div><div class="ph">
+<div class="hd" style="display:flex;justify-content:space-between;align-items:center"><div class="mut" style="font-size:14px"><i class="ti ti-arrow-back-up"></i>&nbsp; <i class="ti ti-arrow-forward-up"></i></div><div style="font-weight:600">Vloerplan bewerken</div><div style="color:#1F5F55;font-weight:600;font-size:14px">Klaar</div></div>
+<div style="padding:0 16px 8px"><div class="seg"><span class="on">Binnen</span><span>Terras</span><span>+ Ruimte</span></div></div>
+<div class="canvas"><svg id="e2" width="314" height="330"></svg></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-size:17px;font-weight:600">Tafel T6</div><div style="display:flex;gap:6px"><span class="step"><span><i class="ti ti-rotate-clockwise"></i></span><span><i class="ti ti-copy"></i></span><span style="color:#A32D2D"><i class="ti ti-trash"></i></span></span></div></div>
+<div class="field"><span class="mut">Naam</span><span>T6</span></div>
+<div class="field"><span class="mut">Plaatsen</span><span class="step"><span>−</span>4<span>+</span></span></div>
+<div class="field"><span class="mut">Vorm</span><div class="seg" style="width:170px"><span>Rond</span><span class="on">Vierkant</span><span>Lang</span></div></div>
+<div class="field"><span class="mut">Combineerbaar met</span><span>T7 <i class="ti ti-chevron-right mut"></i></span></div>
+<div class="field" style="padding-bottom:0"><span class="mut">Online boekbaar</span><span style="width:36px;height:22px;border-radius:11px;background:#1F5F55;position:relative;display:inline-block"><span style="position:absolute;right:2px;top:2px;width:18px;height:18px;border-radius:50%;background:#fff"></span></span></div>
+</div>
+</div><p class="cap">Tafel geselecteerd · grepen om te vergroten</p></div>
+
+</div>
+
+<h2>Massagesalon · Plattegrond live</h2>
+<p class="sub">Een bouwtekening van de salon: kamers met muren en deuren, en wat er nu in elke kamer gebeurt. Behandelkamers tonen therapeut, klant en hoe lang nog. Receptie, wachtruimte en kleedkamers staan erbij voor de oriëntatie.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd"><div style="display:flex;justify-content:space-between;align-items:center"><div class="ttl">Salon</div><div class="mut" style="font-size:12px">Nu · 14:20</div></div>
+<div class="seg" style="margin-top:10px"><span class="on">Gelijkvloers</span><span>Verdieping</span></div></div>
+<div class="legend"><span><i style="background:#EDE8DE"></i>Vrij 2</span><span><i style="background:#2F7A6C"></i>Bezig 3</span><span><i style="background:#F0C978"></i>Klaar binnen 10 min 1</span><span><i style="background:#B9B4AA"></i>Opruimen 1</span></div>
+<div class="canvas"><svg id="m1" width="314" height="430"></svg></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-size:11px;color:#5B6661;font-weight:600;letter-spacing:.05em">KAMER 2 · DUO</div><div style="font-size:18px;font-weight:600">Thaise massage 90 min</div><div class="mut" style="font-size:12px">Emma Peeters · bij Noi · nog 35 min</div></div><span class="chip" style="background:#1F5F55;color:#fff">Bezig</span></div>
+<div style="height:6px;border-radius:3px;background:#E3EEEA;margin:10px 0"><div style="width:61%;height:6px;border-radius:3px;background:#1F5F55"></div></div>
+<div style="display:flex;gap:8px"><div class="btn2" style="flex:1">Afspraak openen</div><div class="btn2" style="flex:1">Volgende: 16:00</div></div>
+</div>
+</div><p class="cap">Telefoon · kamer geselecteerd</p></div>
+
+<div><div class="ph">
+<div class="hd" style="display:flex;justify-content:space-between;align-items:center"><div class="mut" style="font-size:14px"><i class="ti ti-arrow-back-up"></i>&nbsp; <i class="ti ti-arrow-forward-up" style="opacity:.4"></i></div><div style="font-weight:600">Plattegrond bewerken</div><div style="color:#1F5F55;font-weight:600;font-size:14px">Klaar</div></div>
+<div style="padding:0 16px 8px"><div class="seg"><span class="on">Gelijkvloers</span><span>Verdieping</span><span>+ Verdieping</span></div></div>
+<div class="canvas"><svg id="m2" width="314" height="330"></svg></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-size:17px;font-weight:600">Kamer 3</div><div class="step"><span><i class="ti ti-door"></i></span><span><i class="ti ti-copy"></i></span><span style="color:#A32D2D"><i class="ti ti-trash"></i></span></div></div>
+<div class="field"><span class="mut">Soort</span><div class="seg" style="width:200px"><span class="on">Behandeling</span><span>Receptie</span><span>Overig</span></div></div>
+<div class="field"><span class="mut">Gekoppeld aan</span><span>Kamer 3 · 1 tafel <i class="ti ti-chevron-right mut"></i></span></div>
+<div class="field"><span class="mut">Massagetafels</span><span class="step"><span>−</span>1<span>+</span></span></div>
+<div class="field" style="padding-bottom:0"><span class="mut">Extra</span><span style="display:flex;gap:6px"><span class="chip" style="background:#E3EEEA;color:#1F5F55"><i class="ti ti-bath"></i> Douche</span><span class="chip" style="background:#ECE8E0;color:#5B6661">+ Sauna</span></span></div>
+</div>
+</div><p class="cap">Bewerken · kamer tekenen en vergroten aan de grepen</p></div>
+
+<div><div class="ph">
+<div class="hd" style="display:flex;justify-content:space-between;align-items:center"><div class="mut" style="font-size:14px"><i class="ti ti-arrow-back-up"></i></div><div style="font-weight:600">Plattegrond bewerken</div><div style="color:#1F5F55;font-weight:600;font-size:14px">Klaar</div></div>
+<div style="padding:0 16px 8px"><div class="seg"><span class="on">Gelijkvloers</span><span>Verdieping</span><span>+ Verdieping</span></div></div>
+<div class="canvas"><svg id="m3" width="314" height="400"></svg></div>
+<div class="sheet" style="padding-bottom:12px">
+<div class="grab"></div>
+<div style="font-size:11px;color:#5B6661;font-weight:600;letter-spacing:.05em;margin-bottom:8px">TOEVOEGEN</div>
+<div style="display:flex;justify-content:space-between">
+<div class="tool"><b><i class="ti ti-bed"></i></b>Kamer</div>
+<div class="tool"><b><i class="ti ti-users"></i></b>Duokamer</div>
+<div class="tool"><b><i class="ti ti-desk"></i></b>Receptie</div>
+<div class="tool"><b><i class="ti ti-armchair"></i></b>Wachten</div>
+<div class="tool"><b><i class="ti ti-hanger"></i></b>Kleedruimte</div>
+</div>
+<div style="display:flex;justify-content:space-between;margin-top:10px">
+<div class="tool"><b><i class="ti ti-temperature"></i></b>Sauna</div>
+<div class="tool"><b><i class="ti ti-bath"></i></b>Douche</div>
+<div class="tool"><b><i class="ti ti-door"></i></b>Deur</div>
+<div class="tool"><b><i class="ti ti-stairs"></i></b>Trap</div>
+<div class="tool"><b><i class="ti ti-toilet-paper"></i></b>Toilet</div>
+</div>
+</div>
+</div><p class="cap">Bewerken · niets geselecteerd</p></div>
+
+</div>
+
+<h2>Hoe het werkt</h2>
+<div class="notes">
+<div class="note"><b>Eén plan, twee soorten zaken</b>Restaurants plaatsen tafels in ruimtes (Binnen, Terras). Salons tekenen kamers op een verdieping. Beide delen dezelfde editor, hetzelfde raster en dezelfde decor-elementen.</div>
+<div class="note"><b>Bewerken</b>Raster van 20 cm zodat alles netjes uitlijnt. Slepen verplaatst, de witte grepen vergroten, draaien per 45°. Ongedaan maken en opnieuw. Knijpen om te zoomen, twee vingers om te schuiven.</div>
+<div class="note"><b>Live</b>Het plan werkt elke minuut bij. Kleur toont de staat, het label toont naam, tijd en aantal. Tik opent een paneel met de acties: aan tafel, walk-in, afspraak openen.</div>
+<div class="note"><b>Backend</b>Tafels hebben al een positie. Nieuw: ruimtes/verdiepingen, decor-elementen (muur, bar, deur, plant…) en een positie voor behandelkamers. Bestaande data blijft werken, het plan begint leeg met de bestaande tafels of kamers op een rij.</div>
+</div>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+function el(svg,tag,a,txt){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e}
+const ST={free:{f:"#E9E4DA",c:"#CFC8BB",t:"#3B3F3C"},res:{f:"#9CC3B5",c:"#7FAE9F",t:"#103F37"},arr:{f:"#F0C978",c:"#D9AE57",t:"#5A3504"},seat:{f:"#2F7A6C",c:"#256559",t:"#FFFFFF"},block:{f:"#5B6661",c:"#4A544F",t:"#F6F4EF"}};
+function grid(svg,w,h,dots){if(dots){for(let x=10;x<w;x+=20)for(let y=10;y<h;y+=20)el(svg,"circle",{cx:x,cy:y,r:.9,fill:"#2F3D39"})}}
+function walls(svg,pts,door){el(svg,"polyline",{points:pts,fill:"none",stroke:"#5E6E68","stroke-width":5,"stroke-linejoin":"round","stroke-linecap":"round"})}
+function chairs(svg,t,col){const n=t.seats,cs=[];if(t.shape==="round"){for(let i=0;i<n;i++){const a=i/n*Math.PI*2-Math.PI/2,r=t.w/2+6;cs.push([t.x+t.w/2+Math.cos(a)*r,t.y+t.h/2+Math.sin(a)*r,a])}cs.forEach(c=>el(svg,"circle",{cx:c[0],cy:c[1],r:5.5,fill:col}));return}
+const per=Math.ceil(n/2),hor=t.w>=t.h;for(let i=0;i<per;i++){if(hor){const x=t.x+(i+.5)*t.w/per;el(svg,"rect",{x:x-6,y:t.y-9,width:12,height:7,rx:3,fill:col});if(i<n-per)el(svg,"rect",{x:x-6,y:t.y+t.h+2,width:12,height:7,rx:3,fill:col})}else{const y=t.y+(i+.5)*t.h/per;el(svg,"rect",{x:t.x-9,y:y-6,width:7,height:12,rx:3,fill:col});if(i<n-per)el(svg,"rect",{x:t.x+t.w+2,y:y-6,width:7,height:12,rx:3,fill:col})}}}
+function table(svg,t,opt={}){const s=ST[t.st||"free"];chairs(svg,t,s.c);
+if(t.shape==="round")el(svg,"circle",{cx:t.x+t.w/2,cy:t.y+t.h/2,r:t.w/2,fill:s.f});else el(svg,"rect",{x:t.x,y:t.y,width:t.w,height:t.h,rx:7,fill:s.f});
+const cx=t.x+t.w/2,cy=t.y+t.h/2;
+if(t.guest&&!opt.edit){el(svg,"text",{x:cx,y:cy-5,"text-anchor":"middle","font-size":9.5,"font-weight":600,fill:s.t},t.guest);el(svg,"text",{x:cx,y:cy+8,"text-anchor":"middle","font-size":8.5,fill:s.t,opacity:.85},t.name+" · "+t.info)}
+else{el(svg,"text",{x:cx,y:cy-1,"text-anchor":"middle","font-size":11,"font-weight":600,fill:s.t},t.name);el(svg,"text",{x:cx,y:cy+11,"text-anchor":"middle","font-size":8.5,fill:s.t,opacity:.7},t.seats+" pl.")}
+if(t.sel){el(svg,"rect",{x:t.x-13,y:t.y-13,width:t.w+26,height:t.h+26,rx:10,fill:"none",stroke:"#F6F4EF","stroke-width":1.5,"stroke-dasharray":opt.edit?"4 3":"0"});if(opt.edit)[[t.x-13,t.y-13],[t.x+t.w+13,t.y-13],[t.x-13,t.y+t.h+13],[t.x+t.w+13,t.y+t.h+13]].forEach(p=>el(svg,"rect",{x:p[0]-5,y:p[1]-5,width:10,height:10,rx:2,fill:"#fff",stroke:"#1F5F55","stroke-width":1.5}))}}
+function bar(svg,x,y,w,h,label){el(svg,"rect",{x,y,width:w,height:h,rx:6,fill:"#3A4843",stroke:"#566660","stroke-width":1});el(svg,"text",{x:x+w/2,y:y+h/2+4,"text-anchor":"middle","font-size":10,"font-weight":600,fill:"#AFC0B9","letter-spacing":"1.5"},label)}
+function plant(svg,x,y){el(svg,"circle",{cx:x,cy:y,r:8,fill:"#3E6B55"});el(svg,"circle",{cx:x-3,cy:y-2,r:3.5,fill:"#4F8468"})}
+function door(svg,x,y,r,rot){const g=el(svg,"g",{transform:`translate(${x},${y}) rotate(${rot||0})`});el(g,"path",{d:`M0 0 L${r} 0 A${r} ${r} 0 0 0 0 ${-r}`,fill:"none",stroke:"#8FA39B","stroke-width":1,"stroke-dasharray":"2 2"});el(g,"line",{x1:0,y1:0,x2:0,y2:-r,stroke:"#B5C5BE","stroke-width":2})}
+
+function restaurant(svg,s,opt={}){const W=+svg.getAttribute("width"),H=+svg.getAttribute("height");grid(svg,W,H,opt.edit);
+const k=s;const g=el(svg,"g",{transform:`scale(${k})`});
+walls(g,"14,14 296,14 296,300 210,300");walls(g,"150,300 14,300 14,14");door(g,150,300,26,0);
+el(g,"rect",{x:16,y:16,width:6,height:120,fill:"#7FA7C4",opacity:.6});
+const T=[
+{name:"T1",x:36,y:36,w:44,h:44,seats:2,shape:"round",st:"seat",guest:"Peeters",info:"19:00"},
+{name:"T2",x:110,y:40,w:44,h:44,seats:4,st:"res",guest:"Maes",info:"20:30"},
+{name:"T3",x:190,y:38,w:84,h:44,seats:6,st:"seat",guest:"Claes",info:"19:15"},
+{name:"T4",x:40,y:118,w:36,h:36,seats:2,shape:"round",st:"free"},
+{name:"T5",x:110,y:118,w:44,h:44,seats:4,st:"arr",guest:"Wouters",info:"19:45"},
+{name:"T6",x:190,y:118,w:44,h:44,seats:4,st:"arr",guest:"Janssens",info:"20:00",sel:opt.sel},
+{name:"T7",x:250,y:118,w:30,h:44,seats:2,st:"free"},
+{name:"T8",x:40,y:196,w:44,h:44,seats:4,st:"seat",guest:"Dubois",info:"18:45"},
+{name:"T9",x:110,y:196,w:44,h:44,seats:4,st:"free"},
+{name:"T10",x:224,y:186,w:52,h:52,seats:8,shape:"round",st:"res",guest:"Verbeke",info:"21:00"},
+{name:"T11",x:40,y:262,w:36,h:22,seats:2,st:"free"},
+];
+if(opt.edit)T.forEach(t=>{delete t.guest;t.st="free";t.sel=(t.name==="T6"&&opt.sel)});
+bar(g,170,260,110,26,"BAR");plant(g,96,276);plant(g,286,30);
+T.forEach(t=>table(g,t,opt));
+if(opt.edit&&opt.sel){el(g,"line",{x1:212,y1:105,x2:212,y2:14,stroke:"#7FB8A8","stroke-width":.8,"stroke-dasharray":"3 3"});el(g,"rect",{x:186,y:94,width:52,height:15,rx:4,fill:"#1F5F55"});el(g,"text",{x:212,y:104.5,"text-anchor":"middle","font-size":8,fill:"#fff"},"44 × 44")}
+}
+
+function zoomControls(svg){const W=+svg.getAttribute("width"),H=+svg.getAttribute("height");[["+",H-70],["−",H-40]].forEach(([s,y])=>{el(svg,"rect",{x:W-38,y,width:28,height:26,rx:7,fill:"#2B3935",stroke:"#3C4B46"});el(svg,"text",{x:W-24,y:y+18,"text-anchor":"middle","font-size":15,fill:"#CFDAD5"},s)})}
+
+restaurant(document.getElementById("r1"),1.03,{sel:true});zoomControls(document.getElementById("r1"));
+restaurant(document.getElementById("r2"),1.72,{});
+restaurant(document.getElementById("e1"),0.98,{edit:true});
+restaurant(document.getElementById("e2"),1.0,{edit:true,sel:true});
+
+const L=[["19:00","Peeters","2p","T1","seat"],["19:15","Claes","6p","T3","seat"],["19:45","Wouters","4p","T5","arr"],["20:00","Janssens","4p","T6","arr"],["20:30","Maes","4p","T2","res"],["21:00","Verbeke","8p","T10","res"],["21:15","Hermans","2p","—","res"]];
+const lc={seat:["#1F5F55","#fff","Aan tafel"],arr:["#FAEEDA","#633806","Komt nu"],res:["#E6F1FB","#0C447C","Bevestigd"]};
+document.getElementById("list").innerHTML=L.map(r=>`<div style="background:#fff;border:1px solid #E4E0D8;border-radius:12px;padding:9px 11px;display:flex;gap:10px;align-items:center${r[3]==="—"?";border-style:dashed":""}"><b style="font-weight:600;width:38px">${r[0]}</b><div style="flex:1"><div style="font-weight:600">${r[1]}</div><div style="color:#5B6661;font-size:11px">${r[2]} · ${r[3]==="—"?"geen tafel, sleep naar plan":r[3]}</div></div><span class="chip" style="background:${lc[r[4]][0]};color:${lc[r[4]][1]}">${lc[r[4]][2]}</span></div>`).join("");
+
+const RS={free:{f:"#EDE8DE",t:"#3B3F3C",s:"#5B6661"},busy:{f:"#2F7A6C",t:"#FFFFFF",s:"#CFE3DC"},soon:{f:"#F0C978",t:"#5A3504",s:"#7A4D10"},clean:{f:"#B9B4AA",t:"#2C2C2A",s:"#4A4A46"},area:{f:"#2A3834",t:"#AFC0B9",s:"#7F918A"}};
+function bed(svg,x,y,col,rot){const g=el(svg,"g",{transform:`translate(${x},${y}) rotate(${rot||0})`});el(g,"rect",{x:-9,y:-19,width:18,height:38,rx:5,fill:"none",stroke:col,"stroke-width":1.4});el(g,"rect",{x:-6,y:-16,width:12,height:6,rx:2,fill:col,opacity:.6})}
+function room(svg,r,opt={}){const s=RS[r.st];el(svg,"rect",{x:r.x,y:r.y,width:r.w,height:r.h,fill:s.f,stroke:"#5E6E68","stroke-width":4});
+if(r.st==="clean"){for(let i=-r.h;i<r.w;i+=10)el(svg,"line",{x1:r.x+Math.max(i,0),y1:r.y+Math.max(-i,0),x2:r.x+Math.min(i+r.h,r.w),y2:r.y+Math.min(r.h,r.w-i),stroke:"#A8A398","stroke-width":1})}
+if(r.beds)r.beds.forEach(b=>bed(svg,r.x+b[0],r.y+b[1],s.s,b[2]));
+if(r.icon)el(svg,"text",{x:r.x+r.w/2,y:r.y+r.h/2+2,"text-anchor":"middle","font-size":9,"font-weight":600,fill:s.t,"letter-spacing":"1.2"},r.icon);
+el(svg,"text",{x:r.x+8,y:r.y+15,"font-size":10.5,"font-weight":600,fill:s.t},r.name);
+if(r.l1&&!opt.edit)el(svg,"text",{x:r.x+8,y:r.y+r.h-20,"font-size":9,fill:s.t},r.l1);
+if(r.l2&&!opt.edit)el(svg,"text",{x:r.x+8,y:r.y+r.h-9,"font-size":8.5,fill:s.s},r.l2);
+if(r.pr!=null&&!opt.edit){el(svg,"rect",{x:r.x+8,y:r.y+20,width:r.w-16,height:3,rx:1.5,fill:"rgba(255,255,255,.25)"});el(svg,"rect",{x:r.x+8,y:r.y+20,width:(r.w-16)*r.pr,height:3,rx:1.5,fill:"#fff"})}
+if(r.door)door(svg,r.x+r.door[0],r.y+r.door[1],16,r.door[2]);
+if(r.sel){el(svg,"rect",{x:r.x-4,y:r.y-4,width:r.w+8,height:r.h+8,fill:"none",stroke:"#F6F4EF","stroke-width":1.5,"stroke-dasharray":"4 3"});[[r.x-4,r.y-4],[r.x+r.w+4,r.y-4],[r.x-4,r.y+r.h+4],[r.x+r.w+4,r.y+r.h+4],[r.x+r.w/2,r.y-4],[r.x+r.w/2,r.y+r.h+4],[r.x-4,r.y+r.h/2],[r.x+r.w+4,r.y+r.h/2]].forEach(p=>el(svg,"rect",{x:p[0]-4.5,y:p[1]-4.5,width:9,height:9,rx:2,fill:"#fff",stroke:"#1F5F55","stroke-width":1.5}))}}
+function salon(svg,k,opt={}){const W=+svg.getAttribute("width"),H=+svg.getAttribute("height");grid(svg,W,H,opt.edit);const g=el(svg,"g",{transform:`scale(${k})`});
+const R=[
+{name:"Kamer 1",x:16,y:16,w:92,h:110,st:"busy",beds:[[62,60,0]],l1:"Lien · Noi",l2:"nog 25 min",pr:.72,door:[92,104,-90]},
+{name:"Kamer 2 · Duo",x:108,y:16,w:120,h:110,st:"busy",beds:[[40,62,0],[80,62,0]],l1:"Emma + Tom · Noi, Ploy",l2:"nog 35 min",pr:.61,sel:!opt.edit&&opt.sel,door:[0,92,0]},
+{name:"Kamer 3",x:228,y:16,w:70,h:110,st:opt.edit?"free":"soon",beds:[[35,64,0]],l1:"Sara · Mali",l2:"klaar 14:28",pr:.92,sel:opt.edit&&opt.sel,door:[0,92,0]},
+{name:"Sauna",x:228,y:126,w:70,h:62,st:"area",icon:"SAUNA"},
+{name:"Kamer 4",x:16,y:126,w:92,h:90,st:opt.edit?"free":"clean",beds:[[62,52,0]],l1:"opruimen",l2:"vrij om 14:30",door:[92,20,90]},
+{name:"Gang",x:108,y:126,w:120,h:62,st:"area",icon:""},
+{name:"Kamer 5",x:16,y:216,w:92,h:90,st:"free",beds:[[62,48,0]],l1:"vrij",l2:"volgende 15:00",door:[92,20,90]},
+{name:"Omkleden",x:228,y:188,w:70,h:56,st:"area",icon:""},
+{name:"Wachtruimte",x:108,y:188,w:120,h:56,st:"area",icon:""},
+{name:"Receptie",x:108,y:244,w:190,h:62,st:"area",icon:""},
+];
+R.forEach(r=>room(g,r,opt));
+el(g,"rect",{x:150,y:302,width:40,height:8,fill:"#1E2A27"});door(g,150,306,22,0);
+el(g,"text",{x:170,y:325,"text-anchor":"middle","font-size":9,fill:"#7F918A","letter-spacing":"1.5"},"INGANG");
+[[124,206],[140,206],[156,206]].forEach(p=>el(g,"rect",{x:p[0],y:p[1]+12,width:12,height:12,rx:3,fill:"#3E4E49"}));
+el(g,"rect",{x:222,y:286,width:64,height:10,rx:3,fill:"#3E4E49"});
+if(opt.edit&&opt.sel){el(g,"rect",{x:238,y:132,width:50,height:15,rx:4,fill:"#1F5F55"});el(g,"text",{x:263,y:142.5,"text-anchor":"middle","font-size":8,fill:"#fff"},"3,5 × 5,5 m")}
+}
+salon(document.getElementById("m1"),1.02,{sel:true});zoomControls(document.getElementById("m1"));
+salon(document.getElementById("m2"),0.99,{edit:true,sel:true});
+salon(document.getElementById("m3"),1.0,{edit:true});
+</script>
+</body>
+</html>

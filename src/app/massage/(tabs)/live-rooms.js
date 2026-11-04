@@ -25,6 +25,10 @@ import {
   Card,
   Chip,
 } from "../../../components/ui";
+import MassageFloorView from "../../../components/floor/MassageFloorView";
+import { SegmentedControl, SkeletonList } from "../../../components/ui";
+import useFloorPlan from "../../../hooks/useFloorPlan";
+import { t } from "../../../i18n";
 import useDayAppointments, {
   isActiveAppointment,
 } from "../../../hooks/useDayAppointments";
@@ -138,6 +142,13 @@ export default function LiveRoomsScreen() {
   const { appointments, isLoading, error } =
     useDayAppointments(todayString());
 
+  // The plan view when rooms are drawn on the floor plan.
+  const { plan } = useFloorPlan();
+  const hasPlan = Boolean(
+    plan?.elements.some((element) => element.type === "ROOM" && element.treatmentRoomId)
+  );
+  const [view, setView] = useState("plan");
+
   useFocusEffect(
     useCallback(() => {
       if (!business?.id) {
@@ -184,6 +195,52 @@ export default function LiveRoomsScreen() {
 
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
+  const viewToggle = hasPlan ? (
+    <View style={styles.viewToggle}>
+      <SegmentedControl
+        options={[
+          { value: "plan", label: t("floor.room.planView") },
+          { value: "list", label: t("floor.room.listView") },
+        ]}
+        value={view}
+        onChange={setView}
+      />
+    </View>
+  ) : null;
+
+  if (hasPlan && view === "plan") {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <View style={[styles.titleRow, styles.planHeader]}>
+          <View style={styles.titleText}>
+            <Text style={type.title}>{t("floor.room.title")}</Text>
+            <View style={styles.liveRow}>
+              <View style={styles.liveDot} />
+              <Text style={type.caption}>
+                {t("floor.live", { time: formatTime(now.toISOString()) })}
+              </Text>
+            </View>
+          </View>
+          <Button
+            label={t("floor.edit")}
+            onPress={() => router.push("/floor-plan/edit")}
+          />
+        </View>
+        <View style={styles.planToggle}>{viewToggle}</View>
+        {isLoading ? (
+          <SkeletonList rows={3} style={styles.planHeader} />
+        ) : (
+          <MassageFloorView
+            plan={plan}
+            appointments={appointments}
+            now={now}
+            bufferMinutes={bufferMinutes}
+          />
+        )}
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -202,6 +259,8 @@ export default function LiveRoomsScreen() {
             onPress={() => router.push("/massage/rooms")}
           />
         </View>
+
+        {viewToggle}
 
         <ScrollView
           horizontal
@@ -223,7 +282,7 @@ export default function LiveRoomsScreen() {
         </ScrollView>
 
         {isLoading || roomsLoading ? (
-          <ActivityIndicator style={styles.loading} />
+          <SkeletonList rows={4} />
         ) : error ? (
           <Text style={styles.error}>{error}</Text>
         ) : rooms.length === 0 ? (
@@ -307,7 +366,7 @@ export default function LiveRoomsScreen() {
                               backgroundColor: live
                                 ? colors.primary
                                 : past
-                                  ? "#B9B4A8"
+                                  ? colors.textDisabled
                                   : colors.sage,
                             },
                           ]}
@@ -331,7 +390,7 @@ export default function LiveRoomsScreen() {
                   label="Gepland"
                 />
                 <LegendItem
-                  color="#B9B4A8"
+                  color={colors.textDisabled}
                   label="Voorbij"
                 />
               </View>
@@ -397,8 +456,8 @@ function RoomCard({ item, now, onBook }) {
         <RoomHeader
           name={room.name}
           label="Schoonmaak"
-          background="#F3E3C3"
-          color="#633806"
+          background={colors.warningSoft}
+          color={colors.warning}
         />
         <View style={styles.roomBody}>
           <Text style={type.bodyMedium}>
@@ -503,6 +562,21 @@ function LegendItem({ color, label }) {
 }
 
 const styles = StyleSheet.create({
+  viewToggle: {
+    marginTop: spacing.xs,
+  },
+
+  planHeader: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+
+  planToggle: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -569,8 +643,8 @@ const styles = StyleSheet.create({
   },
 
   cleaningCard: {
-    backgroundColor: "#FBF6EC",
-    borderColor: "#EADCC0",
+    backgroundColor: colors.noteBackground,
+    borderColor: colors.noteBorder,
   },
 
   roomHeader: {
@@ -672,7 +746,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 14,
     borderRadius: 4,
-    backgroundColor: "#F1EFE8",
+    backgroundColor: colors.surfaceMuted,
     overflow: "hidden",
   },
 

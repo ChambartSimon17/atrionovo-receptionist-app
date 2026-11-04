@@ -11,15 +11,14 @@ import { api } from "../services/api";
 // Guest history
 // ======================================================
 //
-// Every guest of the restaurant together with all their
-// reservations, in any status. The backend only offers the
-// full history per guest, so this loads the guest list and
-// then each profile, a few at a time. Every reservation is
-// linked to a guest, so together they hold the whole
-// reservation history the Gasten and Analyse screens use.
+// Every guest of the business together with all their
+// reservations and appointments, in any status, from one
+// request (/guest-history). Bookings without a guest
+// (walk-ins) come along as otherReservations, so the
+// Gasten and Analyse screens see the whole history.
 //
-// The plain guest list is available before the profiles,
-// so a list can show while the history loads.
+// An older backend without that endpoint gets the guest
+// list and then each profile, a few at a time.
 //
 // The result is kept for a few minutes, so switching
 // between those screens does not load it again.
@@ -28,7 +27,7 @@ import { api } from "../services/api";
 const PARALLEL_REQUESTS = 6;
 const CACHE_MS = 3 * 60 * 1000;
 
-let cache = null; // { token, loadedAt, guests }
+let cache = null; // { token, loadedAt, guests, otherReservations }
 
 async function loadProfiles(customers, accessToken, onProgress) {
   const guests = new Array(customers.length);
@@ -131,10 +130,13 @@ export function guestSummary(guest, now = new Date()) {
 }
 
 export default function useGuestHistory() {
-  const { accessToken } = useAuth();
+  const { accessToken, business } = useAuth();
 
   const [guests, setGuests] = useState(
     cache?.token === accessToken ? cache.guests : null
+  );
+  const [otherReservations, setOtherReservations] = useState(
+    cache?.token === accessToken ? cache.otherReservations : []
   );
   const [list, setList] = useState(null);
   const [progress, setProgress] = useState(0);
@@ -152,11 +154,35 @@ export default function useGuestHistory() {
         Date.now() - cache.loadedAt < CACHE_MS
       ) {
         setGuests(cache.guests);
+        setOtherReservations(cache.otherReservations);
         return;
       }
 
       try {
         setError(null);
+
+        try {
+          const history = await api.getGuestHistory(business.id, accessToken);
+          const data = history?.data ?? history;
+
+          if (Array.isArray(data?.guests)) {
+            cache = {
+              token: accessToken,
+              loadedAt: Date.now(),
+              guests: data.guests,
+              otherReservations: data.otherReservations ?? [],
+            };
+            setProgress(1);
+            setList(data.guests);
+            setGuests(data.guests);
+            setOtherReservations(data.otherReservations ?? []);
+            return;
+          }
+        } catch (historyError) {
+          if (historyError?.status !== 404) {
+            throw historyError;
+          }
+        }
 
         const response = await api.getCustomers(accessToken);
         const customers = response?.data || response || [];
@@ -173,6 +199,7 @@ export default function useGuestHistory() {
           token: accessToken,
           loadedAt: Date.now(),
           guests: loaded,
+          otherReservations: [],
         };
         setGuests(loaded);
       } catch (loadError) {
@@ -182,7 +209,7 @@ export default function useGuestHistory() {
         );
       }
     },
-    [accessToken]
+    [accessToken, business?.id]
   );
 
   useFocusEffect(
@@ -195,6 +222,8 @@ export default function useGuestHistory() {
     // Every guest with their reservations, null until
     // all profiles are loaded.
     guests,
+    // Bookings without a guest, such as walk-ins.
+    otherReservations,
     // The guest list without history, available first.
     list: guests ?? list,
     isLoading: guests === null && !error,

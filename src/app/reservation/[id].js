@@ -49,6 +49,9 @@ import {
   formatTime,
   toDateString,
 } from "../../utils/date";
+import { UserX, Undo2 } from "lucide-react-native";
+import { Skeleton } from "../../components/ui";
+import { t } from "../../i18n";
 
 // ======================================================
 // Reservatie
@@ -83,6 +86,13 @@ function formatLongDate(isoString) {
 function capitalize(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+// One step back for a tap by mistake.
+const UNDO_TO = {
+  SEATED: "CONFIRMED",
+  COMPLETED: "SEATED",
+  NO_SHOW: "CONFIRMED",
+};
 
 export default function ReservationDetailsScreen() {
   const router = useRouter();
@@ -205,7 +215,11 @@ export default function ReservationDetailsScreen() {
         <BackBar onBack={() => router.back()} />
         <View style={styles.center}>
           {isLoading ? (
-            <ActivityIndicator color={colors.primary} />
+            <View style={{ width: "100%", gap: 12, padding: 20 }}>
+              <Skeleton width="30%" height={20} />
+              <Skeleton width="60%" height={28} />
+              <Skeleton height={90} />
+            </View>
           ) : (
             <Text style={styles.error}>
               {error || "Reservatie niet gevonden."}
@@ -267,7 +281,7 @@ export default function ReservationDetailsScreen() {
           <View style={styles.note}>
             <StickyNote
               size={16}
-              color="#8A5A14"
+              color={colors.warning}
               strokeWidth={1.8}
             />
             <Text style={styles.noteText}>
@@ -371,6 +385,62 @@ export default function ReservationDetailsScreen() {
               />
             )}
           </View>
+
+          {isOpen && new Date(reservation.startTime) < new Date() && (
+            <Button
+              label={t("floor.noShow")}
+              loading={busy === "noShow"}
+              onPress={() =>
+                Alert.alert(
+                  t("floor.noShowTitle"),
+                  t("floor.noShowMessage", { name: reservation.firstName }),
+                  [
+                    { text: t("common.cancel"), style: "cancel" },
+                    {
+                      text: t("floor.noShowConfirm"),
+                      style: "destructive",
+                      onPress: () =>
+                        changeStatus(
+                          api.markReservationAsNoShow,
+                          "NO_SHOW",
+                          "noShow"
+                        ),
+                    },
+                  ]
+                )
+              }
+              icon={
+                <UserX
+                  size={16}
+                  color={colors.text}
+                  strokeWidth={1.8}
+                />
+              }
+            />
+          )}
+
+          {UNDO_TO[reservation.status] && (
+            <Button
+              label={t("reservation.undo", {
+                status: t(`reservation.undoTo.${reservation.status}`),
+              })}
+              loading={busy === "undo"}
+              onPress={() =>
+                changeStatus(
+                  api.undoReservationStatus,
+                  UNDO_TO[reservation.status],
+                  "undo"
+                )
+              }
+              icon={
+                <Undo2
+                  size={16}
+                  color={colors.text}
+                  strokeWidth={1.8}
+                />
+              }
+            />
+          )}
 
           {isOpen && (
             <Button

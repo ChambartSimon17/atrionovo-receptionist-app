@@ -81,6 +81,8 @@ export function computeRestaurantAnalytics(
   let missedCount = 0;
   let cancelledCount = 0;
   let upcomingCount = 0;
+  let walkInCount = 0;
+  let aiCount = 0;
 
   const guestsInPeriod = [];
 
@@ -111,6 +113,12 @@ export function computeRestaurantAnalytics(
 
       reservationCount += 1;
       guestCount += 1;
+
+      if (reservation.source === "WALK_IN") {
+        walkInCount += 1;
+      } else if (reservation.source === "AI") {
+        aiCount += 1;
+      }
 
       if (start <= now) {
         pastCount += 1;
@@ -175,7 +183,9 @@ export function computeRestaurantAnalytics(
       ).count += 1;
     });
 
-    if (guestCount === 0) {
+    // Walk-ins and other bookings without a guest count
+    // in the totals, not as a guest.
+    if (guestCount === 0 || guest.anonymous) {
       return;
     }
 
@@ -208,6 +218,8 @@ export function computeRestaurantAnalytics(
     covers,
     cameCount,
     upcomingCount,
+    walkInCount,
+    aiCount,
     averageParty:
       reservationCount - missedCount > 0
         ? covers / (reservationCount - missedCount)
@@ -255,8 +267,12 @@ export function computeRestaurantAnalytics(
 export default function useRestaurantAnalytics(days) {
   const { business, accessToken } = useAuth();
 
-  const { guests, progress, error: guestError } =
-    useGuestHistory();
+  const {
+    guests,
+    otherReservations,
+    progress,
+    error: guestError,
+  } = useGuestHistory();
 
   const [openingHours, setOpeningHours] = useState([]);
 
@@ -277,7 +293,18 @@ export default function useRestaurantAnalytics(days) {
 
   return {
     analytics: guests
-      ? computeRestaurantAnalytics(days, guests, openingHours)
+      ? computeRestaurantAnalytics(
+          days,
+          [
+            ...guests,
+            {
+              id: "other",
+              anonymous: true,
+              reservations: otherReservations,
+            },
+          ],
+          openingHours
+        )
       : null,
     isLoading: !guests && !guestError,
     progress,

@@ -1,1263 +1,840 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ChevronRight, Plus, Trash2 } from "lucide-react-native";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
-import { skin, useIsMassage } from "../../theme/skin";
-import { colors } from "../../theme";
-import { switchColors } from "../../theme/settingsStyles";
+import {
+  Button,
+  ScreenHeader,
+  SegmentedControl,
+  Sheet,
+  SkeletonList,
+} from "../../components/ui";
+import DateRangePicker from "../../components/ui/DateRangePicker";
+import TimePicker, { formatMinutes } from "../../components/ui/TimePicker";
+import { locale, plural, t } from "../../i18n";
+import { colors, fonts, radius, spacing } from "../../theme";
 
-function minutesToTime(minutes) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+// ======================================================
+// Special opening days
+// ======================================================
+//
+// Holidays, a vacation or a private party: days when the
+// business is closed or open at other hours. The backend
+// stores one special day per date; a range ("5–12 jan")
+// is a run of days with the same name and hours, shown
+// as one row and edited together.
+//
+// Upcoming days first, past days greyed out below.
+// ======================================================
 
-  return `${String(hours).padStart(2, "0")}:${String(
-    mins
+function todayKey() {
+  const now = new Date();
+
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+    now.getDate()
   ).padStart(2, "0")}`;
 }
 
-function timeToMinutes(time) {
-  const match = time.match(/^(\d{1,2}):(\d{2})$/);
+function addDays(key, days) {
+  const [year, month, day] = key.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + days));
 
-  if (!match) {
-    return null;
-  }
-
-  const hours = Number(match[1]);
-  const minutes = Number(match[2]);
-
-  if (
-    hours < 0 ||
-    hours > 23 ||
-    minutes < 0 ||
-    minutes > 59
-  ) {
-    return null;
-  }
-
-  return hours * 60 + minutes;
+  return date.toISOString().slice(0, 10);
 }
 
-function formatDate(dateString) {
-  const date = new Date(dateString);
+function datesBetween(start, end) {
+  const dates = [];
 
-  if (Number.isNaN(date.getTime())) {
-    return "Ongeldige datum";
+  for (let key = start; key <= end; key = addDays(key, 1)) {
+    dates.push(key);
   }
 
-  return date.toLocaleDateString("nl-BE", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+  return dates;
+}
+
+function dateOf(key) {
+  const [year, month, day] = key.split("-").map(Number);
+
+  return new Date(year, month - 1, day, 12);
+}
+
+function signature(day) {
+  return JSON.stringify([
+    day.name ?? "",
+    day.isClosed,
+    (day.openingPeriods ?? []).map((period) => [
+      period.opensAtMinutes,
+      period.closesAtMinutes,
+    ]),
+  ]);
+}
+
+/**
+ * Consecutive days with the same name and hours become
+ * one group { start, end, days, name, isClosed, periods }.
+ */
+function groupDays(specialDays) {
+  const sorted = specialDays
+    .map((day) => ({ ...day, key: String(day.date).slice(0, 10) }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+
+  const groups = [];
+
+  sorted.forEach((day) => {
+    const last = groups[groups.length - 1];
+
+    if (
+      last &&
+      addDays(last.end, 1) === day.key &&
+      signature(last.days[0]) === signature(day)
+    ) {
+      last.end = day.key;
+      last.days.push(day);
+      return;
+    }
+
+    groups.push({
+      start: day.key,
+      end: day.key,
+      days: [day],
+      name: day.name ?? "",
+      isClosed: day.isClosed,
+      periods: (day.openingPeriods ?? [])
+        .map((period) => ({
+          opens: period.opensAtMinutes,
+          closes: period.closesAtMinutes,
+        }))
+        .sort((a, b) => a.opens - b.opens),
+    });
   });
+
+  return groups;
 }
 
-function getTodayString() {
-  const date = new Date();
+function DateTile({ group, past }) {
+  const start = dateOf(group.start);
+  const end = dateOf(group.end);
+  const month = start
+    .toLocaleDateString(locale, { month: "short" })
+    .replace(".", "")
+    .toUpperCase();
+  const days =
+    group.start === group.end
+      ? String(start.getDate())
+      : `${start.getDate()}–${end.getDate()}`;
 
-  const year = date.getFullYear();
-  const month = String(
-    date.getMonth() + 1
-  ).padStart(2, "0");
-  const day = String(
-    date.getDate()
-  ).padStart(2, "0");
+  const tone = past ? "past" : group.isClosed ? "closed" : "open";
 
-  return `${year}-${month}-${day}`;
+  return (
+    <View style={[styles.tile, styles[`tile_${tone}`]]}>
+      <Text style={[styles.tileMonth, styles[`tileText_${tone}`]]}>{month}</Text>
+      <Text
+        style={[styles.tileDay, styles[`tileText_${tone}`]]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {days}
+      </Text>
+    </View>
+  );
 }
 
-function createDefaultPeriod() {
-  return {
-    opensAtMinutes: 660,
-    closesAtMinutes: 1320,
-  };
+function groupDescription(group) {
+  const length = group.days.length;
+
+  if (group.isClosed) {
+    return length > 1
+      ? `${t("special.closed")} · ${plural("special.days", length)}`
+      : t("special.closed");
+  }
+
+  return `${t("special.open")} ${group.periods
+    .map((period) => `${formatMinutes(period.opens)} – ${formatMinutes(period.closes)}`)
+    .join(", ")}`;
 }
+
+const EMPTY_FORM = {
+  group: null,
+  name: "",
+  start: null,
+  end: null,
+  isClosed: true,
+  periods: [{ opens: 18 * 60, closes: 23 * 60 }],
+  editingPeriod: null,
+};
 
 export default function SpecialOpeningDaysScreen() {
-  const isMassage = useIsMassage();
+  const { accessToken, business } = useAuth();
 
+  const [specialDays, setSpecialDays] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [form, setForm] = useState(null);
 
-  const { accessToken } = useAuth();
-
-  const [businessId, setBusinessId] =
-    useState(null);
-
-  const [specialOpeningDays, setSpecialOpeningDays] =
-    useState([]);
-
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [isSaving, setIsSaving] =
-    useState(false);
-
-  const [editingId, setEditingId] =
-    useState(null);
-
-  const [date, setDate] =
-    useState(getTodayString());
-
-  const [isClosed, setIsClosed] =
-    useState(false);
-
-  const [openingPeriods, setOpeningPeriods] =
-    useState([
-      createDefaultPeriod(),
-    ]);
-
-  // UI values for editable time inputs.
-  //
-  // These are kept as strings so the user can
-  // freely type values such as:
-  //
-  // 17:00
-  // 18:30
-  // 22:00
-  //
-  // without React Native immediately changing
-  // the value while typing.
-  const [timeInputs, setTimeInputs] =
-    useState({});
-
-  useEffect(() => {
-    loadSpecialOpeningDays();
-  }, []);
-
-  async function loadSpecialOpeningDays() {
+  const load = useCallback(async () => {
     try {
-      const businessResponse =
-        await api.getMyBusiness(
-          accessToken
-        );
-
-      const business =
-        businessResponse.data;
-
-      if (!business?.id) {
-        throw new Error(
-          "Restaurant ID kon niet worden gevonden."
-        );
-      }
-
-      setBusinessId(
-        business.id
-      );
-
-      const response =
-        await api.getSpecialOpeningDays(
-          business.id,
-          accessToken
-        );
-
-      const data =
-        response?.data ?? response ?? [];
-
-      setSpecialOpeningDays(data);
+      const response = await api.getSpecialOpeningDays(business.id, accessToken);
+      setSpecialDays(response?.data ?? response ?? []);
     } catch (error) {
-      console.error(
-        "Failed to load special opening days:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De speciale openingsdagen konden niet worden geladen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("special.loadFailed"));
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
+  }, [accessToken, business?.id]);
+
+  useEffect(() => {
+    if (business?.id) {
+      load();
+    }
+  }, [business?.id, load]);
+
+  const today = todayKey();
+
+  const { upcoming, past } = useMemo(() => {
+    const groups = groupDays(specialDays);
+
+    return {
+      upcoming: groups.filter((group) => group.end >= today),
+      past: groups.filter((group) => group.end < today).reverse().slice(0, 10),
+    };
+  }, [specialDays, today]);
+
+  function openNew() {
+    setForm({ ...EMPTY_FORM, start: today, end: today });
   }
 
-  function resetForm() {
-    setEditingId(null);
-    setDate(getTodayString());
-    setIsClosed(false);
-
-    const defaultPeriod =
-      createDefaultPeriod();
-
-    setOpeningPeriods([
-      defaultPeriod,
-    ]);
-
-    setTimeInputs({
-      "0-open": minutesToTime(
-        defaultPeriod.opensAtMinutes
-      ),
-      "0-close": minutesToTime(
-        defaultPeriod.closesAtMinutes
-      ),
+  function openGroup(group) {
+    setForm({
+      ...EMPTY_FORM,
+      group,
+      name: group.name,
+      start: group.start,
+      end: group.end,
+      isClosed: group.isClosed,
+      periods: group.periods.length > 0 ? group.periods : EMPTY_FORM.periods,
     });
   }
 
-  function startEditing(
-    specialOpeningDay
-  ) {
-    setEditingId(
-      specialOpeningDay.id
-    );
+  function update(changes) {
+    setForm((current) => ({ ...current, ...changes }));
+  }
 
-    const rawDate =
-      specialOpeningDay.date;
+  async function save() {
+    const periods = [...form.periods].sort((a, b) => a.opens - b.opens);
 
-    const parsedDate =
-      new Date(rawDate);
-
-    if (
-      Number.isNaN(
-        parsedDate.getTime()
-      )
-    ) {
-      Alert.alert(
-        "Fout",
-        "De datum van deze speciale openingsdag kon niet worden gelezen."
+    if (!form.isClosed) {
+      const invalid = periods.some(
+        (period, index) =>
+          period.opens >= period.closes ||
+          (index > 0 && period.opens < periods[index - 1].closes)
       );
 
-      return;
-    }
-
-    const year =
-      parsedDate.getFullYear();
-
-    const month = String(
-      parsedDate.getMonth() + 1
-    ).padStart(2, "0");
-
-    const day = String(
-      parsedDate.getDate()
-    ).padStart(2, "0");
-
-    setDate(
-      `${year}-${month}-${day}`
-    );
-
-    setIsClosed(
-      specialOpeningDay.isClosed
-    );
-
-    const periods =
-      specialOpeningDay.openingPeriods
-        ?.length
-        ? specialOpeningDay.openingPeriods.map(
-            (period) => ({
-              opensAtMinutes:
-                period.opensAtMinutes,
-              closesAtMinutes:
-                period.closesAtMinutes,
-            })
-          )
-        : [createDefaultPeriod()];
-
-    setOpeningPeriods(periods);
-
-    const inputs = {};
-
-    periods.forEach(
-      (period, index) => {
-        inputs[
-          `${index}-open`
-        ] = minutesToTime(
-          period.opensAtMinutes
-        );
-
-        inputs[
-          `${index}-close`
-        ] = minutesToTime(
-          period.closesAtMinutes
-        );
-      }
-    );
-
-    setTimeInputs(inputs);
-  }
-
-  function updatePeriod(
-    index,
-    field,
-    value
-  ) {
-    const periods = [
-      ...openingPeriods,
-    ];
-
-    periods[index] = {
-      ...periods[index],
-      [field]: value,
-    };
-
-    setOpeningPeriods(
-      periods
-    );
-  }
-
-  function updateTimeInput(
-    index,
-    field,
-    value
-  ) {
-    // Only allow numbers and colon.
-    const cleanedValue =
-      value.replace(
-        /[^0-9:]/g,
-        ""
-      );
-
-    setTimeInputs(
-      (current) => ({
-        ...current,
-        [`${index}-${field}`]:
-          cleanedValue,
-      })
-    );
-  }
-
-  function addPeriod() {
-    const newIndex =
-      openingPeriods.length;
-
-    const newPeriod =
-      createDefaultPeriod();
-
-    setOpeningPeriods(
-      (current) => [
-        ...current,
-        newPeriod,
-      ]
-    );
-
-    setTimeInputs(
-      (current) => ({
-        ...current,
-        [`${newIndex}-open`]:
-          minutesToTime(
-            newPeriod.opensAtMinutes
-          ),
-        [`${newIndex}-close`]:
-          minutesToTime(
-            newPeriod.closesAtMinutes
-          ),
-      })
-    );
-  }
-
-  function removePeriod(index) {
-    if (
-      openingPeriods.length === 1
-    ) {
-      Alert.alert(
-        "Kan niet verwijderen",
-        "Een open dag moet minstens één openingsperiode hebben."
-      );
-
-      return;
-    }
-
-    setOpeningPeriods(
-      (current) =>
-        current.filter(
-          (_, periodIndex) =>
-            periodIndex !== index
-        )
-    );
-
-    setTimeInputs(
-      (current) => {
-        const updated = {};
-
-        Object.entries(
-          current
-        ).forEach(
-          ([key, value]) => {
-            const [
-              periodIndex,
-              field,
-            ] = key.split("-");
-
-            const numericIndex =
-              Number(periodIndex);
-
-            if (
-              numericIndex === index
-            ) {
-              return;
-            }
-
-            const newIndex =
-              numericIndex > index
-                ? numericIndex - 1
-                : numericIndex;
-
-            updated[
-              `${newIndex}-${field}`
-            ] = value;
-          }
-        );
-
-        return updated;
-      }
-    );
-  }
-
-  function preparePeriodsForSave() {
-    const convertedPeriods = [];
-
-    for (
-      let i = 0;
-      i < openingPeriods.length;
-      i++
-    ) {
-      const openValue =
-        timeInputs[
-          `${i}-open`
-        ];
-
-      const closeValue =
-        timeInputs[
-          `${i}-close`
-        ];
-
-      const opensAtMinutes =
-        timeToMinutes(
-          openValue || ""
-        );
-
-      const closesAtMinutes =
-        timeToMinutes(
-          closeValue || ""
-        );
-
-      if (
-        opensAtMinutes === null ||
-        closesAtMinutes === null
-      ) {
-        Alert.alert(
-          "Ongeldige openingstijd",
-          `Periode ${i + 1}: gebruik het formaat HH:MM, bijvoorbeeld 17:00.`
-        );
-
-        return null;
-      }
-
-      if (
-        opensAtMinutes >=
-        closesAtMinutes
-      ) {
-        Alert.alert(
-          "Ongeldige openingstijden",
-          `Periode ${i + 1}: openingstijd moet vóór sluitingstijd liggen.`
-        );
-
-        return null;
-      }
-
-      convertedPeriods.push({
-        opensAtMinutes,
-        closesAtMinutes,
-      });
-    }
-
-    return convertedPeriods;
-  }
-
-  async function handleSave() {
-    if (!businessId) {
-      Alert.alert(
-        "Fout",
-        "Restaurant kon niet worden gevonden."
-      );
-
-      return;
-    }
-
-    if (
-      !date.match(
-        /^\d{4}-\d{2}-\d{2}$/
-      )
-    ) {
-      Alert.alert(
-        "Ongeldige datum",
-        "Gebruik het formaat JJJJ-MM-DD."
-      );
-
-      return;
-    }
-
-    let periodsToSave = [];
-
-    if (!isClosed) {
-      periodsToSave =
-        preparePeriodsForSave();
-
-      if (!periodsToSave) {
+      if (invalid || periods.length === 0) {
+        Alert.alert(t("hours.invalid"), t("hours.overlap"));
         return;
       }
     }
 
+    const dates = datesBetween(form.start, form.end);
+
+    if (dates.length > 62) {
+      Alert.alert(t("hours.invalid"), t("special.tooLong"));
+      return;
+    }
+
+    const existingByDate = new Map(
+      specialDays.map((day) => [String(day.date).slice(0, 10), day])
+    );
+    const ownIds = new Set(form.group?.days.map((day) => day.id) ?? []);
+
+    const clash = dates.find((date) => {
+      const day = existingByDate.get(date);
+      return day && !ownIds.has(day.id);
+    });
+
+    if (clash) {
+      Alert.alert(
+        t("special.clashTitle"),
+        t("special.clashMessage", {
+          date: dateOf(clash).toLocaleDateString(locale, { day: "numeric", month: "long" }),
+        })
+      );
+      return;
+    }
+
+    const payload = (date) => ({
+      date,
+      name: form.name.trim() || null,
+      isClosed: form.isClosed,
+      openingPeriods: form.isClosed
+        ? []
+        : periods.map((period) => ({
+            opensAtMinutes: period.opens,
+            closesAtMinutes: period.closes,
+          })),
+    });
+
     try {
       setIsSaving(true);
 
-      const payload = {
-        date,
-        isClosed,
-        openingPeriods:
-          isClosed
-            ? []
-            : periodsToSave,
-      };
+      const ownByDate = new Map(
+        (form.group?.days ?? []).map((day) => [day.key, day])
+      );
 
-      if (editingId) {
-        await api.updateSpecialOpeningDay(
-          businessId,
-          editingId,
-          payload,
-          accessToken
-        );
-      } else {
-        await api.createSpecialOpeningDay(
-          businessId,
-          payload,
-          accessToken
-        );
+      // Days that left the range first, so a date can move.
+      await Promise.all(
+        [...ownByDate.values()]
+          .filter((day) => !dates.includes(day.key))
+          .map((day) => api.deleteSpecialOpeningDay(business.id, day.id, accessToken))
+      );
+
+      for (const date of dates) {
+        const own = ownByDate.get(date);
+
+        if (own) {
+          await api.updateSpecialOpeningDay(business.id, own.id, payload(date), accessToken);
+        } else {
+          await api.createSpecialOpeningDay(business.id, payload(date), accessToken);
+        }
       }
 
-      Alert.alert(
-        "Opgeslagen",
-        editingId
-          ? "De speciale openingsdag is bijgewerkt."
-          : "De speciale openingsdag is toegevoegd."
-      );
-
-      resetForm();
-
-      await loadSpecialOpeningDays();
+      setForm(null);
+      await load();
     } catch (error) {
-      console.error(
-        "Failed to save special opening day:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De speciale openingsdag kon niet worden opgeslagen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("special.saveFailed"));
+      load();
     } finally {
       setIsSaving(false);
     }
   }
 
-  async function handleDelete(id) {
-    if (!businessId) {
-      Alert.alert(
-        "Fout",
-        "Restaurant kon niet worden gevonden."
-      );
+  function remove() {
+    const group = form.group;
 
-      return;
-    }
-
-    Alert.alert(
-      "Verwijderen",
-      "Weet je zeker dat je deze speciale openingsdag wilt verwijderen?",
-      [
-        {
-          text: "Annuleren",
-          style: "cancel",
+    Alert.alert(t("special.removeTitle"), t("special.removeMessage"), [
+      { text: t("common.cancel"), style: "cancel" },
+      {
+        text: t("common.delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setIsSaving(true);
+            await Promise.all(
+              group.days.map((day) =>
+                api.deleteSpecialOpeningDay(business.id, day.id, accessToken)
+              )
+            );
+            setForm(null);
+            await load();
+          } catch (error) {
+            Alert.alert(t("common.error"), error?.message || t("special.saveFailed"));
+          } finally {
+            setIsSaving(false);
+          }
         },
-
-        {
-          text: "Verwijderen",
-          style: "destructive",
-
-          onPress: async () => {
-            try {
-              await api.deleteSpecialOpeningDay(
-                businessId,
-                id,
-                accessToken
-              );
-
-              if (
-                editingId === id
-              ) {
-                resetForm();
-              }
-
-              await loadSpecialOpeningDays();
-            } catch (error) {
-              console.error(
-                "Failed to delete special opening day:",
-                error
-              );
-
-              Alert.alert(
-                "Fout",
-                error.message ||
-                  "De speciale openingsdag kon niet worden verwijderd."
-              );
-            }
-          },
-        },
-      ]
-    );
+      },
+    ]);
   }
 
-  if (isLoading) {
+  function renderGroup(group, index, isPast) {
     return (
-      <View
-        style={
-          styles.loadingContainer
-        }
+      <Pressable
+        key={group.start}
+        accessibilityRole="button"
+        onPress={() => openGroup(group)}
+        style={({ pressed }) => [
+          styles.row,
+          index > 0 && styles.rowDivider,
+          pressed && styles.rowPressed,
+        ]}
       >
-        <ActivityIndicator size="large" />
-      </View>
+        <DateTile group={group} past={isPast} />
+        <View style={styles.rowText}>
+          <Text style={[styles.rowName, isPast && styles.muted]} numberOfLines={1}>
+            {group.name || dateOf(group.start).toLocaleDateString(locale, {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </Text>
+          {group.isClosed && !isPast ? (
+            <View style={styles.closedBadge}>
+              <Text style={styles.closedBadgeText}>{groupDescription(group)}</Text>
+            </View>
+          ) : (
+            <Text style={styles.rowSub}>{groupDescription(group)}</Text>
+          )}
+        </View>
+        <ChevronRight size={18} color={colors.textDisabled} strokeWidth={1.8} />
+      </Pressable>
     );
   }
+
+  const editingPeriod = form?.editingPeriod;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        styles.contentContainer
-      }
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>
-        Speciale openingsdagen
-      </Text>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.header}>
+        <ScreenHeader title={t("special.title")} />
+      </View>
 
-      <Text
-        style={styles.description}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => {
+              setIsRefreshing(true);
+              load();
+            }}
+            tintColor={colors.primary}
+          />
+        }
       >
-        Stel uitzonderlijke openingsuren in
-        voor feestdagen en andere speciale
-        dagen.
-      </Text>
+        <Text style={styles.description}>{t("special.description")}</Text>
 
-      <View style={styles.formCard}>
-        <Text
-          style={styles.sectionTitle}
-        >
-          {editingId
-            ? "Speciale dag aanpassen"
-            : "Speciale dag toevoegen"}
-        </Text>
-
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Datum
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="2026-12-25"
-            keyboardType="numbers-and-punctuation"
-            autoCapitalize="none"
-            maxLength={10}
-          />
-        </View>
-
-        <View style={styles.closedRow}>
-          <View>
-            <Text style={styles.label}>
-              Gesloten
-            </Text>
-
-            <Text
-              style={styles.helperText}
-            >
-              Staat {isMassage ? "de zaak" : "het restaurant"}{" "}
-              deze dag volledig dicht?
-            </Text>
-          </View>
-
-          <Switch
-            {...switchColors}
-            value={isClosed}
-            onValueChange={
-              setIsClosed
-            }
-          />
-        </View>
-
-        {!isClosed && (
-          <View
-            style={
-              styles.periodsContainer
-            }
-          >
-            <Text style={styles.label}>
-              Openingsuren
-            </Text>
-
-            {openingPeriods.map(
-              (period, index) => (
-                <View
-                  key={index}
-                  style={
-                    styles.periodRow
-                  }
-                >
-                  <View
-                    style={
-                      styles.timeField
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.timeLabel
-                      }
-                    >
-                      Van
-                    </Text>
-
-                    <TextInput
-                      style={
-                        styles.input
-                      }
-                      value={
-                        timeInputs[
-                          `${index}-open`
-                        ] ??
-                        minutesToTime(
-                          period.opensAtMinutes
-                        )
-                      }
-                      onChangeText={(
-                        value
-                      ) =>
-                        updateTimeInput(
-                          index,
-                          "open",
-                          value
-                        )
-                      }
-                      placeholder="17:00"
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
-                    />
-                  </View>
-
-                  <Text
-                    style={
-                      styles.separator
-                    }
-                  >
-                    –
-                  </Text>
-
-                  <View
-                    style={
-                      styles.timeField
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.timeLabel
-                      }
-                    >
-                      Tot
-                    </Text>
-
-                    <TextInput
-                      style={
-                        styles.input
-                      }
-                      value={
-                        timeInputs[
-                          `${index}-close`
-                        ] ??
-                        minutesToTime(
-                          period.closesAtMinutes
-                        )
-                      }
-                      onChangeText={(
-                        value
-                      ) =>
-                        updateTimeInput(
-                          index,
-                          "close",
-                          value
-                        )
-                      }
-                      placeholder="22:00"
-                      keyboardType="numbers-and-punctuation"
-                      maxLength={5}
-                    />
-                  </View>
-
-                  <Pressable
-                    style={
-                      styles.removeButton
-                    }
-                    onPress={() =>
-                      removePeriod(
-                        index
-                      )
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.removeButtonText
-                      }
-                    >
-                      ×
-                    </Text>
-                  </Pressable>
-                </View>
-              )
+        {isLoading ? (
+          <SkeletonList rows={3} />
+        ) : (
+          <>
+            <Text style={styles.groupLabel}>{t("special.upcoming")}</Text>
+            {upcoming.length > 0 ? (
+              <View style={styles.card}>
+                {upcoming.map((group, index) => renderGroup(group, index, false))}
+              </View>
+            ) : (
+              <View style={styles.empty}>
+                <Text style={styles.emptyTitle}>{t("special.emptyTitle")}</Text>
+                <Text style={styles.emptyText}>{t("special.emptyText")}</Text>
+              </View>
             )}
 
-            <Pressable
-              style={
-                styles.addButton
-              }
-              onPress={addPeriod}
-            >
-              <Text
-                style={
-                  styles.addButtonText
-                }
-              >
-                + Periode toevoegen
-              </Text>
-            </Pressable>
-          </View>
+            {past.length > 0 ? (
+              <>
+                <Text style={styles.groupLabel}>{t("special.past")}</Text>
+                <View style={styles.card}>
+                  {past.map((group, index) => renderGroup(group, index, true))}
+                </View>
+              </>
+            ) : null}
+          </>
         )}
 
-        <Pressable
-          style={[
-            styles.saveButton,
-            isSaving &&
-              styles.saveButtonDisabled,
-          ]}
-          onPress={handleSave}
-          disabled={isSaving}
-        >
-          {isSaving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text
-              style={
-                styles.saveButtonText
-              }
-            >
-              {editingId
-                ? "Wijzigingen opslaan"
-                : "Toevoegen"}
-            </Text>
-          )}
-        </Pressable>
+        <Button
+          variant="primary"
+          label={t("special.add")}
+          icon={<Plus size={18} color={colors.onPrimary} strokeWidth={2} />}
+          onPress={openNew}
+          style={styles.add}
+        />
+      </ScrollView>
 
-        {editingId && (
-          <Pressable
-            style={
-              styles.cancelButton
-            }
-            onPress={resetForm}
-            disabled={isSaving}
-          >
-            <Text
-              style={
-                styles.cancelButtonText
-              }
-            >
-              Annuleren
-            </Text>
-          </Pressable>
-        )}
-      </View>
-
-      <View
-        style={styles.listContainer}
-      >
-        <Text
-          style={styles.sectionTitle}
-        >
-          Ingestelde speciale dagen
-        </Text>
-
-        {specialOpeningDays.length ===
-        0 ? (
-          <Text
-            style={styles.emptyText}
-          >
-            Er zijn nog geen speciale
-            openingsdagen ingesteld.
-          </Text>
-        ) : (
-          specialOpeningDays.map(
-            (specialOpeningDay) => (
-              <View
-                key={
-                  specialOpeningDay.id
-                }
-                style={styles.dayCard}
-              >
-                <View
-                  style={
-                    styles.dayCardContent
-                  }
-                >
-                  <Text
-                    style={
-                      styles.dayDate
-                    }
-                  >
-                    {formatDate(
-                      specialOpeningDay.date
-                    )}
-                  </Text>
-
-                  {specialOpeningDay.isClosed ? (
-                    <Text
-                      style={
-                        styles.closedText
-                      }
-                    >
-                      Gesloten
-                    </Text>
-                  ) : (
-                    <View>
-                      {specialOpeningDay.openingPeriods?.map(
-                        (
-                          period,
-                          index
-                        ) => (
-                          <Text
-                            key={index}
-                            style={
-                              styles.periodText
-                            }
-                          >
-                            {minutesToTime(
-                              period.opensAtMinutes
-                            )}{" "}
-                            –{" "}
-                            {minutesToTime(
-                              period.closesAtMinutes
-                            )}
-                          </Text>
-                        )
-                      )}
-                    </View>
-                  )}
-                </View>
-
-                <View
-                  style={
-                    styles.actionsContainer
-                  }
-                >
-                  <Pressable
-                    style={
-                      styles.editButton
-                    }
-                    onPress={() =>
-                      startEditing(
-                        specialOpeningDay
-                      )
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.editButtonText
-                      }
-                    >
-                      Bewerken
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={
-                      styles.deleteButton
-                    }
-                    onPress={() =>
-                      handleDelete(
-                        specialOpeningDay.id
-                      )
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.deleteButtonText
-                      }
-                    >
-                      Verwijderen
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
+      <Sheet
+        visible={form !== null}
+        onClose={() => (editingPeriod ? update({ editingPeriod: null }) : setForm(null))}
+        title={
+          editingPeriod
+            ? t("special.periodTitle")
+            : form?.group
+              ? t("special.edit")
+              : t("special.add")
+        }
+        footer={
+          form ? (
+            editingPeriod ? (
+              <Button
+                variant="primary"
+                label={t("common.done")}
+                onPress={() => {
+                  const periods = [...form.periods];
+                  periods[editingPeriod.index] = {
+                    opens: editingPeriod.opens,
+                    closes: editingPeriod.closes,
+                  };
+                  update({ periods, editingPeriod: null });
+                }}
+              />
+            ) : (
+              <>
+                <Button
+                  variant="primary"
+                  label={t("common.save")}
+                  onPress={save}
+                  loading={isSaving}
+                />
+                {form.group ? (
+                  <Button
+                    variant="danger"
+                    label={t("common.delete")}
+                    icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+                    onPress={remove}
+                    disabled={isSaving}
+                  />
+                ) : null}
+              </>
             )
-          )
-        )}
-      </View>
-    </ScrollView>
+          ) : null
+        }
+      >
+        {form && editingPeriod ? (
+          <View>
+            <Text style={styles.label}>{t("hours.opens")}</Text>
+            <TimePicker
+              value={editingPeriod.opens}
+              onChange={(opens) => update({ editingPeriod: { ...editingPeriod, opens } })}
+            />
+            <Text style={[styles.label, styles.labelGap]}>{t("hours.closes")}</Text>
+            <TimePicker
+              value={editingPeriod.closes}
+              onChange={(closes) => update({ editingPeriod: { ...editingPeriod, closes } })}
+            />
+          </View>
+        ) : form ? (
+          <View>
+            <Text style={styles.label}>{t("special.name")}</Text>
+            <TextInput
+              value={form.name}
+              onChangeText={(name) => update({ name })}
+              placeholder={t("special.namePlaceholder")}
+              placeholderTextColor={colors.textDisabled}
+              style={styles.input}
+              maxLength={60}
+            />
+
+            <Text style={[styles.label, styles.labelGap]}>
+              {form.start === form.end
+                ? dateOf(form.start).toLocaleDateString(locale, {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })
+                : `${dateOf(form.start).toLocaleDateString(locale, {
+                    day: "numeric",
+                    month: "short",
+                  })} – ${dateOf(form.end).toLocaleDateString(locale, {
+                    day: "numeric",
+                    month: "short",
+                  })} · ${plural("special.days", datesBetween(form.start, form.end).length)}`}
+            </Text>
+            <View style={styles.calendar}>
+              <DateRangePicker
+                start={form.start}
+                end={form.end}
+                minDate={form.group ? undefined : today}
+                onChange={({ start, end }) => update({ start, end })}
+              />
+            </View>
+            <Text style={styles.hint}>{t("special.rangeHint")}</Text>
+
+            <View style={styles.labelGap}>
+              <SegmentedControl
+                options={[
+                  { value: "closed", label: t("special.closed") },
+                  { value: "open", label: t("special.otherHours") },
+                ]}
+                value={form.isClosed ? "closed" : "open"}
+                onChange={(value) => update({ isClosed: value === "closed" })}
+              />
+            </View>
+
+            {!form.isClosed ? (
+              <View style={styles.periods}>
+                {form.periods.map((period, index) => (
+                  <Pressable
+                    key={index}
+                    accessibilityRole="button"
+                    onPress={() => update({ editingPeriod: { index, ...period } })}
+                    onLongPress={() =>
+                      form.periods.length > 1 &&
+                      update({
+                        periods: form.periods.filter((_, other) => other !== index),
+                      })
+                    }
+                    style={styles.pill}
+                  >
+                    <Text style={styles.pillText}>
+                      {formatMinutes(period.opens)} – {formatMinutes(period.closes)}
+                    </Text>
+                  </Pressable>
+                ))}
+                {form.periods.length < 3 ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      const last = form.periods[form.periods.length - 1];
+                      const opens = Math.min((last?.closes ?? 11 * 60) + 60, 22 * 60);
+                      update({
+                        editingPeriod: {
+                          index: form.periods.length,
+                          opens,
+                          closes: Math.min(opens + 3 * 60, 23 * 60 + 45),
+                        },
+                      });
+                    }}
+                    style={styles.addPill}
+                  >
+                    <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                    <Text style={styles.addPillText}>{t("hours.period")}</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </Sheet>
+    </SafeAreaView>
   );
 }
 
-// Written in neutral colours; skin turns them into the
-// Eucalyptus look.
-const styleDefs = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
 
-  contentContainer: {
-    padding: 24,
-    paddingBottom: 48,
+  header: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
   },
 
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 8,
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
   },
 
   description: {
-    fontSize: 15,
-    color: "#666",
-    marginBottom: 24,
-  },
-
-  formCard: {
-    borderWidth: 1,
-    borderColor: "#e1e1e1",
-    borderRadius: 12,
-    padding: 18,
-    backgroundColor: "#fafafa",
-  },
-
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 18,
-  },
-
-  field: {
-    gap: 7,
-    marginBottom: 18,
-  },
-
-  label: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#333",
-  },
-
-  helperText: {
+    fontFamily: fonts.regular,
     fontSize: 13,
-    color: "#777",
-    marginTop: 3,
+    lineHeight: 18,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.xs,
   },
 
-  input: {
-    height: 48,
+  groupLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.xs,
+  },
+
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fff",
+    borderColor: colors.border,
+    overflow: "hidden",
   },
 
-  closedRow: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 18,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
 
-  periodsContainer: {
-    gap: 12,
-    marginBottom: 4,
+  rowDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 
-  periodRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
+  rowPressed: {
+    backgroundColor: colors.surfaceMuted,
   },
 
-  timeField: {
+  rowText: {
     flex: 1,
-    gap: 6,
+    alignItems: "flex-start",
+    gap: 4,
   },
 
-  timeLabel: {
-    fontSize: 13,
-    color: "#666",
-  },
-
-  separator: {
-    fontSize: 20,
-    paddingBottom: 11,
-    color: "#777",
-  },
-
-  removeButton: {
-    width: 42,
-    height: 48,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#eee",
-  },
-
-  removeButtonText: {
-    fontSize: 24,
-    color: "#666",
-  },
-
-  addButton: {
-    height: 44,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-
-  saveButton: {
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 24,
-  },
-
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
-  cancelButton: {
-    height: 48,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
-  },
-
-  cancelButtonText: {
+  rowName: {
+    fontFamily: fonts.semibold,
     fontSize: 15,
-    fontWeight: "600",
-    color: "#666",
+    color: colors.text,
+    textTransform: "capitalize",
   },
 
-  listContainer: {
-    marginTop: 32,
+  rowSub: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+
+  muted: {
+    color: colors.textMuted,
+  },
+
+  closedBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.dangerSoft,
+  },
+
+  closedBadgeText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.danger,
+  },
+
+  tile: {
+    width: 46,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    borderRadius: radius.md,
+    alignItems: "center",
+  },
+
+  tile_open: { backgroundColor: colors.sandSoft },
+  tile_closed: { backgroundColor: colors.dangerSoft },
+  tile_past: { backgroundColor: colors.surfaceMuted },
+
+  tileText_open: { color: colors.onSand },
+  tileText_closed: { color: colors.danger },
+  tileText_past: { color: colors.textMuted },
+
+  tileMonth: {
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    letterSpacing: 0.4,
+  },
+
+  tileDay: {
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+  },
+
+  empty: {
+    padding: spacing.xl,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
   },
 
   emptyText: {
-    fontSize: 14,
-    color: "#777",
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: spacing.xs,
   },
 
-  dayCard: {
+  add: {
+    marginTop: spacing.xxl,
+  },
+
+  label: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.text,
+    marginBottom: spacing.sm,
+    textTransform: "capitalize",
+  },
+
+  labelGap: {
+    marginTop: spacing.lg,
+  },
+
+  input: {
+    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: "#e1e1e1",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#fafafa",
-  },
-
-  dayCardContent: {
-    marginBottom: 14,
-  },
-
-  dayDate: {
-    fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-
-  periodText: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    fontFamily: fonts.regular,
     fontSize: 15,
-    color: "#555",
-    marginTop: 2,
+    color: colors.text,
   },
 
-  closedText: {
-    fontSize: 15,
-    color: "#777",
+  calendar: {
+    padding: spacing.md,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
-  actionsContainer: {
+  hint: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+  },
+
+  periods: {
     flexDirection: "row",
-    gap: 8,
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
-  editButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 9,
+  pill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+
+  pillText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+
+  addPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#eee",
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.primaryBorder,
   },
 
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+  addPillText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.primary,
   },
-
-  deleteButton: {
-    flex: 1,
-    height: 44,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#eee",
-  },
-
-  deleteButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#666",
-  },
-};
-
-const styles = StyleSheet.create(
-  skin(styleDefs, {
-    container: {
-      backgroundColor: colors.background,
-    },
-  })
-);
+});

@@ -3,7 +3,7 @@
     "name": "atrionovo-receptionist-app",
     "slug": "atrionovo-receptionist-app",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "atrionovoreceptionistapp",
     "userInterfaceStyle": "automatic",
@@ -11,8 +11,21 @@
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.atrionovo.receptionist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "remote-notification"
+        ],
+        "UISupportedInterfaceOrientations": [
+          "UIInterfaceOrientationPortrait"
+        ],
+        "UISupportedInterfaceOrientations~ipad": [
+          "UIInterfaceOrientationPortrait",
+          "UIInterfaceOrientationPortraitUpsideDown",
+          "UIInterfaceOrientationLandscapeLeft",
+          "UIInterfaceOrientationLandscapeRight"
+        ]
+      },
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +53,20 @@
       "expo-secure-store",
       "expo-font",
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "color": "#1F5F55"
+        }
+      ],
+      [
+        "@sentry/react-native",
+        {
+          "organization": "atrionovo",
+          "project": "receptionist-app"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

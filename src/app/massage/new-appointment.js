@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D8D3C9",
+    backgroundColor: colors.border,
   },
 
   progressStepDone: {

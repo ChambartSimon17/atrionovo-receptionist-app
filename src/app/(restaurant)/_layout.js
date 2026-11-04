@@ -12,6 +12,7 @@ import {
   colors,
   fonts,
 } from "../../theme";
+import { t } from "../../i18n";
 
 // ======================================================
 // Restaurant tabs
@@ -56,35 +57,35 @@ export default function RestaurantTabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Vandaag",
+          title: t("tabs.today"),
           tabBarIcon: tabIcon(House),
         }}
       />
       <Tabs.Screen
         name="floor"
         options={{
-          title: "Zaal",
+          title: t("tabs.floor"),
           tabBarIcon: tabIcon(LayoutGrid),
         }}
       />
       <Tabs.Screen
         name="agenda"
         options={{
-          title: "Agenda",
+          title: t("tabs.agenda"),
           tabBarIcon: tabIcon(CalendarRange),
         }}
       />
       <Tabs.Screen
         name="customers"
         options={{
-          title: "Gasten",
+          title: t("tabs.guests"),
           tabBarIcon: tabIcon(Users),
         }}
       />
       <Tabs.Screen
         name="more"
         options={{
-          title: "Meer",
+          title: t("tabs.more"),
           tabBarIcon: tabIcon(Ellipsis),
         }}
       />

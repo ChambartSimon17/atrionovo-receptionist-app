@@ -24,7 +24,10 @@ import {
   statusColors,
   type,
 } from "../../theme";
-import { todayString } from "../../utils/date";
+import { formatTime, todayString } from "../../utils/date";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { SkeletonList } from "../../components/ui";
+import { t } from "../../i18n";
 
 // ======================================================
 // Agenda (timeline per table)
@@ -61,7 +64,12 @@ export default function RestaurantAgendaScreen() {
     tables,
     isLoading,
     error,
+    moveTo,
   } = useRestaurantDay(date);
+
+  // A reservation being dragged to another table:
+  // { id, fromIndex, dy }.
+  const [drag, setDrag] = useState(null);
 
   // The hours shown: the opening hours of the week,
   // widened to fit every reservation of the day.
@@ -140,6 +148,56 @@ export default function RestaurantAgendaScreen() {
     nowMinutes >= startMinutes &&
     nowMinutes <= endMinutes;
 
+  const targetIndex = drag
+    ? Math.max(
+        0,
+        Math.min(
+          rows.length - 1,
+          drag.fromIndex + Math.round(drag.dy / ROW_HEIGHT)
+        )
+      )
+    : null;
+
+  // Drops a dragged reservation on the row under it and,
+  // after a confirmation, moves it to that table.
+  function dropOnRow(reservation, fromIndex, dy) {
+    const toIndex = Math.max(
+      0,
+      Math.min(rows.length - 1, fromIndex + Math.round(dy / ROW_HEIGHT))
+    );
+    const target = rows[toIndex];
+
+    setDrag(null);
+
+    if (toIndex === fromIndex || !target || target.id === UNASSIGNED) {
+      return;
+    }
+
+    const table = tables.find((candidate) => candidate.id === target.id);
+    const tooSmall = table && table.capacity < reservation.guestCount;
+
+    Alert.alert(
+      t("agenda.moveTitle", { table: target.name }),
+      tooSmall
+        ? t("agenda.moveSmall", {
+            name: `${reservation.firstName} ${reservation.lastName}`.trim(),
+            count: reservation.guestCount,
+            seats: table.capacity,
+          })
+        : t("agenda.moveMessage", {
+            name: `${reservation.firstName} ${reservation.lastName}`.trim(),
+            time: formatTime(reservation.startTime),
+          }),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("agenda.moveConfirm"),
+          onPress: () => moveTo(reservation, [target.id]),
+        },
+      ]
+    );
+  }
+
   const covers = reservations.reduce(
     (sum, reservation) => sum + reservation.guestCount,
     0
@@ -175,10 +233,9 @@ export default function RestaurantAgendaScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator
-          color={colors.primary}
-          style={styles.loading}
-        />
+        <View style={styles.message}>
+          <SkeletonList rows={5} />
+        </View>
       ) : error ? (
         <Card style={styles.message}>
           <Text style={styles.error}>{error}</Text>
@@ -194,6 +251,7 @@ export default function RestaurantAgendaScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={!drag}
         >
           <Card style={styles.grid}>
             {/* Table names */}
@@ -227,6 +285,7 @@ export default function RestaurantAgendaScreen() {
 
             <ScrollView
               horizontal
+              scrollEnabled={!drag}
               showsHorizontalScrollIndicator={false}
               contentOffset={{
                 x: showNow
@@ -256,6 +315,11 @@ export default function RestaurantAgendaScreen() {
                     style={[
                       styles.timelineRow,
                       index > 0 && styles.rowDivider,
+                      drag &&
+                        targetIndex === index &&
+                        index !== drag.fromIndex &&
+                        styles.dropTarget,
+                      drag?.fromIndex === index && styles.dragRow,
                     ]}
                   >
                     {hours.map((minutes) => (
@@ -281,50 +345,45 @@ export default function RestaurantAgendaScreen() {
                       const palette = seated
                         ? statusColors.SEATED
                         : statusColors.CONFIRMED;
+                      const isDragged =
+                        drag?.id === reservation.id &&
+                        drag.fromIndex === index;
 
                       return (
-                        <Pressable
+                        <AgendaBlock
                           key={reservation.id}
-                          accessibilityRole="button"
-                          onPress={() =>
+                          reservation={reservation}
+                          palette={palette}
+                          dragged={isDragged}
+                          dy={isDragged ? drag.dy : 0}
+                          style={{
+                            left: x(start) + 2,
+                            width: Math.max(
+                              36,
+                              (duration / 60) * HOUR_WIDTH - 4
+                            ),
+                          }}
+                          onOpen={() =>
                             router.push(
                               `/reservation/${reservation.id}`
                             )
                           }
-                          style={({ pressed }) => [
-                            styles.block,
-                            {
-                              left: x(start) + 2,
-                              width: Math.max(
-                                36,
-                                (duration / 60) * HOUR_WIDTH - 4
-                              ),
-                              backgroundColor: palette.background,
-                            },
-                            pressed && styles.blockPressed,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.blockName,
-                              { color: palette.text },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {reservation.lastName ||
-                              reservation.firstName}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.blockMeta,
-                              { color: palette.text },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {reservation.guestCount} p.
-                            {reservation.notes ? " · ✎" : ""}
-                          </Text>
-                        </Pressable>
+                          onDragStart={() =>
+                            setDrag({
+                              id: reservation.id,
+                              fromIndex: index,
+                              dy: 0,
+                            })
+                          }
+                          onDrag={(dy) =>
+                            setDrag((current) =>
+                              current ? { ...current, dy } : current
+                            )
+                          }
+                          onDrop={(dy) =>
+                            dropOnRow(reservation, index, dy)
+                          }
+                        />
                       );
                     })}
                   </View>
@@ -345,6 +404,8 @@ export default function RestaurantAgendaScreen() {
             </ScrollView>
           </Card>
 
+          <Text style={styles.dragHint}>{t("agenda.dragHint")}</Text>
+
           <View style={styles.legend}>
             <LegendItem
               color={statusColors.CONFIRMED.background}
@@ -359,6 +420,66 @@ export default function RestaurantAgendaScreen() {
         </ScrollView>
       )}
     </SafeAreaView>
+  );
+}
+
+// A reservation on the timeline. Tap to open it; hold
+// and drag up or down to move it to another table.
+function AgendaBlock({
+  reservation,
+  palette,
+  style,
+  dragged,
+  dy,
+  onOpen,
+  onDragStart,
+  onDrag,
+  onDrop,
+}) {
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .activateAfterLongPress(300)
+    .onStart(() => onDragStart())
+    .onUpdate((event) => onDrag(event.translationY))
+    .onEnd((event) => onDrop(event.translationY))
+    .onFinalize((event, success) => {
+      if (!success) {
+        onDrag(0);
+      }
+    });
+
+  const tap = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((event, success) => success && onOpen());
+
+  return (
+    <GestureDetector gesture={Gesture.Exclusive(pan, tap)}>
+      <View
+        accessibilityRole="button"
+        accessibilityHint={t("agenda.dragHint")}
+        style={[
+          styles.block,
+          style,
+          { backgroundColor: palette.background },
+          dragged && styles.blockDragged,
+          dragged && { transform: [{ translateY: dy }] },
+        ]}
+      >
+        <Text
+          style={[styles.blockName, { color: palette.text }]}
+          numberOfLines={1}
+        >
+          {reservation.lastName || reservation.firstName}
+        </Text>
+        <Text
+          style={[styles.blockMeta, { color: palette.text }]}
+          numberOfLines={1}
+        >
+          {reservation.guestCount} p.
+          {reservation.notes ? " · ✎" : ""}
+        </Text>
+      </View>
+    </GestureDetector>
   );
 }
 
@@ -377,6 +498,32 @@ function LegendItem({ color, label, line = false }) {
 }
 
 const styles = StyleSheet.create({
+  dropTarget: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  dragRow: {
+    zIndex: 10,
+  },
+
+  blockDragged: {
+    zIndex: 20,
+    opacity: 0.92,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+
+  dragHint: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: spacing.md,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,

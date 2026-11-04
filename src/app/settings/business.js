@@ -1,5 +1,5 @@
+import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
@@ -8,283 +8,473 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Check } from "lucide-react-native";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
-import { skin } from "../../theme/skin";
+import {
+  Button,
+  ScreenHeader,
+  SegmentedControl,
+  SettingsGroup,
+  SettingsRow,
+  Sheet,
+  Skeleton,
+  Stepper,
+  Switch,
+} from "../../components/ui";
+import { language as appLanguage, LANGUAGES, setLanguage, t } from "../../i18n";
+import { getAppearance, setAppearance } from "../../theme/appearance";
+import { colors, fonts, radius, spacing } from "../../theme";
+import { BUSINESS_TYPES } from "../../utils/business-type";
+
+// ======================================================
+// Business settings
+// ======================================================
+//
+// Restaurantgegevens or Salongegevens: one screen for
+// both business types, in grouped sections like the iOS
+// settings app.
+//
+//   card        initials, name and type
+//   Algemeen    name; capacity (restaurant) or the pause
+//               between appointments (salon)
+//   Regio       time zone (picker) and the language the
+//               AI receptionist speaks
+//   AI          the receptionist switch, saved right away
+//   App         appearance and app language, stored on
+//               this phone
+// ======================================================
+
+const TIMEZONES = [
+  { value: "Europe/Brussels", label: "Brussel" },
+  { value: "Europe/Amsterdam", label: "Amsterdam" },
+  { value: "Europe/Luxembourg", label: "Luxemburg" },
+  { value: "Europe/Paris", label: "Parijs" },
+  { value: "Europe/Berlin", label: "Berlijn" },
+  { value: "Europe/London", label: "Londen" },
+  { value: "Europe/Madrid", label: "Madrid" },
+  { value: "Europe/Lisbon", label: "Lissabon" },
+];
+
+function initials(name) {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((word) => word[0].toUpperCase())
+      .join("") || "?"
+  );
+}
+
+function timezoneLabel(value) {
+  return TIMEZONES.find((zone) => zone.value === value)?.label ?? value;
+}
 
 export default function BusinessSettingsScreen() {
-  const { accessToken } = useAuth();
+  const { accessToken, business, businessType, updateBusiness } = useAuth();
+
+  const isMassage = businessType === BUSINESS_TYPES.MASSAGE;
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [tableSummary, setTableSummary] = useState(null);
 
   const [name, setName] = useState("");
-  const [maxCapacity, setMaxCapacity] = useState("");
-  const [timezone, setTimezone] = useState("");
-  const [language, setLanguage] = useState("");
+  const [maxCapacity, setMaxCapacity] = useState(40);
+  const [buffer, setBuffer] = useState(0);
+  const [timezone, setTimezone] = useState("Europe/Brussels");
+  const [language, setBusinessLanguage] = useState("nl");
+  const [voiceAgentEnabled, setVoiceAgentEnabled] = useState(true);
+  const [isTogglingVoice, setIsTogglingVoice] = useState(false);
+  const [pickingTimezone, setPickingTimezone] = useState(false);
 
-  useEffect(() => {
-    loadBusiness();
-  }, []);
+  const [saved, setSaved] = useState(null);
 
-  async function loadBusiness() {
+  const load = useCallback(async () => {
     try {
-      const response =
-        await api.getMyBusiness(accessToken);
+      const response = await api.getMyBusiness(accessToken);
+      const data = response?.data || response;
 
-      const business = response.data;
+      setName(data.name ?? "");
+      setMaxCapacity(Number(data.maxCapacity) || 40);
+      setBuffer(Number(data.appointmentBufferMinutes) || 0);
+      setTimezone(data.timezone || "Europe/Brussels");
+      setBusinessLanguage(data.language || "nl");
+      setVoiceAgentEnabled(data.voiceAgentEnabled ?? true);
+      setSaved({
+        name: data.name ?? "",
+        maxCapacity: Number(data.maxCapacity) || 40,
+        buffer: Number(data.appointmentBufferMinutes) || 0,
+        timezone: data.timezone || "Europe/Brussels",
+        language: data.language || "nl",
+      });
 
-      setName(business.name ?? "");
-      setMaxCapacity(
-        String(business.maxCapacity ?? "")
-      );
-      setTimezone(business.timezone ?? "");
-      setLanguage(business.language ?? "");
+      if (!isMassage && data.id) {
+        api
+          .getTables(data.id, accessToken)
+          .then((tablesResponse) => {
+            const tables = (tablesResponse?.data || tablesResponse || []).filter(
+              (table) => table.isActive !== false
+            );
+            setTableSummary({
+              count: tables.length,
+              seats: tables.reduce((sum, table) => sum + (table.capacity || 0), 0),
+            });
+          })
+          .catch(() => {});
+      }
     } catch (error) {
-      console.error(
-        "Failed to load restaurant:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De restaurantgegevens konden niet worden geladen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("business.loadFailed"));
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [accessToken, isMassage]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const isDirty =
+    saved &&
+    (name !== saved.name ||
+      maxCapacity !== saved.maxCapacity ||
+      buffer !== saved.buffer ||
+      timezone !== saved.timezone ||
+      language !== saved.language);
 
   async function handleSave() {
     if (!name.trim()) {
-      Alert.alert(
-        "Ongeldige gegevens",
-        "Restaurantnaam is verplicht."
-      );
+      Alert.alert(t("business.invalid"), t("business.nameRequired"));
       return;
     }
 
-    if (
-      !maxCapacity ||
-      Number(maxCapacity) <= 0
-    ) {
-      Alert.alert(
-        "Ongeldige gegevens",
-        "Maximale capaciteit moet groter zijn dan 0."
-      );
-      return;
-    }
+    const changes = isMassage
+      ? {
+          name: name.trim(),
+          timezone,
+          language,
+          appointmentBufferMinutes: buffer,
+        }
+      : {
+          name: name.trim(),
+          maxCapacity,
+          timezone,
+          language,
+        };
 
     try {
       setIsSaving(true);
-
-      await api.updateMyBusiness(
-        {
-          name: name.trim(),
-          maxCapacity: Number(maxCapacity),
-          timezone: timezone.trim(),
-          language: language.trim(),
-        },
-        accessToken
-      );
-
-      Alert.alert(
-        "Opgeslagen",
-        "De restaurantgegevens zijn bijgewerkt."
-      );
+      await api.updateMyBusiness(changes, accessToken);
+      updateBusiness(changes);
+      setSaved({ name: name.trim(), maxCapacity, buffer, timezone, language });
     } catch (error) {
-      console.error(
-        "Failed to update restaurant:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De restaurantgegevens konden niet worden opgeslagen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("business.saveFailed"));
     } finally {
       setIsSaving(false);
     }
   }
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+  async function toggleVoiceAgent(next) {
+    setVoiceAgentEnabled(next);
+    setIsTogglingVoice(true);
+
+    try {
+      const response = await api.setVoiceAgentEnabled(next, accessToken);
+      const data = response?.data || response;
+      setVoiceAgentEnabled(data?.voiceAgentEnabled ?? next);
+      updateBusiness({ voiceAgentEnabled: data?.voiceAgentEnabled ?? next });
+    } catch (error) {
+      setVoiceAgentEnabled(!next);
+      Alert.alert(t("business.voiceNotSaved"), error?.message || t("common.tryAgain"));
+    } finally {
+      setIsTogglingVoice(false);
+    }
   }
 
+  const title = isMassage ? t("business.titleMassage") : t("business.titleRestaurant");
+
+  const subtitle = isMassage
+    ? t("business.typeMassage")
+    : tableSummary
+      ? t("business.typeRestaurantTables", tableSummary)
+      : t("business.typeRestaurant");
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        styles.contentContainer
-      }
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>
-        Restaurant
-      </Text>
-
-      <Text style={styles.description}>
-        Beheer de basisgegevens van je restaurant.
-      </Text>
-
-      <View style={styles.section}>
-        <SettingField
-          label="Restaurantnaam"
-          value={name}
-          onChangeText={setName}
-        />
-
-        <SettingField
-          label="Maximale capaciteit"
-          value={maxCapacity}
-          onChangeText={setMaxCapacity}
-          keyboardType="numeric"
-        />
-
-        <SettingField
-          label="Tijdzone"
-          value={timezone}
-          onChangeText={setTimezone}
-          autoCapitalize="none"
-        />
-
-        <SettingField
-          label="Taal"
-          value={language}
-          onChangeText={setLanguage}
-          autoCapitalize="none"
-        />
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.header}>
+        <ScreenHeader title={title} />
       </View>
 
-      <Pressable
-        style={[
-          styles.saveButton,
-          isSaving &&
-            styles.saveButtonDisabled,
-        ]}
-        onPress={handleSave}
-        disabled={isSaving}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
       >
-        {isSaving ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.saveButtonText}>
-            Opslaan
-          </Text>
-        )}
-      </Pressable>
-    </ScrollView>
+        <View style={styles.identity}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>
+              {initials(name || business?.name || "")}
+            </Text>
+          </View>
+          <View style={styles.identityText}>
+            {isLoading ? (
+              <>
+                <Skeleton width="60%" height={16} />
+                <Skeleton width="40%" height={12} style={styles.gap} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.identityName} numberOfLines={1}>
+                  {name || business?.name}
+                </Text>
+                <Text style={styles.identitySub}>{subtitle}</Text>
+              </>
+            )}
+          </View>
+        </View>
+
+        <SettingsGroup label={t("business.general")}>
+          <SettingsRow label={t("business.name")}>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder={title}
+              placeholderTextColor={colors.textDisabled}
+              style={styles.inlineInput}
+              returnKeyType="done"
+              editable={!isLoading}
+            />
+          </SettingsRow>
+          {isMassage ? (
+            <SettingsRow
+              label={t("business.buffer")}
+              hint={t("business.bufferHint")}
+            >
+              <Stepper
+                value={buffer}
+                onChange={setBuffer}
+                min={0}
+                max={60}
+                step={5}
+                suffix="min"
+              />
+            </SettingsRow>
+          ) : (
+            <SettingsRow
+              label={t("business.capacity")}
+              hint={t("business.capacityHint")}
+            >
+              <Stepper
+                value={maxCapacity}
+                onChange={setMaxCapacity}
+                min={1}
+                max={500}
+              />
+            </SettingsRow>
+          )}
+        </SettingsGroup>
+
+        <SettingsGroup label={t("business.region")}>
+          <SettingsRow
+            label={t("business.timezone")}
+            value={timezoneLabel(timezone)}
+            onPress={() => setPickingTimezone(true)}
+          />
+          <SettingsRow label={t("business.language")} hint={t("business.languageHint")}>
+            <SegmentedControl
+              options={LANGUAGES}
+              value={language}
+              onChange={setBusinessLanguage}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+
+        <SettingsGroup
+          label={t("business.ai")}
+          footer={
+            voiceAgentEnabled ? t("business.aiOnFooter") : t("business.aiOffFooter")
+          }
+        >
+          <SettingsRow label={t("business.aiAnswers")}>
+            <Switch
+              value={voiceAgentEnabled}
+              onValueChange={toggleVoiceAgent}
+              disabled={isTogglingVoice || isLoading}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+
+        <SettingsGroup label={t("business.app")} footer={t("business.appFooter")}>
+          <SettingsRow label={t("business.appearance")}>
+            <SegmentedControl
+              options={[
+                { value: "automatic", label: t("business.appearanceAuto") },
+                { value: "light", label: t("business.appearanceLight") },
+                { value: "dark", label: t("business.appearanceDark") },
+              ]}
+              value={getAppearance()}
+              onChange={setAppearance}
+            />
+          </SettingsRow>
+          <SettingsRow label={t("business.appLanguage")}>
+            <SegmentedControl
+              options={LANGUAGES}
+              value={appLanguage}
+              onChange={setLanguage}
+            />
+          </SettingsRow>
+        </SettingsGroup>
+
+        <Button
+          variant="primary"
+          label={isDirty ? t("business.save") : t("business.saved")}
+          onPress={handleSave}
+          loading={isSaving}
+          disabled={!isDirty || isLoading}
+          style={styles.save}
+        />
+      </ScrollView>
+
+      <Sheet
+        visible={pickingTimezone}
+        onClose={() => setPickingTimezone(false)}
+        title={t("business.timezone")}
+      >
+        <SettingsGroup>
+          {TIMEZONES.map((zone) => (
+            <Pressable
+              key={zone.value}
+              accessibilityRole="button"
+              onPress={() => {
+                setTimezone(zone.value);
+                setPickingTimezone(false);
+              }}
+              style={({ pressed }) => [styles.zone, pressed && styles.zonePressed]}
+            >
+              <View style={styles.zoneText}>
+                <Text style={styles.zoneLabel}>{zone.label}</Text>
+                <Text style={styles.zoneValue}>{zone.value}</Text>
+              </View>
+              {zone.value === timezone ? (
+                <Check size={18} color={colors.primary} strokeWidth={2.2} />
+              ) : null}
+            </Pressable>
+          ))}
+        </SettingsGroup>
+      </Sheet>
+    </SafeAreaView>
   );
 }
 
-function SettingField({
-  label,
-  value,
-  onChangeText,
-  keyboardType,
-  autoCapitalize,
-}) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>
-        {label}
-      </Text>
-
-      <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={
-          keyboardType || "default"
-        }
-        autoCapitalize={
-          autoCapitalize || "sentences"
-        }
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create(
-  skin({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
+    backgroundColor: colors.background,
   },
 
-  contentContainer: {
-    padding: 24,
-    paddingBottom: 48,
+  header: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
   },
 
-  loadingContainer: {
-    flex: 1,
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
+  },
+
+  identity: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f7f7f7",
-  },
-
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 8,
-  },
-
-  description: {
-    fontSize: 15,
-    color: "#666",
-    marginBottom: 32,
-  },
-
-  section: {
-    gap: 18,
-  },
-
-  field: {
-    gap: 7,
-  },
-
-  label: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#333",
-  },
-
-  input: {
-    height: 48,
+    gap: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    fontSize: 16,
-    backgroundColor: "#fafafa",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 
-  saveButton: {
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: "#111",
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primarySoft,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 32,
   },
 
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-
-  saveButtonText: {
-    color: "#fff",
+  avatarText: {
+    fontFamily: fonts.semibold,
     fontSize: 16,
-    fontWeight: "600",
+    color: colors.primary,
   },
-})
-);
+
+  identityText: {
+    flex: 1,
+  },
+
+  identityName: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
+  },
+
+  identitySub: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  gap: {
+    marginTop: spacing.sm,
+  },
+
+  inlineInput: {
+    flex: 1.4,
+    textAlign: "right",
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.text,
+    paddingVertical: spacing.sm,
+  },
+
+  save: {
+    marginTop: spacing.xxl,
+  },
+
+  zone: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: 52,
+  },
+
+  zonePressed: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  zoneText: {
+    flex: 1,
+  },
+
+  zoneLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 15,
+    color: colors.text,
+  },
+
+  zoneValue: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+});

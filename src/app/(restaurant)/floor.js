@@ -1,654 +1,500 @@
+import { useEffect, useMemo, useState } from "react";
 import {
-  useRef,
-  useState,
-} from "react";
-import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
-  Check,
-  PencilRuler,
-  Plus,
+  ArrowRightLeft,
+  Pencil,
+  UserPlus,
+  UserX,
   X,
 } from "lucide-react-native";
 
-import { useAuth } from "../../context/auth-context";
-import { api } from "../../services/api";
-import DayNavigation from "../../components/DayNavigation";
+import FloorCanvas from "../../components/floor/FloorCanvas";
+import { tableLiveState } from "../../components/floor/floor-model";
 import ReservationRow from "../../components/ReservationRow";
-import TableMap from "../../components/TableMap";
-import { getTableReservationState } from "../../components/table-state";
-import {
-  Button,
-  Card,
-  SegmentedControl,
-} from "../../components/ui";
+import WalkInSheet, { freeTablesForWalkIn } from "../../components/WalkInSheet";
+import { Button, Skeleton } from "../../components/ui";
+import useFloorPlan from "../../hooks/useFloorPlan";
 import useRestaurantDay from "../../hooks/useRestaurantDay";
-import {
-  colors,
-  fonts,
-  radius,
-  spacing,
-  tableColors,
-  type,
-} from "../../theme";
-import { todayString } from "../../utils/date";
+import { plural, t } from "../../i18n";
+import { colors, floorColors, fonts, radius, spacing, type } from "../../theme";
+import { formatTime, todayString } from "../../utils/date";
 
 // ======================================================
-// Zaal (live floor plan)
+// Zaal
 // ======================================================
 //
-// The floor plan of the chosen day with every table
-// coloured by its state. Tapping a table shows who sits
-// there or comes next, with the buttons to seat them or
-// let them leave.
+// The floor plan during the service. Every table shows
+// its state (free, reserved, arriving, late, seated) and
+// who sits or comes there. Rooms (Binnen, Terras) are
+// tabs.
 //
-// "Bewerk vloerplan" switches to editing: drag the
-// tables, add one, or tap one to change its name, size,
-// shape and number of seats, or to deactivate it.
+// Tap a table: a panel with its reservations and the
+// actions (aan tafel, vertrokken, niet gekomen, verplaats)
+// or, for a free table, a walk-in.
+//
+// On an iPad the day's reservations stand next to the
+// plan. Tap "Verplaats" or a reservation without a table,
+// then tap a free table to put it there.
 // ======================================================
 
 const LEGEND = [
-  { state: "AVAILABLE", label: "Vrij" },
-  { state: "RESERVED", label: "Gereserveerd" },
-  { state: "ARRIVING", label: "Komt nu" },
-  { state: "SEATED", label: "Bezet" },
+  { state: "free", label: "floor.legend.free" },
+  { state: "reserved", label: "floor.legend.reserved" },
+  { state: "arriving", label: "floor.legend.arriving" },
+  { state: "late", label: "floor.legend.late" },
+  { state: "seated", label: "floor.legend.seated" },
 ];
 
-const SHAPES = [
-  { value: "ROUND", label: "Rond" },
-  { value: "SQUARE", label: "Vierkant" },
-  { value: "RECTANGLE", label: "Rechthoek" },
-];
-
-const STATE_LABELS = {
-  AVAILABLE: "Vrij",
-  RESERVED: "Gereserveerd",
-  ARRIVING: "Gasten komen nu",
-  SEATED: "Bezet",
-};
-
-export default function RestaurantFloorScreen() {
+export default function FloorScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 900;
 
-  const { business, accessToken } = useAuth();
+  const { plan, isLoading: planLoading } = useFloorPlan();
+  const day = useRestaurantDay(todayString());
 
-  const [date, setDate] = useState(todayString());
-  const [selectedId, setSelectedId] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [draft, setDraft] = useState(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [areaId, setAreaId] = useState(null);
+  const [selection, setSelection] = useState(null);
+  const [walkIn, setWalkIn] = useState(null);
+  const [moving, setMoving] = useState(null);
+  const [now, setNow] = useState(() => new Date());
 
-  const scrollRef = useRef(null);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const {
-    reservations,
-    tables,
-    setTables,
-    isLoading,
-    error,
-    seat,
-    complete,
-    actionId,
-  } = useRestaurantDay(date);
+  useEffect(() => {
+    if (plan && !plan.areas.some((area) => area.id === areaId)) {
+      setAreaId(plan.areas[0]?.id ?? null);
+    }
+  }, [plan, areaId]);
 
-  const now = new Date();
-  const isToday = date === todayString();
+  const area = plan?.areas.find((candidate) => candidate.id === areaId);
 
-  // Outside today the map shows the day as planned.
-  const stateTime = isToday ? now : new Date(`${date}T00:00:00`);
+  // The plan's tables carry the positions; the day's
+  // reservations the state.
+  const tables = useMemo(() => plan?.tables ?? [], [plan]);
+  const areaTables = tables.filter((table) => table.areaId === area?.id);
+  const areaElements = plan?.elements.filter((element) => element.areaId === area?.id) ?? [];
 
-  const counts = tables.reduce((result, table) => {
-    const state = getTableReservationState(
-      table,
-      reservations,
-      stateTime
-    );
-    result[state] = (result[state] ?? 0) + 1;
+  const tableStates = useMemo(
+    () =>
+      Object.fromEntries(
+        tables.map((table) => [table.id, tableLiveState(table, day.reservations, now)])
+      ),
+    [tables, day.reservations, now]
+  );
+
+  const counts = LEGEND.reduce((result, item) => {
+    result[item.state] = areaTables.filter(
+      (table) => tableStates[table.id]?.state === item.state
+    ).length;
     return result;
   }, {});
 
-  const selectedTable = tables.find(
-    (table) => table.id === selectedId
+  const selectedTable =
+    selection?.kind === "table" ? tables.find((table) => table.id === selection.id) : null;
+  const selectedState = selectedTable ? tableStates[selectedTable.id] : null;
+
+  // While moving: the tables that are free for that
+  // reservation's time and big enough.
+  const highlightIds = useMemo(() => {
+    if (!moving) {
+      return undefined;
+    }
+
+    const start = new Date(moving.startTime);
+    const minutes = Math.max(30, (new Date(moving.endTime) - start) / 60000);
+
+    return freeTablesForWalkIn(
+      tables,
+      day.reservations.filter((reservation) => reservation.id !== moving.id),
+      Math.min(moving.guestCount, Math.max(...tables.map((table) => table.capacity), 1)),
+      minutes,
+      start
+    ).map((option) => option.table.id);
+  }, [moving, tables, day.reservations]);
+
+  async function handleSelect(next) {
+    if (moving) {
+      if (next?.kind === "table") {
+        if (!highlightIds?.includes(next.id)) {
+          Alert.alert(t("floor.tableTakenTitle"), t("floor.tableTakenMessage"));
+          return;
+        }
+
+        const ok = await day.moveTo(moving, [next.id]);
+
+        if (ok) {
+          setMoving(null);
+          setSelection(next);
+        }
+      }
+      return;
+    }
+
+    setSelection(next?.kind === "table" ? next : null);
+  }
+
+  function confirmNoShow(reservation) {
+    Alert.alert(t("floor.noShowTitle"), t("floor.noShowMessage", { name: reservation.firstName }), [
+      { text: t("common.cancel"), style: "cancel" },
+      { text: t("floor.noShowConfirm"), style: "destructive", onPress: () => day.noShow(reservation) },
+    ]);
+  }
+
+  const isLoading = planLoading || day.isLoading;
+
+  const panel = selectedTable ? (
+    <View style={styles.panel}>
+      <View style={styles.panelHead}>
+        <View style={styles.flex}>
+          <Text style={styles.panelLabel}>
+            {selectedTable.name} · {t("floor.seatsLong", { count: selectedTable.capacity })}
+          </Text>
+          <Text style={styles.panelTitle}>
+            {selectedState?.reservation
+              ? `${selectedState.reservation.firstName} ${selectedState.reservation.lastName}`.trim() ||
+                t("floor.walkIn")
+              : t("floor.legend.free")}
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("common.close")}
+          onPress={() => setSelection(null)}
+          hitSlop={10}
+        >
+          <X size={20} color={colors.textMuted} strokeWidth={1.8} />
+        </Pressable>
+      </View>
+
+      {selectedState?.upcoming.length ? (
+        <View style={styles.reservations}>
+          {selectedState.upcoming.map((reservation, index) => (
+            <View key={reservation.id}>
+              <ReservationRow
+                reservation={reservation}
+                tables={tables}
+                divider={index > 0}
+                now={now}
+                busy={day.actionId === reservation.id}
+                onPress={() => router.push(`/reservation/${reservation.id}`)}
+                onSeat={() => day.seat(reservation)}
+                onComplete={() => day.complete(reservation)}
+              />
+              {reservation.status === "CONFIRMED" ? (
+                <View style={styles.extraActions}>
+                  <SmallAction
+                    icon={ArrowRightLeft}
+                    label={t("floor.move")}
+                    onPress={() => {
+                      setMoving(reservation);
+                      setSelection(null);
+                    }}
+                  />
+                  {new Date(reservation.startTime) < now ? (
+                    <SmallAction
+                      icon={UserX}
+                      label={t("floor.noShow")}
+                      danger
+                      onPress={() => confirmNoShow(reservation)}
+                    />
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : (
+        <Text style={styles.panelEmpty}>{t("floor.noReservationsToday")}</Text>
+      )}
+
+      {selectedState?.state !== "seated" ? (
+        <Button
+          label={t("floor.walkInHere")}
+          icon={<UserPlus size={17} color={colors.text} strokeWidth={1.8} />}
+          onPress={() => setWalkIn({ table: selectedTable })}
+          style={styles.walkInButton}
+        />
+      ) : null}
+    </View>
+  ) : null;
+
+  const list = (
+    <ScrollView contentContainerStyle={styles.listContent}>
+      <Text style={styles.listTitle}>{t("floor.today")}</Text>
+      <Text style={type.caption}>
+        {plural("floor.reservationsCount", day.reservations.length)} ·{" "}
+        {plural("floor.coversCount", day.reservations.reduce((sum, r) => sum + r.guestCount, 0))}
+      </Text>
+      <View style={styles.listCards}>
+        {day.reservations.map((reservation) => {
+          const hasTable = reservation.tables?.length > 0;
+
+          return (
+            <View
+              key={reservation.id}
+              style={[
+                styles.listCard,
+                !hasTable && styles.listCardDashed,
+                moving?.id === reservation.id && styles.listCardMoving,
+              ]}
+            >
+              <ReservationRow
+                reservation={reservation}
+                tables={tables}
+                now={now}
+                busy={day.actionId === reservation.id}
+                onPress={() =>
+                  hasTable
+                    ? setSelection({ kind: "table", id: reservation.tables[0].tableId })
+                    : setMoving(reservation)
+                }
+                onSeat={() => day.seat(reservation)}
+                onComplete={() => day.complete(reservation)}
+              />
+              {!hasTable ? (
+                <Text style={styles.noTable}>{t("floor.noTableHint")}</Text>
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
-
-  const selectedReservations = selectedTable
-    ? reservations.filter((reservation) =>
-        reservation.tables?.some(
-          (reservationTable) =>
-            reservationTable.tableId === selectedTable.id
-        )
-      )
-    : [];
-
-  function selectTable(table) {
-    setSelectedId(table.id);
-
-    // The panel sits under the map; bring it into view.
-    setTimeout(
-      () => scrollRef.current?.scrollToEnd({ animated: true }),
-      50
-    );
-
-    if (isEditing) {
-      setDraft({
-        id: table.id,
-        name: table.name,
-        capacity: String(table.capacity),
-        width: String(Math.round(table.width)),
-        height: String(Math.round(table.height)),
-        shape: table.shape,
-      });
-    }
-  }
-
-  function toggleEditing() {
-    setIsEditing((current) => !current);
-    setSelectedId(null);
-    setDraft(null);
-  }
-
-  async function moveTable(tableId, position) {
-    setTables((current) =>
-      current.map((table) =>
-        table.id === tableId ? { ...table, ...position } : table
-      )
-    );
-
-    try {
-      await api.updateTable(
-        business.id,
-        tableId,
-        position,
-        accessToken
-      );
-    } catch (moveError) {
-      Alert.alert(
-        "Niet opgeslagen",
-        moveError?.message ||
-          "De tafelpositie kon niet worden opgeslagen."
-      );
-    }
-  }
-
-  async function addTable() {
-    const names = new Set(tables.map((table) => table.name));
-    let number = 1;
-
-    while (names.has(`Tafel ${number}`)) {
-      number += 1;
-    }
-
-    try {
-      const response = await api.createTable(
-        business.id,
-        {
-          name: `Tafel ${number}`,
-          capacity: 2,
-          shape: "ROUND",
-          x: 24,
-          y: 24,
-          width: 70,
-          height: 70,
-          rotation: 0,
-          isActive: true,
-        },
-        accessToken
-      );
-      const created = response?.data || response;
-
-      setTables((current) => [...current, created]);
-      selectTable(created);
-    } catch (addError) {
-      Alert.alert(
-        "Niet gelukt",
-        addError?.message ||
-          "De tafel kon niet worden toegevoegd."
-      );
-    }
-  }
-
-  async function saveDraft() {
-    const capacity = Number(draft.capacity);
-    const width = Number(draft.width);
-    const height = Number(draft.height);
-
-    if (!draft.name.trim()) {
-      Alert.alert("Ongeldig", "Geef de tafel een naam.");
-      return;
-    }
-
-    if (!Number.isInteger(capacity) || capacity <= 0) {
-      Alert.alert(
-        "Ongeldig",
-        "Het aantal plaatsen moet een positief geheel getal zijn."
-      );
-      return;
-    }
-
-    if (
-      !Number.isFinite(width) ||
-      width <= 0 ||
-      !Number.isFinite(height) ||
-      height <= 0
-    ) {
-      Alert.alert(
-        "Ongeldig",
-        "Breedte en hoogte moeten groter zijn dan nul."
-      );
-      return;
-    }
-
-    try {
-      setIsSaving(true);
-
-      const updates = {
-        name: draft.name.trim(),
-        capacity,
-        shape: draft.shape,
-        width,
-        height,
-      };
-
-      const response = await api.updateTable(
-        business.id,
-        draft.id,
-        updates,
-        accessToken
-      );
-      const updated = response?.data || response;
-
-      setTables((current) =>
-        current.map((table) =>
-          table.id === draft.id
-            ? { ...table, ...updates, ...updated }
-            : table
-        )
-      );
-      setDraft(null);
-      setSelectedId(null);
-    } catch (saveError) {
-      Alert.alert(
-        "Niet opgeslagen",
-        saveError?.message ||
-          "De tafel kon niet worden bijgewerkt."
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function confirmDeactivate() {
-    Alert.alert(
-      "Tafel deactiveren?",
-      `Weet je zeker dat je ${draft.name} wilt deactiveren? Bestaande reservaties blijven bewaard.`,
-      [
-        { text: "Annuleren", style: "cancel" },
-        {
-          text: "Deactiveren",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await api.deleteTable(
-                business.id,
-                draft.id,
-                accessToken
-              );
-              setTables((current) =>
-                current.filter(
-                  (table) => table.id !== draft.id
-                )
-              );
-              setDraft(null);
-              setSelectedId(null);
-            } catch (deleteError) {
-              Alert.alert(
-                "Niet gelukt",
-                deleteError?.message ||
-                  "De tafel kon niet worden gedeactiveerd."
-              );
-            }
-          },
-        },
-      ]
-    );
-  }
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.titleRow}>
-          <View style={styles.titleText}>
-            <Text style={type.title}>Zaal</Text>
-            <Text style={type.caption}>
-              {tables.length === 1
-                ? "1 tafel"
-                : `${tables.length} tafels`}
-              {" · "}
-              {tables.reduce(
-                (sum, table) => sum + (table.capacity ?? 0),
-                0
-              )}{" "}
-              plaatsen
-            </Text>
-          </View>
-          <Button
-            label={isEditing ? "Klaar" : "Bewerk vloerplan"}
-            variant={isEditing ? "primary" : "secondary"}
-            onPress={toggleEditing}
-            icon={
-              isEditing ? (
-                <Check
-                  size={16}
-                  color={colors.onPrimary}
-                  strokeWidth={2}
-                />
-              ) : (
-                <PencilRuler
-                  size={16}
-                  color={colors.text}
-                  strokeWidth={1.8}
-                />
-              )
-            }
-          />
+      <View style={styles.header}>
+        <View style={styles.flex}>
+          <Text style={type.title}>{t("tabs.floor")}</Text>
+          <Text style={type.caption}>
+            {t("floor.live", { time: formatTime(now.toISOString()) })}
+          </Text>
         </View>
+        <Button
+          label={t("floor.walkIn")}
+          icon={<UserPlus size={17} color={colors.text} strokeWidth={1.8} />}
+          onPress={() => setWalkIn({ table: null })}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("floor.edit")}
+          onPress={() => router.push("/floor-plan/edit")}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
+        >
+          <Pencil size={18} color={colors.text} strokeWidth={1.8} />
+        </Pressable>
+      </View>
 
-        {!isEditing && (
-          <DayNavigation
-            date={date}
-            onChange={(nextDate) => {
-              setDate(nextDate);
-              setSelectedId(null);
-            }}
-          />
-        )}
+      {plan && plan.areas.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.tabsScroll}
+          contentContainerStyle={styles.tabs}
+        >
+          {plan.areas.map((candidate) => {
+            const active = candidate.id === area?.id;
 
-        {/* Legend */}
-
-        {isEditing ? (
-          <View style={styles.editHint}>
-            <Text style={styles.editHintText}>
-              Sleep een tafel om ze te verplaatsen, tik om
-              ze aan te passen.
-            </Text>
-            <Button
-              label="Tafel"
-              onPress={addTable}
-              icon={
-                <Plus
-                  size={16}
-                  color={colors.text}
-                  strokeWidth={2}
-                />
-              }
-            />
-          </View>
-        ) : (
-          <View style={styles.legend}>
-            {LEGEND.map((item) => (
-              <View key={item.state} style={styles.legendItem}>
-                <View
-                  style={[
-                    styles.legendDot,
-                    {
-                      backgroundColor:
-                        tableColors[item.state].background,
-                      borderColor: tableColors[item.state].border,
-                    },
-                  ]}
-                />
-                <Text style={styles.legendText}>
-                  {item.label}
-                </Text>
-                <Text style={styles.legendCount}>
-                  {counts[item.state] ?? 0}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {isLoading ? (
-          <ActivityIndicator
-            color={colors.primary}
-            style={styles.loading}
-          />
-        ) : error ? (
-          <Card>
-            <Text style={styles.error}>{error}</Text>
-          </Card>
-        ) : (
-          <TableMap
-            tables={tables}
-            reservations={reservations}
-            isEditing={isEditing}
-            selectedTableId={selectedId}
-            currentTime={stateTime}
-            onTableSelect={selectTable}
-            onTablePositionChange={moveTable}
-          />
-        )}
-
-        {/* Selected table */}
-
-        {!isEditing && selectedTable && (
-          <Card style={styles.panel}>
-            <View style={styles.panelHeader}>
-              <View>
-                <Text style={type.heading}>
-                  {selectedTable.name}
-                </Text>
-                <Text style={type.caption}>
-                  {selectedTable.capacity} plaatsen ·{" "}
-                  {
-                    STATE_LABELS[
-                      getTableReservationState(
-                        selectedTable,
-                        reservations,
-                        stateTime
-                      )
-                    ]
-                  }
-                </Text>
-              </View>
-              <CloseButton onPress={() => setSelectedId(null)} />
-            </View>
-
-            {selectedReservations.length === 0 ? (
-              <Text style={styles.panelEmpty}>
-                Geen reservaties aan deze tafel{" "}
-                {isToday ? "vandaag" : "deze dag"}.
-              </Text>
-            ) : (
-              selectedReservations.map((reservation, index) => (
-                <ReservationRow
-                  key={reservation.id}
-                  reservation={reservation}
-                  tables={tables}
-                  divider={index > 0}
-                  showActions={isToday}
-                  now={now}
-                  busy={actionId === reservation.id}
-                  onPress={() =>
-                    router.push(`/reservation/${reservation.id}`)
-                  }
-                  onSeat={seat}
-                  onComplete={complete}
-                />
-              ))
-            )}
-          </Card>
-        )}
-
-        {/* Table editor */}
-
-        {isEditing && draft && (
-          <Card style={styles.panel}>
-            <View style={styles.panelHeader}>
-              <Text style={type.heading}>Tafel aanpassen</Text>
-              <CloseButton
+            return (
+              <Pressable
+                key={candidate.id}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: active }}
                 onPress={() => {
-                  setDraft(null);
-                  setSelectedId(null);
+                  setAreaId(candidate.id);
+                  setSelection(null);
                 }}
-              />
-            </View>
+                style={[styles.tab, active && styles.tabActive]}
+              >
+                <Text style={[styles.tabText, active && styles.tabTextActive]}>{candidate.name}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      ) : null}
 
-            <Field label="Naam">
-              <TextInput
-                value={draft.name}
-                onChangeText={(name) =>
-                  setDraft((current) => ({ ...current, name }))
-                }
-                style={styles.input}
-              />
-            </Field>
+      <View style={styles.legend}>
+        {LEGEND.map((item) => (
+          <View key={item.state} style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: floorColors[item.state].fill }]} />
+            <Text style={styles.legendText}>
+              {t(item.label)} {counts[item.state]}
+            </Text>
+          </View>
+        ))}
+      </View>
 
-            <View style={styles.fieldRow}>
-              <Field label="Plaatsen" style={styles.fieldItem}>
-                <TextInput
-                  value={draft.capacity}
-                  onChangeText={(capacity) =>
-                    setDraft((current) => ({
-                      ...current,
-                      capacity,
-                    }))
-                  }
-                  keyboardType="number-pad"
-                  style={styles.input}
+      {moving ? (
+        <View style={styles.moving}>
+          <Text style={styles.movingText} numberOfLines={2}>
+            {t("floor.movingHint", {
+              name: `${moving.firstName} ${moving.lastName}`.trim(),
+              count: moving.guestCount,
+            })}
+          </Text>
+          <Pressable accessibilityRole="button" onPress={() => setMoving(null)} hitSlop={8}>
+            <Text style={styles.movingCancel}>{t("common.cancel")}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <View style={[styles.body, isWide && styles.bodyWide]}>
+        {isWide ? <View style={styles.side}>{list}</View> : null}
+
+        <View style={styles.flex}>
+          <View style={styles.canvas}>
+            {isLoading || !area ? (
+              <View style={styles.canvasLoading}>
+                <Skeleton width="60%" height={14} />
+              </View>
+            ) : areaTables.length === 0 && areaElements.length === 0 ? (
+              <View style={styles.canvasEmpty}>
+                <Text style={styles.canvasEmptyTitle}>{t("floor.emptyTitle")}</Text>
+                <Text style={styles.canvasEmptyText}>{t("floor.emptyText")}</Text>
+                <Button
+                  variant="primary"
+                  label={t("floor.draw")}
+                  onPress={() => router.push("/floor-plan/edit")}
+                  style={styles.drawButton}
                 />
-              </Field>
-              <Field label="Breedte" style={styles.fieldItem}>
-                <TextInput
-                  value={draft.width}
-                  onChangeText={(width) =>
-                    setDraft((current) => ({
-                      ...current,
-                      width,
-                    }))
-                  }
-                  keyboardType="number-pad"
-                  style={styles.input}
-                />
-              </Field>
-              <Field label="Hoogte" style={styles.fieldItem}>
-                <TextInput
-                  value={draft.height}
-                  onChangeText={(height) =>
-                    setDraft((current) => ({
-                      ...current,
-                      height,
-                    }))
-                  }
-                  keyboardType="number-pad"
-                  style={styles.input}
-                />
-              </Field>
-            </View>
-
-            <Field label="Vorm">
-              <SegmentedControl
-                options={SHAPES}
-                value={draft.shape}
-                onChange={(shape) =>
-                  setDraft((current) => ({ ...current, shape }))
-                }
+              </View>
+            ) : (
+              <FloorCanvas
+                area={area}
+                tables={areaTables}
+                elements={areaElements}
+                tableStates={tableStates}
+                selection={selection}
+                onSelect={handleSelect}
+                highlightIds={highlightIds}
+                fitKey={area.id}
               />
-            </Field>
+            )}
+          </View>
+          {panel}
+        </View>
+      </View>
 
-            <Button
-              label="Opslaan"
-              variant="primary"
-              loading={isSaving}
-              onPress={saveDraft}
-            />
-            <Button
-              label="Tafel deactiveren"
-              variant="danger"
-              onPress={confirmDeactivate}
-            />
-          </Card>
-        )}
-      </ScrollView>
+      <WalkInSheet
+        visible={walkIn !== null}
+        onClose={() => setWalkIn(null)}
+        tables={tables}
+        reservations={day.reservations}
+        table={walkIn?.table}
+        onConfirm={async (data) => {
+          const created = await day.walkIn(data);
+
+          if (created?.tables?.[0]) {
+            setSelection({ kind: "table", id: created.tables[0].tableId });
+          }
+
+          return Boolean(created);
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function Field({ label, style, children }) {
-  return (
-    <View style={[styles.field, style]}>
-      <Text style={styles.label}>{label}</Text>
-      {children}
-    </View>
-  );
-}
-
-function CloseButton({ onPress }) {
+function SmallAction({ icon: Icon, label, onPress, danger }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Sluiten"
-      hitSlop={12}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.close,
-        pressed && styles.closePressed,
-      ]}
+      style={({ pressed }) => [styles.smallAction, pressed && styles.pressed]}
     >
-      <X size={18} color={colors.textMuted} strokeWidth={1.8} />
+      <Icon size={14} color={danger ? colors.danger : colors.textMuted} strokeWidth={2} />
+      <Text style={[styles.smallActionText, danger && styles.danger]}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
   },
 
-  content: {
-    width: "100%",
-    maxWidth: 900,
-    alignSelf: "center",
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
-    gap: spacing.lg,
-  },
-
-  titleRow: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.md,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
 
-  titleText: {
-    flex: 1,
-    gap: 2,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  // Legend
+  pressed: {
+    opacity: 0.6,
+  },
+
+  tabsScroll: {
+    flexGrow: 0,
+  },
+
+  tabs: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
+  },
+
+  tab: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+
+  tabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  tabText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.text,
+  },
+
+  tabTextActive: {
+    color: colors.onPrimary,
+    fontFamily: fonts.semibold,
+  },
 
   legend: {
     flexDirection: "row",
     flexWrap: "wrap",
-    columnGap: spacing.md,
-    rowGap: spacing.xs,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.sm,
   },
 
   legendItem: {
@@ -658,107 +504,203 @@ const styles = StyleSheet.create({
   },
 
   legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1.5,
+    width: 10,
+    height: 10,
+    borderRadius: 3,
   },
 
   legendText: {
     fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.text,
-  },
-
-  legendCount: {
-    fontFamily: fonts.semibold,
-    fontSize: 12,
+    fontSize: 11.5,
     color: colors.textMuted,
   },
 
-  editHint: {
+  moving: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
   },
 
-  editHintText: {
+  movingText: {
     flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.warning,
+  },
+
+  movingCancel: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.warning,
+  },
+
+  body: {
+    flex: 1,
+  },
+
+  bodyWide: {
+    flexDirection: "row",
+  },
+
+  side: {
+    width: 340,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+  },
+
+  listContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+
+  listTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
+  },
+
+  listCards: {
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+
+  listCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+  },
+
+  listCardDashed: {
+    borderStyle: "dashed",
+  },
+
+  listCardMoving: {
+    borderColor: colors.warning,
+    borderWidth: 2,
+  },
+
+  noTable: {
+    fontFamily: fonts.regular,
+    fontSize: 11.5,
+    color: colors.warning,
+    paddingBottom: spacing.sm,
+  },
+
+  canvas: {
+    flex: 1,
+    marginHorizontal: 0,
+    backgroundColor: floorColors.canvas,
+  },
+
+  canvasLoading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  canvasEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.xxl,
+  },
+
+  canvasEmptyTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: floorColors.selection,
+  },
+
+  canvasEmptyText: {
     fontFamily: fonts.regular,
     fontSize: 13,
-    color: colors.textMuted,
+    color: floorColors.decorText,
+    textAlign: "center",
+    marginTop: spacing.xs,
   },
 
-  loading: {
-    marginTop: spacing.xxl,
+  drawButton: {
+    marginTop: spacing.lg,
   },
-
-  error: {
-    fontFamily: fonts.regular,
-    fontSize: 14,
-    color: colors.danger,
-  },
-
-  // Panels
 
   panel: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.lg,
+    maxHeight: 360,
+    borderTopWidth: 1,
+    borderColor: colors.border,
+  },
+
+  panelHead: {
+    flexDirection: "row",
+    alignItems: "flex-start",
     gap: spacing.md,
   },
 
-  panelHeader: {
+  panelLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+  },
+
+  panelTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 18,
+    color: colors.text,
+    marginTop: 2,
+  },
+
+  reservations: {
+    marginTop: spacing.sm,
+  },
+
+  extraActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    gap: spacing.md,
+    paddingBottom: spacing.sm,
+    paddingLeft: 56,
+  },
+
+  smallAction: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 4,
+  },
+
+  smallActionText: {
+    fontFamily: fonts.medium,
+    fontSize: 12.5,
+    color: colors.textMuted,
+  },
+
+  danger: {
+    color: colors.danger,
   },
 
   panelEmpty: {
     fontFamily: fonts.regular,
     fontSize: 13,
     color: colors.textMuted,
+    marginTop: spacing.sm,
   },
 
-  close: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: -4,
-    marginRight: -6,
-  },
-
-  closePressed: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  field: {
-    gap: 6,
-  },
-
-  fieldRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-
-  fieldItem: {
-    flex: 1,
-  },
-
-  label: {
-    fontFamily: fonts.medium,
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-
-  input: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.surface,
+  walkInButton: {
+    marginTop: spacing.md,
   },
 });

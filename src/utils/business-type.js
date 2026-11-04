@@ -32,9 +32,13 @@ export function getHomeRoute(type) {
 
 // Settings screens that work for every business type.
 const SHARED_SETTINGS_SCREENS = [
+  "business",
   "opening-hours",
   "special-opening-days",
 ];
+
+// Top-level screens both business types use.
+const SHARED_SCREENS = ["calls", "floor-plan"];
 
 /**
  * Whether a business type may open the screen with the
@@ -43,8 +47,8 @@ const SHARED_SETTINGS_SCREENS = [
  *
  * - Restaurants may open everything except /massage/...
  * - Massage businesses may only open /massage/..., the
- *   calendar, the shared settings screens and the login
- *   screen. The restaurant tabs sit in the "(restaurant)"
+ *   calendar, the call log, the floor plan editor, the
+ *   shared settings screens and the login screen. The restaurant tabs sit in the "(restaurant)"
  *   group, which is not on that list.
  */
 export function isRouteAllowed(type, segments) {
@@ -61,7 +65,8 @@ export function isRouteAllowed(type, segments) {
     if (
       first === "massage" ||
       first === "login" ||
-      first === "calendar"
+      first === "calendar" ||
+      SHARED_SCREENS.includes(first)
     ) {
       return true;
     }

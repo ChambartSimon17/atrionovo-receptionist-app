@@ -203,6 +203,12 @@ export function AuthProvider({ children }) {
         isLoading,
         login,
         logout,
+        // Merges saved settings into the business, so
+        // every screen shows the new name at once.
+        updateBusiness: (changes) =>
+          setBusiness((current) =>
+            current ? { ...current, ...changes } : current
+          ),
       }}
     >
       {children}

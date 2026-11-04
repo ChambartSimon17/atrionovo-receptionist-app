@@ -1002,4 +1002,144 @@ export const api = {
       }
     );
   },
+
+  // Every reservation of a day, also completed,
+  // cancelled and no-show ones.
+  getAllReservationsForDay(date, accessToken) {
+    return authenticatedRequest(
+      `/reservations/day?all=true&date=${encodeURIComponent(date)}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  markReservationAsNoShow(businessId, reservationId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/reservations/${reservationId}/no-show`,
+      accessToken,
+      { method: "PATCH" }
+    );
+  },
+
+  undoReservationStatus(businessId, reservationId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/reservations/${reservationId}/undo`,
+      accessToken,
+      { method: "PATCH" }
+    );
+  },
+
+  moveReservationToTables(businessId, reservationId, tableIds, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/reservations/${reservationId}/tables`,
+      accessToken,
+      {
+        method: "PUT",
+        body: JSON.stringify({ tableIds }),
+      }
+    );
+  },
+
+  createWalkIn(businessId, walkIn, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/walk-ins`,
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify(walkIn),
+      }
+    );
+  },
+
+  // ====================================================
+  // Floor plan
+  // ====================================================
+
+  getFloorPlan(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/floor-plan`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  saveFloorPlan(businessId, plan, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/floor-plan`,
+      accessToken,
+      {
+        method: "PUT",
+        body: JSON.stringify(plan),
+      }
+    );
+  },
+
+  // ====================================================
+  // Insights
+  // ====================================================
+
+  getGuestHistory(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/guest-history`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  getCalls(businessId, { from, to, limit } = {}, accessToken) {
+    const query = new URLSearchParams();
+
+    if (from) query.set("from", from);
+    if (to) query.set("to", to);
+    if (limit) query.set("limit", String(limit));
+
+    return authenticatedRequest(
+      `/businesses/${businessId}/calls?${query.toString()}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  getCall(businessId, callId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calls/${callId}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  setCallHandled(businessId, callId, handled, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calls/${callId}`,
+      accessToken,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ handled }),
+      }
+    );
+  },
+
+  getAiStats(businessId, { from, to }, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/ai-stats?from=${encodeURIComponent(
+        from
+      )}&to=${encodeURIComponent(to)}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  registerPushToken(token, accessToken) {
+    return authenticatedRequest("/auth/push-tokens", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    });
+  },
+
+  removePushToken(token, accessToken) {
+    return authenticatedRequest("/auth/push-tokens", accessToken, {
+      method: "DELETE",
+      body: JSON.stringify({ token }),
+    });
+  },
 };

@@ -19,7 +19,6 @@ export default function MassageLayout() {
       <Stack.Screen name="services" options={settingsHeader} />
       <Stack.Screen name="therapists" options={settingsHeader} />
       <Stack.Screen name="rooms" options={settingsHeader} />
-      <Stack.Screen name="settings" options={settingsHeader} />
     </Stack>
   );
 }

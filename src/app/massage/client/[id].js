@@ -42,6 +42,7 @@ import {
 } from "../../../theme";
 import { formatTime } from "../../../utils/date";
 import { formatPrice } from "../../../utils/price";
+import { Skeleton, SkeletonList } from "../../../components/ui";
 
 // ======================================================
 // Klantprofiel
@@ -191,7 +192,12 @@ export default function MassageClientScreen() {
         <BackBar onBack={() => router.back()} />
         <View style={styles.center}>
           {isLoading ? (
-            <ActivityIndicator />
+            <View style={{ width: "100%", gap: 12 }}>
+              <Skeleton width="55%" height={26} />
+              <Skeleton width="35%" height={14} />
+              <Skeleton height={90} />
+              <SkeletonList rows={3} />
+            </View>
           ) : (
             <Text style={styles.error}>
               {error || "Klant niet gevonden."}
@@ -236,7 +242,7 @@ export default function MassageClientScreen() {
                 <Badge
                   label="VIP"
                   background={colors.sandSoft}
-                  color="#6B5326"
+                  color={colors.noteText}
                 />
               )}
               {stats.noShows > 0 && (
@@ -575,7 +581,7 @@ const styles = StyleSheet.create({
   },
 
   vipAvatarText: {
-    color: "#6B5326",
+    color: colors.noteText,
   },
 
   profileText: {
@@ -680,9 +686,9 @@ const styles = StyleSheet.create({
   },
 
   notes: {
-    backgroundColor: "#FBF6EC",
+    backgroundColor: colors.noteBackground,
     borderWidth: 1,
-    borderColor: "#EADCC0",
+    borderColor: colors.noteBorder,
     borderRadius: radius.xl,
     padding: spacing.md + 2,
     gap: spacing.xs,
@@ -691,14 +697,14 @@ const styles = StyleSheet.create({
   notesLabel: {
     fontFamily: fonts.semibold,
     fontSize: 12,
-    color: "#6B5326",
+    color: colors.noteText,
   },
 
   notesText: {
     fontFamily: fonts.regular,
     fontSize: 13,
     lineHeight: 19,
-    color: "#3B3324",
+    color: colors.noteStrong,
   },
 
   section: {

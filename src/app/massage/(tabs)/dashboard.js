@@ -45,6 +45,7 @@ import {
   todayString,
 } from "../../../utils/date";
 import { formatPrice } from "../../../utils/price";
+import { RefreshControl } from "react-native";
 
 // ======================================================
 // Vandaag (massage home)
@@ -112,7 +113,10 @@ export default function MassageTodayScreen() {
     isLoading,
     error,
     confirmStatus,
+    reload,
   } = useDayAppointments(date);
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -161,6 +165,17 @@ export default function MassageTodayScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={async () => {
+              setIsRefreshing(true);
+              await reload();
+              setIsRefreshing(false);
+            }}
+            tintColor={colors.primary}
+          />
+        }
       >
         {/* Header */}
 

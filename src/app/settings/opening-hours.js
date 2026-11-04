@@ -1,724 +1,493 @@
+import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   View,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Copy, Plus, Trash2 } from "lucide-react-native";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
-import { skin, useIsMassage } from "../../theme/skin";
-import { colors } from "../../theme";
-import { switchColors } from "../../theme/settingsStyles";
+import {
+  Button,
+  ScreenHeader,
+  Sheet,
+  SkeletonList,
+  Switch,
+} from "../../components/ui";
+import TimePicker, { formatMinutes } from "../../components/ui/TimePicker";
+import { t } from "../../i18n";
+import { colors, fonts, radius, spacing } from "../../theme";
+import { BUSINESS_TYPES } from "../../utils/business-type";
+
+// ======================================================
+// Opening hours
+// ======================================================
+//
+// One row per day with a switch for open or closed. An
+// open day shows its periods as time pills; tapping a
+// pill opens a sheet with the opening and closing time.
+// "+ periode" adds a second period (lunch and dinner).
+// The first open day can be copied to every other day.
+//
+// The AI receptionist only books inside these hours.
+// ======================================================
 
 const DAYS = [
-  { key: "MONDAY", label: "Maandag" },
-  { key: "TUESDAY", label: "Dinsdag" },
-  { key: "WEDNESDAY", label: "Woensdag" },
-  { key: "THURSDAY", label: "Donderdag" },
-  { key: "FRIDAY", label: "Vrijdag" },
-  { key: "SATURDAY", label: "Zaterdag" },
-  { key: "SUNDAY", label: "Zondag" },
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
 ];
 
-function minutesToTime(minutes) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+const DEFAULT_PERIOD = { opens: 12 * 60, closes: 22 * 60 };
 
-  return `${String(hours).padStart(2, "0")}:${String(
-    mins
-  ).padStart(2, "0")}`;
+function emptySchedule() {
+  return Object.fromEntries(DAYS.map((day) => [day, []]));
 }
 
-function timeToMinutes(time) {
-  const [hours, minutes] = time
-    .split(":")
-    .map(Number);
-
-  return hours * 60 + minutes;
+function sortPeriods(periods) {
+  return [...periods].sort((a, b) => a.opens - b.opens);
 }
 
-function isValidTime(time) {
-  if (!/^\d{2}:\d{2}$/.test(time)) {
-    return false;
-  }
+function overlaps(periods) {
+  const sorted = sortPeriods(periods);
 
-  const [hours, minutes] = time
-    .split(":")
-    .map(Number);
-
-  return (
-    hours >= 0 &&
-    hours <= 23 &&
-    minutes >= 0 &&
-    minutes <= 59
+  return sorted.some(
+    (period, index) => index > 0 && period.opens < sorted[index - 1].closes
   );
 }
 
-function createEmptySchedule() {
-  return DAYS.reduce((schedule, day) => {
-    schedule[day.key] = [];
-    return schedule;
-  }, {});
-}
-
 export default function OpeningHoursScreen() {
-  const isMassage = useIsMassage();
+  const { accessToken, business, businessType } = useAuth();
 
+  const isMassage = businessType === BUSINESS_TYPES.MASSAGE;
 
-  const { accessToken } = useAuth();
+  const [schedule, setSchedule] = useState(emptySchedule);
+  const [savedSchedule, setSavedSchedule] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const [business, setBusiness] =
-    useState(null);
+  // { day, index, opens, closes } while the sheet is open.
+  const [editing, setEditing] = useState(null);
 
-  const [schedule, setSchedule] =
-    useState(createEmptySchedule());
-
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [isSaving, setIsSaving] =
-    useState(false);
-
-  useEffect(() => {
-    loadOpeningHours();
-  }, []);
-
-  async function loadOpeningHours() {
+  const load = useCallback(async () => {
     try {
-      const businessResponse =
-        await api.getMyBusiness(
-          accessToken
-        );
+      const response = await api.getOpeningHours(business.id, accessToken);
+      const openingHours = response?.data ?? response ?? [];
 
-      const businessData =
-        businessResponse.data;
+      const next = emptySchedule();
 
-      setBusiness(businessData);
-
-      const response =
-        await api.getOpeningHours(
-          businessData.id,
-          accessToken
-        );
-
-      const openingHours =
-        response.data ?? response;
-
-      const newSchedule =
-        createEmptySchedule();
-
-      for (const openingHour of openingHours) {
-        if (
-          !newSchedule[
-            openingHour.dayOfWeek
-          ]
-        ) {
-          continue;
-        }
-
-        newSchedule[
-          openingHour.dayOfWeek
-        ].push({
-          opensAt:
-            minutesToTime(
-              openingHour.opensAtMinutes
-            ),
-
-          closesAt:
-            minutesToTime(
-              openingHour.closesAtMinutes
-            ),
+      openingHours.forEach((openingHour) => {
+        next[openingHour.dayOfWeek]?.push({
+          opens: openingHour.opensAtMinutes,
+          closes: openingHour.closesAtMinutes,
         });
-      }
+      });
 
-      setSchedule(newSchedule);
+      DAYS.forEach((day) => {
+        next[day] = sortPeriods(next[day]);
+      });
+
+      setSchedule(next);
+      setSavedSchedule(next);
     } catch (error) {
-      console.error(
-        "Failed to load opening hours:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De openingstijden konden niet worden geladen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("hours.loadFailed"));
     } finally {
       setIsLoading(false);
     }
+  }, [accessToken, business?.id]);
+
+  useEffect(() => {
+    if (business?.id) {
+      load();
+    }
+  }, [business?.id, load]);
+
+  const isDirty =
+    savedSchedule && JSON.stringify(schedule) !== JSON.stringify(savedSchedule);
+
+  function setDay(day, periods) {
+    setSchedule((current) => ({ ...current, [day]: sortPeriods(periods) }));
   }
 
-  function updateDay(dayKey, periods) {
-    setSchedule((current) => ({
-      ...current,
-      [dayKey]: periods,
-    }));
+  function toggleDay(day, open) {
+    setDay(day, open ? [DEFAULT_PERIOD] : []);
   }
 
-  function toggleDay(dayKey, isOpen) {
-    if (isOpen) {
-      updateDay(dayKey, [
-        {
-          opensAt: "11:00",
-          closesAt: "22:00",
-        },
-      ]);
+  function addPeriod(day) {
+    const periods = schedule[day];
+    const last = periods[periods.length - 1];
 
+    const opens = last ? Math.min(last.closes + 60, 23 * 60) : DEFAULT_PERIOD.opens;
+    const closes = Math.min(opens + 4 * 60, 23 * 60 + 45);
+
+    setEditing({ day, index: periods.length, opens, closes, isNew: true });
+  }
+
+  function saveEditing() {
+    const { day, index, opens, closes } = editing;
+
+    if (opens >= closes) {
+      Alert.alert(t("hours.invalid"), t("hours.closesAfterOpens"));
       return;
     }
 
-    updateDay(dayKey, []);
+    const periods = [...schedule[day]];
+    periods[index] = { opens, closes };
+
+    if (overlaps(periods)) {
+      Alert.alert(t("hours.invalid"), t("hours.overlap"));
+      return;
+    }
+
+    setDay(day, periods);
+    setEditing(null);
   }
 
-  function updatePeriod(
-    dayKey,
-    index,
-    field,
-    value
-  ) {
-    const periods = [
-      ...schedule[dayKey],
-    ];
+  function removeEditing() {
+    const { day, index } = editing;
 
-    periods[index] = {
-      ...periods[index],
-      [field]: value,
-    };
-
-    updateDay(dayKey, periods);
-  }
-
-  function addPeriod(dayKey) {
-    const periods = [
-      ...schedule[dayKey],
-    ];
-
-    periods.push({
-      opensAt: "11:00",
-      closesAt: "22:00",
-    });
-
-    updateDay(dayKey, periods);
-  }
-
-  function removePeriod(
-    dayKey,
-    index
-  ) {
-    const periods = schedule[
-      dayKey
-    ].filter(
-      (_, periodIndex) =>
-        periodIndex !== index
+    setDay(
+      day,
+      schedule[day].filter((_, periodIndex) => periodIndex !== index)
     );
+    setEditing(null);
+  }
 
-    updateDay(dayKey, periods);
+  const copySource = DAYS.find((day) => schedule[day].length > 0);
+
+  function copyToAll() {
+    Alert.alert(
+      t("hours.copyTitle", { day: t(`days.${copySource}`) }),
+      t("hours.copyMessage"),
+      [
+        { text: t("common.cancel"), style: "cancel" },
+        {
+          text: t("hours.copyConfirm"),
+          onPress: () =>
+            setSchedule((current) =>
+              Object.fromEntries(
+                DAYS.map((day) => [
+                  day,
+                  current[day].length > 0 || day === copySource
+                    ? current[copySource]
+                    : current[day],
+                ])
+              )
+            ),
+        },
+      ]
+    );
   }
 
   async function handleSave() {
+    const openingHours = DAYS.flatMap((day) =>
+      schedule[day].map((period) => ({
+        dayOfWeek: day,
+        opensAtMinutes: period.opens,
+        closesAtMinutes: period.closes,
+      }))
+    );
+
     try {
       setIsSaving(true);
-
-      const openingHours = [];
-
-      for (const day of DAYS) {
-        const periods =
-          schedule[day.key];
-
-        for (const period of periods) {
-          const opensAt =
-            period.opensAt.trim();
-
-          const closesAt =
-            period.closesAt.trim();
-
-          if (
-            !isValidTime(opensAt) ||
-            !isValidTime(closesAt)
-          ) {
-            Alert.alert(
-              "Ongeldige openingstijden",
-              `${day.label}: gebruik het formaat HH:MM, bijvoorbeeld 17:00.`
-            );
-
-            return;
-          }
-
-          const opensAtMinutes =
-            timeToMinutes(opensAt);
-
-          const closesAtMinutes =
-            timeToMinutes(closesAt);
-
-          if (
-            opensAtMinutes >=
-            closesAtMinutes
-          ) {
-            Alert.alert(
-              "Ongeldige openingstijden",
-              `${day.label}: openingstijd moet vóór sluitingstijd liggen.`
-            );
-
-            return;
-          }
-
-          openingHours.push({
-            dayOfWeek: day.key,
-
-            opensAtMinutes,
-
-            closesAtMinutes,
-          });
-        }
-      }
-
-      await api.updateOpeningHours(
-        business.id,
-        openingHours,
-        accessToken
-      );
-
-      Alert.alert(
-        "Opgeslagen",
-        "De openingstijden zijn bijgewerkt."
-      );
+      await api.updateOpeningHours(business.id, openingHours, accessToken);
+      setSavedSchedule(schedule);
     } catch (error) {
-      console.error(
-        "Failed to update opening hours:",
-        error
-      );
-
-      Alert.alert(
-        "Fout",
-        error.message ||
-          "De openingstijden konden niet worden opgeslagen."
-      );
+      Alert.alert(t("common.error"), error?.message || t("hours.saveFailed"));
     } finally {
       setIsSaving(false);
     }
   }
 
-  if (isLoading) {
-    return (
-      <View
-        style={
-          styles.loadingContainer
+  return (
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <View style={styles.header}>
+        <ScreenHeader title={isMassage ? t("hours.titleMassage") : t("hours.title")} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={styles.description}>{t("hours.description")}</Text>
+
+        {isLoading ? (
+          <SkeletonList rows={7} />
+        ) : (
+          <View style={styles.card}>
+            {DAYS.map((day, dayIndex) => {
+              const periods = schedule[day];
+              const open = periods.length > 0;
+
+              return (
+                <View
+                  key={day}
+                  style={[styles.day, dayIndex > 0 && styles.dayDivider]}
+                >
+                  <View style={styles.dayText}>
+                    <Text style={styles.dayName}>{t(`days.${day}`)}</Text>
+
+                    {open ? (
+                      <View style={styles.pills}>
+                        {periods.map((period, index) => (
+                          <Pressable
+                            key={`${period.opens}-${index}`}
+                            accessibilityRole="button"
+                            accessibilityHint={t("hours.editHint")}
+                            onPress={() =>
+                              setEditing({ day, index, ...period })
+                            }
+                            style={({ pressed }) => [
+                              styles.pill,
+                              pressed && styles.pillPressed,
+                            ]}
+                          >
+                            <Text style={styles.pillText}>
+                              {formatMinutes(period.opens)} – {formatMinutes(period.closes)}
+                            </Text>
+                          </Pressable>
+                        ))}
+
+                        {periods.length < 3 ? (
+                          <Pressable
+                            accessibilityRole="button"
+                            onPress={() => addPeriod(day)}
+                            style={({ pressed }) => [
+                              styles.addPill,
+                              pressed && styles.pillPressed,
+                            ]}
+                          >
+                            <Plus size={13} color={colors.primary} strokeWidth={2.2} />
+                            <Text style={styles.addPillText}>{t("hours.period")}</Text>
+                          </Pressable>
+                        ) : null}
+                      </View>
+                    ) : (
+                      <Text style={styles.closed}>{t("hours.closed")}</Text>
+                    )}
+                  </View>
+
+                  <Switch value={open} onValueChange={(next) => toggleDay(day, next)} />
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {!isLoading && copySource ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={copyToAll}
+            style={({ pressed }) => [styles.copy, pressed && styles.copyPressed]}
+          >
+            <Copy size={15} color={colors.primary} strokeWidth={2} />
+            <Text style={styles.copyText}>
+              {t("hours.copy", { day: t(`days.${copySource}`) })}
+            </Text>
+          </Pressable>
+        ) : null}
+
+        <Button
+          variant="primary"
+          label={isDirty ? t("common.save") : t("common.saved")}
+          onPress={handleSave}
+          loading={isSaving}
+          disabled={!isDirty}
+          style={styles.save}
+        />
+      </ScrollView>
+
+      <Sheet
+        visible={editing !== null}
+        onClose={() => setEditing(null)}
+        title={editing ? t(`days.${editing.day}`) : ""}
+        footer={
+          editing ? (
+            <>
+              <Button variant="primary" label={t("common.done")} onPress={saveEditing} />
+              {!editing.isNew ? (
+                <Button
+                  variant="danger"
+                  label={t("hours.removePeriod")}
+                  icon={<Trash2 size={16} color={colors.danger} strokeWidth={2} />}
+                  onPress={removeEditing}
+                />
+              ) : null}
+            </>
+          ) : null
         }
       >
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={
-        styles.contentContainer
-      }
-      keyboardShouldPersistTaps="handled"
-    >
-      <Text style={styles.title}>
-        Openingstijden
-      </Text>
-
-      <Text style={styles.description}>
-        Stel de wekelijkse openingstijden
-        van je {isMassage ? "zaak" : "restaurant"} in.
-      </Text>
-
-      <View style={styles.daysContainer}>
-        {DAYS.map((day) => {
-          const periods =
-            schedule[day.key];
-
-          const isOpen =
-            periods.length > 0;
-
-          return (
-            <View
-              key={day.key}
-              style={styles.dayCard}
-            >
-              <View
-                style={
-                  styles.dayHeader
-                }
-              >
-                <Text
-                  style={
-                    styles.dayTitle
-                  }
-                >
-                  {day.label}
-                </Text>
-
-                <View
-                  style={
-                    styles.switchContainer
-                  }
-                >
-                  <Text
-                    style={
-                      styles.openText
-                    }
-                  >
-                    {isOpen
-                      ? "Open"
-                      : "Gesloten"}
-                  </Text>
-
-                  <Switch
-                    {...switchColors}
-                    value={isOpen}
-                    onValueChange={(
-                      value
-                    ) =>
-                      toggleDay(
-                        day.key,
-                        value
-                      )
-                    }
-                  />
-                </View>
-              </View>
-
-              {isOpen && (
-                <View
-                  style={
-                    styles.periodsContainer
-                  }
-                >
-                  {periods.map(
-                    (
-                      period,
-                      index
-                    ) => (
-                      <View
-                        key={index}
-                        style={
-                          styles.periodRow
-                        }
-                      >
-                        <View
-                          style={
-                            styles.timeField
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.timeLabel
-                            }
-                          >
-                            Van
-                          </Text>
-
-                          <TextInput
-                            style={
-                              styles.input
-                            }
-                            value={
-                              period.opensAt
-                            }
-                            onChangeText={(
-                              value
-                            ) => {
-                              updatePeriod(
-                                day.key,
-                                index,
-                                "opensAt",
-                                value
-                              );
-                            }}
-                            placeholder="17:00"
-                            keyboardType="numbers-and-punctuation"
-                            maxLength={5}
-                            selectTextOnFocus={false}
-                          />
-                        </View>
-
-                        <Text
-                          style={
-                            styles.separator
-                          }
-                        >
-                          –
-                        </Text>
-
-                        <View
-                          style={
-                            styles.timeField
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.timeLabel
-                            }
-                          >
-                            Tot
-                          </Text>
-
-                          <TextInput
-                            style={
-                              styles.input
-                            }
-                            value={
-                              period.closesAt
-                            }
-                            onChangeText={(
-                              value
-                            ) => {
-                              updatePeriod(
-                                day.key,
-                                index,
-                                "closesAt",
-                                value
-                              );
-                            }}
-                            placeholder="22:00"
-                            keyboardType="numbers-and-punctuation"
-                            maxLength={5}
-                            selectTextOnFocus={false}
-                          />
-                        </View>
-
-                        <Pressable
-                          style={
-                            styles.removeButton
-                          }
-                          onPress={() =>
-                            removePeriod(
-                              day.key,
-                              index
-                            )
-                          }
-                        >
-                          <Text
-                            style={
-                              styles.removeButtonText
-                            }
-                          >
-                            ×
-                          </Text>
-                        </Pressable>
-                      </View>
-                    )
-                  )}
-
-                  <Pressable
-                    style={
-                      styles.addButton
-                    }
-                    onPress={() =>
-                      addPeriod(
-                        day.key
-                      )
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.addButtonText
-                      }
-                    >
-                      + Periode toevoegen
-                    </Text>
-                  </Pressable>
-                </View>
-              )}
-            </View>
-          );
-        })}
-      </View>
-
-      <Pressable
-        style={[
-          styles.saveButton,
-          isSaving &&
-            styles.saveButtonDisabled,
-        ]}
-        onPress={handleSave}
-        disabled={isSaving}
-      >
-        {isSaving ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text
-            style={
-              styles.saveButtonText
-            }
-          >
-            Opslaan
-          </Text>
-        )}
-      </Pressable>
-    </ScrollView>
+        {editing ? (
+          <View style={styles.sheetBody}>
+            <Text style={styles.sheetLabel}>{t("hours.opens")}</Text>
+            <TimePicker
+              value={editing.opens}
+              onChange={(opens) => setEditing((current) => ({ ...current, opens }))}
+            />
+            <Text style={[styles.sheetLabel, styles.sheetLabelGap]}>
+              {t("hours.closes")}
+            </Text>
+            <TimePicker
+              value={editing.closes}
+              onChange={(closes) => setEditing((current) => ({ ...current, closes }))}
+            />
+          </View>
+        ) : null}
+      </Sheet>
+    </SafeAreaView>
   );
 }
 
-// Written in neutral colours; skin turns them into the
-// Eucalyptus look.
-const styleDefs = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
 
-  contentContainer: {
-    padding: 24,
-    paddingBottom: 48,
+  header: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
   },
 
-  loadingContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    marginBottom: 8,
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl * 2,
   },
 
   description: {
-    fontSize: 15,
-    color: "#666",
-    marginBottom: 24,
-  },
-
-  daysContainer: {
-    gap: 12,
-  },
-
-  dayCard: {
-    borderWidth: 1,
-    borderColor: "#e1e1e1",
-    borderRadius: 12,
-    padding: 16,
-    backgroundColor: "#fafafa",
-  },
-
-  dayHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  dayTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-  },
-
-  switchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-
-  openText: {
-    fontSize: 14,
-    color: "#666",
-  },
-
-  periodsContainer: {
-    marginTop: 16,
-    gap: 12,
-  },
-
-  periodRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    gap: 8,
-  },
-
-  timeField: {
-    flex: 1,
-    gap: 6,
-  },
-
-  timeLabel: {
+    fontFamily: fonts.regular,
     fontSize: 13,
-    color: "#666",
+    lineHeight: 18,
+    color: colors.textMuted,
+    marginTop: spacing.sm,
+    marginBottom: spacing.lg,
+    marginHorizontal: spacing.xs,
   },
 
-  input: {
-    height: 46,
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 9,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    backgroundColor: "#fff",
+    borderColor: colors.border,
   },
 
-  separator: {
-    fontSize: 20,
-    paddingBottom: 11,
-    color: "#777",
+  day: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
 
-  removeButton: {
-    width: 42,
-    height: 46,
-    borderRadius: 9,
+  dayDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+
+  dayText: {
+    flex: 1,
+  },
+
+  dayName: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+    lineHeight: 30,
+  },
+
+  closed: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+
+  pills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: 2,
+  },
+
+  pill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+
+  pillPressed: {
+    opacity: 0.7,
+  },
+
+  pillText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+
+  addPill: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#eee",
-  },
-
-  removeButtonText: {
-    fontSize: 24,
-    color: "#666",
-  },
-
-  addButton: {
-    height: 44,
-    borderRadius: 9,
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderStyle: "dashed",
+    borderColor: colors.primaryBorder,
+  },
+
+  addPillText: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.primary,
+  },
+
+  copy: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    gap: spacing.sm,
+    paddingVertical: spacing.lg,
   },
 
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-  },
-
-  saveButton: {
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: "#111",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 28,
-  },
-
-  saveButtonDisabled: {
+  copyPressed: {
     opacity: 0.6,
   },
 
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  copyText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.primary,
   },
-};
 
-const styles = StyleSheet.create(
-  skin(styleDefs, {
-    container: {
-      backgroundColor: colors.background,
-    },
-  })
-);
+  save: {
+    marginTop: spacing.sm,
+  },
+
+  sheetBody: {
+    paddingBottom: spacing.sm,
+  },
+
+  sheetLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+
+  sheetLabelGap: {
+    marginTop: spacing.lg,
+  },
+});

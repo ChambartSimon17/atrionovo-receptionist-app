@@ -31,7 +31,19 @@ import {
   isRouteAllowed,
 } from "../utils/business-type";
 
-import { settingsHeader } from "../theme/settingsHeader";
+import { StatusBar } from "expo-status-bar";
+
+import {
+  setMonitoringBusiness,
+  withMonitoring,
+} from "../services/monitoring";
+import {
+  addNotificationResponseListener,
+  registerPushNotifications,
+} from "../services/notifications";
+
+import { isDark } from "../theme";
+import { watchSystemAppearance } from "../theme/appearance";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,10 +52,30 @@ function AuthGuard() {
     isAuthenticated,
     isLoading,
     businessType,
+    business,
+    accessToken,
   } = useAuth();
 
   const router = useRouter();
   const segments = useSegments();
+
+  // Once logged in: push notifications for this phone,
+  // and the business on error reports.
+  useEffect(() => {
+    setMonitoringBusiness(isAuthenticated ? business : null);
+
+    if (isAuthenticated && accessToken) {
+      registerPushNotifications(accessToken);
+    }
+    // Only when the business changes, not on every
+    // refreshed access token.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, business?.id]);
+
+  useEffect(
+    () => addNotificationResponseListener((route) => router.push(route)),
+    [router]
+  );
 
   useEffect(() => {
     if (isLoading) {
@@ -98,24 +130,11 @@ function AuthGuard() {
         headerShown: false,
       }}
     >
-      {/* Settings opened from "Meer" get a back button. */}
-      <Stack.Screen
-        name="settings/opening-hours"
-        options={settingsHeader}
-      />
-      <Stack.Screen
-        name="settings/special-opening-days"
-        options={settingsHeader}
-      />
-      <Stack.Screen
-        name="settings/business"
-        options={settingsHeader}
-      />
     </Stack>
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -130,6 +149,10 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  // Follow the phone when it switches between light and
+  // dark (the styles are made once, so this reloads).
+  useEffect(() => watchSystemAppearance(isDark), []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -138,9 +161,12 @@ export default function RootLayout() {
     <GestureHandlerRootView
       style={{ flex: 1 }}
     >
+      <StatusBar style={isDark ? "light" : "dark"} />
       <AuthProvider>
         <AuthGuard />
       </AuthProvider>
     </GestureHandlerRootView>
   );
 }
+
+export default withMonitoring(RootLayout);

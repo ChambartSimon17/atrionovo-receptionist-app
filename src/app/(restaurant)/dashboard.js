@@ -1,37 +1,32 @@
 import {
-  useCallback,
   useEffect,
   useState,
 } from "react";
 import {
-  ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
 import {
-  Phone,
   Plus,
+  Undo2,
 } from "lucide-react-native";
 
 import { useAuth } from "../../context/auth-context";
-import { api } from "../../services/api";
 import DayNavigation from "../../components/DayNavigation";
 import ReservationRow, {
   reservationState,
 } from "../../components/ReservationRow";
-import { Card, StatTile } from "../../components/ui";
+import { Card, SkeletonList, StatTile } from "../../components/ui";
+import { plural, t } from "../../i18n";
 import useRestaurantDay, {
   isInsideService,
 } from "../../hooks/useRestaurantDay";
@@ -42,9 +37,9 @@ import {
   spacing,
   type,
 } from "../../theme";
-import { switchColors } from "../../theme/settingsStyles";
 import {
   formatLongDate,
+  formatTime,
   todayString,
 } from "../../utils/date";
 
@@ -52,10 +47,13 @@ import {
 // Vandaag (restaurant home)
 // ======================================================
 //
-// The first tab of a restaurant: a greeting, the AI phone
-// receptionist switch, the day navigation, four numbers
-// for the day and the reservations per service (lunch and
-// dinner), each with how full the service is.
+// The first tab of a restaurant: a greeting, the day
+// navigation, four numbers for the day and the
+// reservations per service (lunch and dinner), each with
+// how full the service is. Below, the reservations that
+// are done (left, not come, cancelled); a tap by mistake
+// can be undone there. The AI receptionist switch lives
+// in Restaurantgegevens.
 //
 // The calendar opens this screen with a ?date=YYYY-MM-DD
 // parameter to show another day.
@@ -109,6 +107,7 @@ export default function RestaurantTodayScreen() {
 
   const {
     reservations,
+    allReservations,
     services,
     tables,
     isLoading,
@@ -117,10 +116,15 @@ export default function RestaurantTodayScreen() {
     reload,
     seat,
     complete,
+    undo,
     actionId,
   } = useRestaurantDay(date);
 
-  const voiceAgent = useVoiceAgent();
+  const finished = allReservations
+    .filter((reservation) =>
+      ["COMPLETED", "NO_SHOW", "CANCELLED"].includes(reservation.status)
+    )
+    .sort((a, b) => new Date(b.updatedAt ?? b.startTime) - new Date(a.updatedAt ?? a.startTime));
 
   const now = new Date();
   const isToday = date === todayString();
@@ -197,44 +201,6 @@ export default function RestaurantTodayScreen() {
           )}
         </View>
 
-        {/* AI receptionist */}
-
-        <Card style={styles.voiceCard}>
-          <View
-            style={[
-              styles.voiceIcon,
-              voiceAgent.enabled && styles.voiceIconOn,
-            ]}
-          >
-            <Phone
-              size={18}
-              color={
-                voiceAgent.enabled
-                  ? colors.onPrimary
-                  : colors.textMuted
-              }
-              strokeWidth={1.8}
-            />
-          </View>
-          <View style={styles.voiceText}>
-            <Text style={type.bodyMedium}>
-              AI-receptionist
-            </Text>
-            <Text style={type.caption}>
-              {voiceAgent.enabled
-                ? "Actief · neemt onbeantwoorde oproepen op"
-                : "Uit · de AI neemt niet op"}
-            </Text>
-          </View>
-          <Switch
-            value={voiceAgent.enabled}
-            disabled={voiceAgent.isUpdating}
-            onValueChange={voiceAgent.toggle}
-            accessibilityLabel="AI-receptionist"
-            {...switchColors}
-          />
-        </Card>
-
         <DayNavigation date={date} onChange={setDate} />
 
         {/* Numbers of the day */}
@@ -274,10 +240,7 @@ export default function RestaurantTodayScreen() {
         {/* Reservations per service */}
 
         {isLoading ? (
-          <ActivityIndicator
-            color={colors.primary}
-            style={styles.loading}
-          />
+          <SkeletonList rows={4} />
         ) : error ? (
           <Card>
             <Text style={styles.error}>{error}</Text>
@@ -362,6 +325,52 @@ export default function RestaurantTodayScreen() {
             );
           })
         )}
+
+        {/* Done for today, with undo */}
+
+        {!isLoading && finished.length > 0 ? (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={type.heading}>{t("dashboard.finished")}</Text>
+              <Text style={type.caption}>{finished.length}</Text>
+            </View>
+            <Card style={styles.list}>
+              {finished.map((reservation, index) => (
+                <View
+                  key={reservation.id}
+                  style={[styles.finishedRow, index > 0 && styles.finishedDivider]}
+                >
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/reservation/${reservation.id}`)}
+                    style={styles.finishedText}
+                  >
+                    <Text style={styles.finishedName} numberOfLines={1}>
+                      {formatTime(reservation.startTime)} ·{" "}
+                      {`${reservation.firstName} ${reservation.lastName}`.trim()}
+                    </Text>
+                    <Text style={type.caption}>
+                      {t(`dashboard.status.${reservation.status}`)} ·{" "}
+                      {plural("dashboard.people", reservation.guestCount)}
+                    </Text>
+                  </Pressable>
+                  {reservation.status !== "CANCELLED" ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t("dashboard.undo")}
+                      disabled={actionId === reservation.id}
+                      onPress={() => undo(reservation)}
+                      style={({ pressed }) => [styles.undo, pressed && styles.fabPressed]}
+                    >
+                      <Undo2 size={14} color={colors.primary} strokeWidth={2} />
+                      <Text style={styles.undoText}>{t("dashboard.undo")}</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ))}
+            </Card>
+          </View>
+        ) : null}
       </ScrollView>
 
       <Pressable
@@ -384,62 +393,47 @@ export default function RestaurantTodayScreen() {
   );
 }
 
-// The AI phone receptionist switch, saved right away and
-// put back when saving fails.
-function useVoiceAgent() {
-  const { business, accessToken } = useAuth();
-
-  const [enabled, setEnabled] = useState(
-    business?.voiceAgentEnabled ?? true
-  );
-  const [isUpdating, setIsUpdating] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!accessToken) {
-        return;
-      }
-
-      api
-        .getMyBusiness(accessToken)
-        .then((response) => {
-          const data = response?.data || response;
-          setEnabled(data?.voiceAgentEnabled ?? true);
-        })
-        .catch(() => {});
-    }, [accessToken])
-  );
-
-  const toggle = useCallback(
-    async (nextValue) => {
-      setEnabled(nextValue);
-      setIsUpdating(true);
-
-      try {
-        const response = await api.setVoiceAgentEnabled(
-          nextValue,
-          accessToken
-        );
-        const data = response?.data || response;
-        setEnabled(data?.voiceAgentEnabled ?? nextValue);
-      } catch (toggleError) {
-        setEnabled(!nextValue);
-        Alert.alert(
-          "Instelling niet opgeslagen",
-          toggleError?.message ||
-            "De instelling kon niet worden gewijzigd. Probeer opnieuw."
-        );
-      } finally {
-        setIsUpdating(false);
-      }
-    },
-    [accessToken]
-  );
-
-  return { enabled, isUpdating, toggle };
-}
 
 const styles = StyleSheet.create({
+  finishedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+
+  finishedDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+
+  finishedText: {
+    flex: 1,
+    gap: 2,
+  },
+
+  finishedName: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.text,
+  },
+
+  undo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+  },
+
+  undoText: {
+    fontFamily: fonts.semibold,
+    fontSize: 12.5,
+    color: colors.primary,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
@@ -475,29 +469,6 @@ const styles = StyleSheet.create({
 
   // AI receptionist
 
-  voiceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.md,
-  },
-
-  voiceIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  voiceIconOn: {
-    backgroundColor: colors.primary,
-  },
-
-  voiceText: {
-    flex: 1,
-    gap: 2,
-  },
 
   // Tiles
 
