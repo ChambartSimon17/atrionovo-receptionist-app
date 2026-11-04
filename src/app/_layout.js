@@ -27,7 +27,6 @@ import {
 } from "../context/auth-context";
 
 import {
-  BUSINESS_TYPES,
   getHomeRoute,
   isRouteAllowed,
 } from "../utils/business-type";
@@ -93,27 +92,24 @@ function AuthGuard() {
     segments,
   ]);
 
-  // Massage businesses open the shared opening-hours
-  // screens from "Meer"; give them a back button there.
-  // Restaurants keep these screens as they were.
-  const sharedSettingsOptions =
-    businessType === BUSINESS_TYPES.MASSAGE
-      ? settingsHeader
-      : {};
-
   return (
     <Stack
       screenOptions={{
         headerShown: false,
       }}
     >
+      {/* Settings opened from "Meer" get a back button. */}
       <Stack.Screen
         name="settings/opening-hours"
-        options={sharedSettingsOptions}
+        options={settingsHeader}
       />
       <Stack.Screen
         name="settings/special-opening-days"
-        options={sharedSettingsOptions}
+        options={settingsHeader}
+      />
+      <Stack.Screen
+        name="settings/business"
+        options={settingsHeader}
       />
     </Stack>
   );

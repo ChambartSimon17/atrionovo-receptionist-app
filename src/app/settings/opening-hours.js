@@ -13,11 +13,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
-import {
-  massageSkin,
-  useBusinessStyles,
-  useIsMassage,
-} from "../../theme/massageSkin";
+import { skin, useIsMassage } from "../../theme/skin";
 import { colors } from "../../theme";
 import { switchColors } from "../../theme/settingsStyles";
 
@@ -75,10 +71,6 @@ function createEmptySchedule() {
 export default function OpeningHoursScreen() {
   const isMassage = useIsMassage();
 
-  const styles = useBusinessStyles(
-    restaurantStyles,
-    massageStyles
-  );
 
   const { accessToken } = useAuth();
 
@@ -384,7 +376,7 @@ export default function OpeningHoursScreen() {
                   </Text>
 
                   <Switch
-                    {...(isMassage ? switchColors : {})}
+                    {...switchColors}
                     value={isOpen}
                     onValueChange={(
                       value
@@ -570,8 +562,8 @@ export default function OpeningHoursScreen() {
   );
 }
 
-// Restaurants keep this look; massage businesses get the
-// same layout in the Eucalyptus colours (massageSkin).
+// Written in neutral colours; skin turns them into the
+// Eucalyptus look.
 const styleDefs = {
   container: {
     flex: 1,
@@ -723,10 +715,8 @@ const styleDefs = {
   },
 };
 
-const restaurantStyles = StyleSheet.create(styleDefs);
-
-const massageStyles = StyleSheet.create(
-  massageSkin(styleDefs, {
+const styles = StyleSheet.create(
+  skin(styleDefs, {
     container: {
       backgroundColor: colors.background,
     },

@@ -12,6 +12,7 @@ import { router } from "expo-router";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
+import { skin } from "../../theme/skin";
 
 function formatDate(date) {
   return date.toLocaleDateString("nl-BE", {
@@ -688,7 +689,8 @@ export default function NewReservation() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create(
+  skin({
   container: {
     flex: 1,
     backgroundColor: "#f7f7f7",
@@ -966,4 +968,5 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#111",
   },
-});
+})
+);

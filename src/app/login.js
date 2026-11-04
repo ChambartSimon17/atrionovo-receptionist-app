@@ -12,6 +12,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "../context/auth-context";
+import { skin } from "../theme/skin";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -160,10 +161,11 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create(
+  skin({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f7f7",
   },
 
   content: {
@@ -240,4 +242,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+})
+);

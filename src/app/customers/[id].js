@@ -1,745 +1,715 @@
 import {
+  useCallback,
+  useState,
+} from "react";
+import {
   ActivityIndicator,
+  Linking,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
+  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-
 import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+  ChevronLeft,
+  ChevronRight,
+  Mail,
+  MessageSquare,
+  Phone,
+  Plus,
+} from "lucide-react-native";
 
-import { api } from "../../../src/services/api";
-import { useAuth } from "../../../src/context/auth-context";
-import { BUSINESS_TYPES } from "../../../src/utils/business-type";
+import { useAuth } from "../../context/auth-context";
+import { api } from "../../services/api";
 import {
-  formatDuration,
-  formatPrice,
-} from "../../../src/utils/price";
+  Badge,
+  Button,
+  Card,
+} from "../../components/ui";
+import {
+  colors,
+  fonts,
+  radius,
+  spacing,
+  touchTarget,
+  type,
+} from "../../theme";
+import { guestSummary } from "../../hooks/useGuestHistory";
+import { formatTime } from "../../utils/date";
 
-const APPOINTMENT_STATUS_LABELS = {
+// ======================================================
+// Gastprofiel
+// ======================================================
+//
+// One guest of a restaurant: contact buttons, a few
+// numbers (visits, usual party size, missed and cancelled
+// reservations), the notes and every reservation they
+// made. Tapping a reservation opens it.
+// ======================================================
+
+const STATUS_LABELS = {
   CONFIRMED: "Bevestigd",
+  SEATED: "Aan tafel",
   COMPLETED: "Afgerond",
   CANCELLED: "Geannuleerd",
   NO_SHOW: "Niet verschenen",
 };
 
+const MONTHS_SHORT = [
+  "jan",
+  "feb",
+  "mrt",
+  "apr",
+  "mei",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "okt",
+  "nov",
+  "dec",
+];
 
-// ======================================================
-// Helpers
-// ======================================================
+function formatShortDate(isoString) {
+  const date = new Date(isoString);
 
-function formatDate(dateString) {
-  if (!dateString) {
-    return "-";
-  }
+  return `${date.getDate()} ${MONTHS_SHORT[date.getMonth()]} ${date.getFullYear()}`;
+}
 
-  return new Date(dateString).toLocaleDateString(
-    "nl-BE",
-    {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }
+function initials(customer) {
+  return `${customer.firstName?.[0] ?? ""}${
+    customer.lastName?.[0] ?? ""
+  }`.toUpperCase();
+}
+
+function isMissed(reservation, now) {
+  return (
+    reservation.status === "CONFIRMED" &&
+    new Date(reservation.endTime) < now
   );
 }
 
-function formatTime(dateString) {
-  if (!dateString) {
-    return "-";
-  }
-
-  return new Date(dateString).toLocaleTimeString(
-    "nl-BE",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }
-  );
-}
-
-function formatGuestCount(count) {
-  if (count === 1) {
-    return "1 persoon";
-  }
-
-  return `${count} personen`;
-}
-
-
-// ======================================================
-// Customer Detail
-// ======================================================
-
-export default function CustomerDetail() {
+export default function GuestProfileScreen() {
   const router = useRouter();
 
   const { id } = useLocalSearchParams();
 
-  const {
-    accessToken,
-    businessType,
-  } = useAuth();
+  const { accessToken } = useAuth();
 
-  const isMassage =
-    businessType ===
-    BUSINESS_TYPES.MASSAGE;
+  const [customer, setCustomer] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [customer, setCustomer] =
-    useState(null);
-
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState(null);
-
-
-  // ====================================================
-  // Load customer
-  // ====================================================
-
-  const loadCustomer = useCallback(
-    async () => {
-      if (
-        !accessToken ||
-        !id
-      ) {
+  useFocusEffect(
+    useCallback(() => {
+      if (!accessToken || !id) {
         return;
       }
 
-      try {
-        setIsLoading(true);
-        setError(null);
+      setError(null);
 
-        const response =
-          await api.getCustomer(
-            id,
-            accessToken
-          );
+      api
+        .getCustomer(id, accessToken)
+        .then((response) => {
+          const data = response?.data || response;
 
-        const data =
-          response?.data ||
-          response;
-
-        setCustomer({
-          ...data.customer,
-          reservations:
-            data.reservations || [],
-          appointments:
-            data.appointments || [],
-        });
-      } catch (error) {
-        console.error(
-          "Failed to load customer:",
-          error
-        );
-
-        setError(
-          error?.message ||
-            "De klant kon niet worden geladen."
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [
-      accessToken,
-      id,
-    ]
+          setCustomer({
+            ...data.customer,
+            reservations: data.reservations || [],
+          });
+        })
+        .catch((loadError) =>
+          setError(
+            loadError?.message ||
+              "De gast kon niet worden geladen."
+          )
+        )
+        .finally(() => setIsLoading(false));
+    }, [accessToken, id])
   );
 
-
-  useEffect(() => {
-    loadCustomer();
-  }, [loadCustomer]);
-
-
-  // ====================================================
-  // Loading
-  // ====================================================
-
-  if (isLoading) {
+  if (isLoading || error || !customer) {
     return (
-      <SafeAreaView
-        style={styles.container}
-      >
+      <SafeAreaView style={styles.screen}>
+        <BackBar onBack={() => router.back()} />
         <View style={styles.center}>
-          <ActivityIndicator
-            size="large"
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-
-  // ====================================================
-  // Error
-  // ====================================================
-
-  if (error) {
-    return (
-      <SafeAreaView
-        style={styles.container}
-      >
-        <View style={styles.center}>
-          <Text style={styles.errorTitle}>
-            Klant niet gevonden
-          </Text>
-
-          <Text style={styles.errorText}>
-            {error}
-          </Text>
-
-          <Pressable
-            style={styles.backButton}
-            onPress={() =>
-              router.back()
-            }
-          >
-            <Text
-              style={styles.backButtonText}
-            >
-              Terug
+          {isLoading ? (
+            <ActivityIndicator />
+          ) : (
+            <Text style={styles.error}>
+              {error || "Gast niet gevonden."}
             </Text>
-          </Pressable>
+          )}
         </View>
       </SafeAreaView>
     );
   }
 
-
-  if (!customer) {
-    return null;
-  }
-
-
-  // ====================================================
-  // Render
-  // ====================================================
+  const now = new Date();
+  const stats = guestSummary(customer, now);
 
   return (
-    <SafeAreaView
-      style={styles.container}
-    >
-      <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
-      >
+    <SafeAreaView style={styles.screen}>
+      <BackBar onBack={() => router.back()} />
 
-        {/* Header */}
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Profile */}
 
-        <View style={styles.header}>
-
-          <Pressable
-            onPress={() =>
-              router.back()
-            }
-            style={styles.back}
-          >
-            <Text style={styles.backIcon}>
-              ‹
-            </Text>
-          </Pressable>
-
-          <View style={styles.headerText}>
-            <Text
-              style={styles.title}
-            >
-              {customer.firstName}{" "}
-              {customer.lastName}
-            </Text>
-
-            <Text
-              style={styles.subtitle}
-            >
-              Klant
-            </Text>
-          </View>
-
-          {customer.isVip && (
-            <View
-              style={styles.vipBadge}
-            >
-              <Text
-                style={styles.vipText}
-              >
-                VIP
-              </Text>
-            </View>
-          )}
-
-        </View>
-
-
-        {/* Contact information */}
-
-        <View style={styles.card}>
-
-          <Text style={styles.sectionTitle}>
-            Contactgegevens
-          </Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>
-              Telefoon
-            </Text>
-
-            <Text style={styles.value}>
-              {customer.phoneNumber ||
-                "-"}
-            </Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>
-              E-mail
-            </Text>
-
-            <Text style={styles.value}>
-              {customer.email ||
-                "-"}
-            </Text>
-          </View>
-
-        </View>
-
-
-        {/* Customer information */}
-
-        <View style={styles.card}>
-
-          <Text style={styles.sectionTitle}>
-            Klantinformatie
-          </Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>
-              VIP
-            </Text>
-
-            <Text style={styles.value}>
-              {customer.isVip
-                ? "Ja"
-                : "Nee"}
-            </Text>
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.notesContainer}>
-            <Text style={styles.label}>
-              Notities
-            </Text>
-
-            <Text style={styles.notes}>
-              {customer.notes ||
-                "Geen notities"}
-            </Text>
-          </View>
-
-        </View>
-
-
-        {/* Appointments (massage) / Reservations (restaurant) */}
-
-        {isMassage ? (
-          <View style={styles.card}>
-            <View
-              style={
-                styles.reservationHeader
-              }
-            >
-              <Text
-                style={styles.sectionTitle}
-              >
-                Afspraken
-              </Text>
-
-              <Text
-                style={styles.reservationCount}
-              >
-                {customer.appointments
-                  ?.length || 0}
-              </Text>
-            </View>
-
-            {!customer.appointments ||
-            customer.appointments.length ===
-              0 ? (
-              <Text
-                style={
-                  styles.emptyReservations
-                }
-              >
-                Geen afspraken gevonden.
-              </Text>
-            ) : (
-              customer.appointments.map(
-                (appointment) => (
-                  <View
-                    key={appointment.id}
-                    style={
-                      styles.reservationRow
-                    }
-                  >
-                    <View>
-                      <Text
-                        style={
-                          styles.reservationDate
-                        }
-                      >
-                        {formatDate(
-                          appointment.startTime
-                        )}
-                      </Text>
-
-                      <Text
-                        style={
-                          styles.reservationMeta
-                        }
-                      >
-                        {formatTime(
-                          appointment.startTime
-                        )}{" "}
-                        ·{" "}
-                        {appointment.serviceName}{" "}
-                        ·{" "}
-                        {formatDuration(
-                          appointment.durationMinutes
-                        )}{" "}
-                        ·{" "}
-                        {formatPrice(
-                          appointment.priceCents
-                        )}
-                      </Text>
-                    </View>
-
-                    <Text
-                      style={
-                        styles.reservationMeta
-                      }
-                    >
-                      {
-                        APPOINTMENT_STATUS_LABELS[
-                          appointment.status
-                        ]
-                      }
-                    </Text>
-                  </View>
-                )
-              )
-            )}
-          </View>
-        ) : (
-        <View style={styles.card}>
-
+        <View style={styles.profile}>
           <View
-            style={
-              styles.reservationHeader
-            }
+            style={[
+              styles.avatar,
+              customer.isVip && styles.vipAvatar,
+            ]}
           >
             <Text
-              style={styles.sectionTitle}
+              style={[
+                styles.avatarText,
+                customer.isVip && styles.vipAvatarText,
+              ]}
             >
-              Reservaties
-            </Text>
-
-            <Text
-              style={styles.reservationCount}
-            >
-              {customer.reservations
-                ?.length || 0}
+              {initials(customer)}
             </Text>
           </View>
-
-
-          {!customer.reservations ||
-          customer.reservations.length ===
-            0 ? (
-            <Text
-              style={
-                styles.emptyReservations
-              }
-            >
-              Geen reservaties gevonden.
+          <View style={styles.profileText}>
+            <Text style={styles.name}>
+              {customer.firstName} {customer.lastName}
             </Text>
-          ) : (
-            customer.reservations.map(
-              (reservation) => (
-                <Pressable
-                  key={
-                    reservation.id
-                  }
-                  style={
-                    styles.reservationRow
-                  }
-                  onPress={() =>
-                    router.push(
-                      `/reservation/${reservation.id}`
-                    )
-                  }
-                >
-
-                  <View>
-                    <Text
-                      style={
-                        styles.reservationDate
-                      }
-                    >
-                      {formatDate(
-                        reservation.startTime
-                      )}
-                    </Text>
-
-                    <Text
-                      style={
-                        styles.reservationMeta
-                      }
-                    >
-                      {formatTime(
-                        reservation.startTime
-                      )}{" "}
-                      ·{" "}
-                      {formatGuestCount(
-                        reservation.guestCount
-                      )}
-                    </Text>
-                  </View>
-
-                  <Text
-                    style={
-                      styles.chevron
-                    }
-                  >
-                    ›
-                  </Text>
-
-                </Pressable>
-              )
-            )
-          )}
-
+            <View style={styles.tags}>
+              {customer.isVip && (
+                <Badge
+                  label="VIP"
+                  background={colors.sandSoft}
+                  color="#6B5326"
+                />
+              )}
+              {stats.visits >= 3 && (
+                <Badge label="Vaste gast" status="SEATED" />
+              )}
+              {stats.missed > 0 && (
+                <Badge
+                  label={`${stats.missed}× niet gekomen`}
+                  status="NO_SHOW"
+                />
+              )}
+              {!!customer.createdAt && (
+                <Badge
+                  label={`Sinds ${formatShortDate(
+                    customer.createdAt
+                  )}`}
+                />
+              )}
+            </View>
+          </View>
         </View>
+
+        {/* Contact */}
+
+        <View style={styles.contactRow}>
+          <ContactButton
+            label="Bel"
+            icon={Phone}
+            onPress={() =>
+              Linking.openURL(`tel:${customer.phoneNumber}`)
+            }
+          />
+          <ContactButton
+            label="SMS"
+            icon={MessageSquare}
+            onPress={() =>
+              Linking.openURL(`sms:${customer.phoneNumber}`)
+            }
+          />
+          <ContactButton
+            label="E-mail"
+            icon={Mail}
+            disabled={!customer.email}
+            onPress={() =>
+              Linking.openURL(`mailto:${customer.email}`)
+            }
+          />
+        </View>
+
+        {/* Numbers */}
+
+        <Card style={styles.stats}>
+          <Stat label="bezoeken" value={String(stats.visits)} />
+          <Stat
+            label="gem. groep"
+            value={
+              stats.averageParty === null
+                ? "–"
+                : String(Math.round(stats.averageParty * 10) / 10)
+            }
+          />
+          <Stat
+            label="niet gekomen"
+            value={String(stats.missed)}
+          />
+          <Stat
+            label="geannuleerd"
+            value={String(stats.cancelled)}
+            last
+          />
+        </Card>
+
+        {/* Details */}
+
+        <Card style={styles.details}>
+          <DetailRow
+            label="Laatste bezoek"
+            value={
+              stats.lastVisit
+                ? formatShortDate(stats.lastVisit.startTime)
+                : "–"
+            }
+          />
+          <DetailRow
+            label="Gepland"
+            value={
+              stats.upcoming === 1
+                ? "1 reservatie"
+                : `${stats.upcoming} reservaties`
+            }
+          />
+          <DetailRow
+            label="Telefoon"
+            value={customer.phoneNumber}
+          />
+          <DetailRow
+            label="E-mail"
+            value={customer.email || "–"}
+            last
+          />
+        </Card>
+
+        {!!customer.notes && (
+          <View style={styles.notes}>
+            <Text style={styles.notesLabel}>Notitie</Text>
+            <Text style={styles.notesText}>
+              {customer.notes}
+            </Text>
+          </View>
         )}
 
+        {/* History */}
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={type.heading}>Geschiedenis</Text>
+            <Text style={type.caption}>
+              {customer.reservations.length}
+            </Text>
+          </View>
+
+          {customer.reservations.length === 0 ? (
+            <Card>
+              <Text style={type.caption}>
+                Nog geen reservaties.
+              </Text>
+            </Card>
+          ) : (
+            <Card style={styles.history}>
+              {customer.reservations.map(
+                (reservation, index) => {
+                  const status = isMissed(reservation, now)
+                    ? "NO_SHOW"
+                    : reservation.status;
+
+                  return (
+                    <Pressable
+                      key={reservation.id}
+                      accessibilityRole="button"
+                      onPress={() =>
+                        router.push(
+                          `/reservation/${reservation.id}`
+                        )
+                      }
+                      style={({ pressed }) => [
+                        styles.historyRow,
+                        index > 0 && styles.historyDivider,
+                        pressed && styles.historyPressed,
+                      ]}
+                    >
+                      <View style={styles.historyText}>
+                        <Text style={type.bodyMedium}>
+                          {formatShortDate(
+                            reservation.startTime
+                          )}
+                        </Text>
+                        <Text
+                          style={type.caption}
+                          numberOfLines={1}
+                        >
+                          {formatTime(reservation.startTime)} ·{" "}
+                          {reservation.guestCount === 1
+                            ? "1 persoon"
+                            : `${reservation.guestCount} personen`}
+                          {reservation.notes
+                            ? ` · ${reservation.notes}`
+                            : ""}
+                        </Text>
+                      </View>
+                      <Badge
+                        label={STATUS_LABELS[status]}
+                        status={status}
+                      />
+                      <ChevronRight
+                        size={16}
+                        color={colors.textMuted}
+                        strokeWidth={1.8}
+                      />
+                    </Pressable>
+                  );
+                }
+              )}
+            </Card>
+          )}
+        </View>
+
+        <Button
+          label="Nieuwe reservatie"
+          variant="primary"
+          icon={
+            <Plus
+              size={18}
+              color={colors.onPrimary}
+              strokeWidth={2}
+            />
+          }
+          onPress={() =>
+            router.push("/reservation/new")
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function BackBar({ onBack }) {
+  return (
+    <View style={styles.backBar}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Terug"
+        onPress={onBack}
+        style={styles.backButton}
+      >
+        <ChevronLeft
+          size={20}
+          color={colors.text}
+          strokeWidth={1.8}
+        />
+      </Pressable>
+      <Text style={styles.backTitle}>Gast</Text>
+      <View style={styles.backSpacer} />
+    </View>
+  );
+}
 
-// ======================================================
-// Styles
-// ======================================================
+function ContactButton({ label, icon: Icon, onPress, disabled }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.contactButton,
+        pressed && styles.contactPressed,
+        disabled && styles.contactDisabled,
+      ]}
+    >
+      <Icon
+        size={16}
+        color={disabled ? colors.textDisabled : colors.primary}
+        strokeWidth={1.8}
+      />
+      <Text
+        style={[
+          styles.contactLabel,
+          disabled && { color: colors.textDisabled },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function Stat({ label, value, last }) {
+  return (
+    <View style={[styles.stat, !last && styles.statDivider]}>
+      <Text style={styles.statValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function DetailRow({ label, value, last }) {
+  return (
+    <View
+      style={[styles.detailRow, !last && styles.detailDivider]}
+    >
+      <Text style={type.caption}>{label}</Text>
+      <Text
+        style={[type.bodyMedium, styles.detailValue]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: "#F5F6F8",
-  },
-
-  content: {
-    padding: 20,
-    paddingBottom: 40,
+    backgroundColor: colors.background,
   },
 
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
   },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
-  },
-
-  back: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-
-  backIcon: {
-    fontSize: 30,
-    lineHeight: 32,
-    color: "#111",
-  },
-
-  headerText: {
-    flex: 1,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#111",
-  },
-
-  subtitle: {
-    marginTop: 3,
+  error: {
+    fontFamily: fonts.regular,
     fontSize: 14,
-    color: "#777",
+    color: colors.danger,
   },
 
-  vipBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: "#111",
-  },
-
-  vipText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 14,
-  },
-
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#111",
-    marginBottom: 14,
-  },
-
-  infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 20,
-  },
-
-  label: {
-    fontSize: 14,
-    color: "#777",
-  },
-
-  value: {
-    flex: 1,
-    textAlign: "right",
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#ECEDEF",
-    marginVertical: 14,
-  },
-
-  notesContainer: {
-    gap: 8,
-  },
-
-  notes: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: "#222",
-  },
-
-  reservationHeader: {
+  backBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-
-  reservationCount: {
-    minWidth: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#F0F1F3",
-    textAlign: "center",
-    paddingTop: 5,
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  reservationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderTopColor: "#ECEDEF",
-  },
-
-  reservationDate: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#111",
-  },
-
-  reservationMeta: {
-    marginTop: 4,
-    fontSize: 13,
-    color: "#777",
-  },
-
-  chevron: {
-    fontSize: 25,
-    color: "#999",
-  },
-
-  emptyReservations: {
-    fontSize: 14,
-    color: "#888",
-  },
-
-  errorTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#111",
-    marginBottom: 8,
-  },
-
-  errorText: {
-    textAlign: "center",
-    fontSize: 14,
-    color: "#777",
-    marginBottom: 20,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
   },
 
   backButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: "#111",
+    width: touchTarget,
+    height: touchTarget,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
-  backButtonText: {
-    color: "#fff",
-    fontWeight: "700",
+  backTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: 15,
+    color: colors.text,
+  },
+
+  backSpacer: {
+    width: touchTarget,
+  },
+
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
+
+  profile: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md + 2,
+  },
+
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  vipAvatar: {
+    backgroundColor: colors.sandSoft,
+  },
+
+  avatarText: {
+    fontFamily: fonts.semibold,
+    fontSize: 20,
+    color: colors.primary,
+  },
+
+  vipAvatarText: {
+    color: "#6B5326",
+  },
+
+  profileText: {
+    flex: 1,
+    gap: 6,
+  },
+
+  name: {
+    fontFamily: fonts.semibold,
+    fontSize: 20,
+    color: colors.text,
+  },
+
+  tags: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+  },
+
+  contactRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+
+  contactButton: {
+    flex: 1,
+    minHeight: touchTarget,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+
+  contactPressed: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  contactDisabled: {
+    opacity: 0.6,
+  },
+
+  contactLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.text,
+  },
+
+  stats: {
+    flexDirection: "row",
+    paddingHorizontal: 0,
+    paddingVertical: spacing.md,
+  },
+
+  stat: {
+    flex: 1,
+    alignItems: "center",
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+
+  statDivider: {
+    borderRightWidth: 1,
+    borderRightColor: colors.divider,
+  },
+
+  statValue: {
+    fontFamily: fonts.semibold,
+    fontSize: 17,
+    color: colors.text,
+  },
+
+  statLabel: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+
+  details: {
+    paddingVertical: spacing.xs,
+  },
+
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 11,
+  },
+
+  detailDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+
+  detailValue: {
+    flexShrink: 1,
+    fontSize: 13,
+  },
+
+  notes: {
+    backgroundColor: "#FBF6EC",
+    borderWidth: 1,
+    borderColor: "#EADCC0",
+    borderRadius: radius.xl,
+    padding: spacing.md + 2,
+    gap: spacing.xs,
+  },
+
+  notesLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    color: "#6B5326",
+  },
+
+  notesText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#3B3324",
+  },
+
+  section: {
+    gap: spacing.sm,
+  },
+
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+
+  history: {
+    paddingVertical: spacing.xs,
+  },
+
+  historyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+
+  historyPressed: {
+    opacity: 0.7,
+  },
+
+  historyDivider: {
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
+  },
+
+  historyText: {
+    flex: 1,
+    gap: 2,
   },
 });

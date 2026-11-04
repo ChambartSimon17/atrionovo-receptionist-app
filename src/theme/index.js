@@ -2,7 +2,7 @@
 // Theme (Eucalyptus)
 // ======================================================
 //
-// Every colour, size and font of the massage app. Screens
+// Every colour, size and font of the app. Screens
 // and components read from here instead of hard-coding
 // values, so the look stays the same everywhere.
 //
@@ -44,13 +44,24 @@ export const colors = {
   live: "#C2552E",
 };
 
-// Appointment statuses, the same on every screen.
+// Appointment and reservation statuses, the same on
+// every screen.
 export const statusColors = {
   CONFIRMED: { background: "#E6F1FB", text: "#0C447C" },
   IN_PROGRESS: { background: colors.primary, text: colors.onPrimary },
+  ARRIVING: { background: "#FAEEDA", text: "#633806" },
+  SEATED: { background: colors.primary, text: colors.onPrimary },
   COMPLETED: { background: "#EAF3DE", text: "#27500A" },
   NO_SHOW: { background: "#FAEEDA", text: "#633806" },
   CANCELLED: { background: "#F1EFE8", text: "#444441" },
+};
+
+// Tables on the floor plan, by reservation state.
+export const tableColors = {
+  AVAILABLE: { background: colors.surface, border: colors.border, text: colors.text, muted: colors.textMuted },
+  RESERVED: { background: colors.primarySoft, border: colors.primaryBorder, text: colors.primary, muted: colors.primary },
+  ARRIVING: { background: "#FAEEDA", border: "#E2B970", text: "#633806", muted: "#8A5A14" },
+  SEATED: { background: colors.primary, border: colors.primary, text: colors.onPrimary, muted: colors.onPrimaryMuted },
 };
 
 export const spacing = {

@@ -17,6 +17,7 @@ import {
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
+import { skin } from "../../theme/skin";
 
 export default function NewCustomer() {
   const {
@@ -304,7 +305,8 @@ export default function NewCustomer() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create(
+  skin({
   container: {
     flex: 1,
     backgroundColor: "#f7f7f7",
@@ -437,4 +439,5 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#111",
   },
-});
+})
+);

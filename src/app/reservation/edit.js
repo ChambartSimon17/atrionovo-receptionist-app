@@ -18,6 +18,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
+import { skin } from "../../theme/skin";
 
 export default function EditReservation() {
   const { id } = useLocalSearchParams();
@@ -875,7 +876,8 @@ export default function EditReservation() {
 // Styles
 // ======================================================
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create(
+  skin({
   container: {
     flex: 1,
     backgroundColor: "#f7f7f7",
@@ -1056,4 +1058,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+})
+);

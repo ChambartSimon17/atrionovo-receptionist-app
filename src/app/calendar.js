@@ -32,10 +32,7 @@ import {
   BUSINESS_TYPES,
   getHomeRoute,
 } from "../utils/business-type";
-import {
-  massageSkin,
-  useBusinessStyles,
-} from "../theme/massageSkin";
+import { skin } from "../theme/skin";
 import { colors, spacing } from "../theme";
 
 // ======================================================
@@ -130,10 +127,6 @@ function formatMonthTitle(
 // ======================================================
 
 export default function Calendar() {
-  const styles = useBusinessStyles(
-    restaurantStyles,
-    massageStyles
-  );
 
   const router =
     useRouter();
@@ -669,8 +662,8 @@ export default function Calendar() {
 // Styles
 // ======================================================
 
-// Restaurants keep this look; massage businesses get the
-// same layout in the Eucalyptus colours (massageSkin).
+// Written in neutral colours; skin turns them into the
+// Eucalyptus look.
 const styleDefs = {
     container: {
       flex: 1,
@@ -907,10 +900,8 @@ const styleDefs = {
     },
 };
 
-const restaurantStyles = StyleSheet.create(styleDefs);
-
-const massageStyles = StyleSheet.create(
-  massageSkin(styleDefs, {
+const styles = StyleSheet.create(
+  skin(styleDefs, {
     container: {
       backgroundColor: colors.background,
       paddingHorizontal: spacing.xl,

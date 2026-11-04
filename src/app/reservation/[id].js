@@ -1,553 +1,621 @@
 import {
+  useCallback,
+  useState,
+} from "react";
+import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
+  useFocusEffect,
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import { useEffect, useState } from "react";
+import {
+  Armchair,
+  ChevronLeft,
+  DoorOpen,
+  Pencil,
+  Phone,
+  StickyNote,
+  X,
+} from "lucide-react-native";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
+import { guestLabel } from "../../components/ReservationRow";
+import {
+  Badge,
+  Button,
+  Card,
+} from "../../components/ui";
+import { tableNames } from "../../hooks/useRestaurantDay";
+import {
+  colors,
+  fonts,
+  radius,
+  spacing,
+  touchTarget,
+  type,
+} from "../../theme";
+import {
+  formatTime,
+  toDateString,
+} from "../../utils/date";
 
-export default function ReservationDetails() {
-  const { id } = useLocalSearchParams();
+// ======================================================
+// Reservatie
+// ======================================================
+//
+// One reservation: who, when, how many, which tables and
+// the note, with the steps that fit its status:
+//
+//   CONFIRMED  Aan tafel · Bewerken · Annuleren
+//   SEATED     Vertrokken
+//
+// and a button to call the guest.
+// ======================================================
+
+const STATUS = {
+  CONFIRMED: { label: "Bevestigd", status: "CONFIRMED" },
+  SEATED: { label: "Aan tafel", status: "SEATED" },
+  COMPLETED: { label: "Afgerond", status: "COMPLETED" },
+  CANCELLED: { label: "Geannuleerd", status: "CANCELLED" },
+  NO_SHOW: { label: "Niet verschenen", status: "NO_SHOW" },
+};
+
+function formatLongDate(isoString) {
+  return new Date(isoString).toLocaleDateString("nl-BE", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function capitalize(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+export default function ReservationDetailsScreen() {
   const router = useRouter();
 
-  const { accessToken } = useAuth();
+  const { id } = useLocalSearchParams();
 
-  const [reservation, setReservation] =
-    useState(null);
+  const { business, accessToken } = useAuth();
 
-  const [loading, setLoading] =
-    useState(true);
+  const [reservation, setReservation] = useState(null);
+  const [tables, setTables] = useState([]);
+  const [assigned, setAssigned] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(null);
 
-  const [error, setError] =
-    useState(null);
-
-  const [cancelling, setCancelling] =
-    useState(false);
-
-  useEffect(() => {
-    async function loadReservation() {
-      if (!id || !accessToken) {
+  useFocusEffect(
+    useCallback(() => {
+      if (!accessToken || !id) {
         return;
       }
 
-      try {
-        setLoading(true);
-        setError(null);
+      api
+        .getReservation(id, accessToken)
+        .then((response) => {
+          const data = response?.data || response;
 
-        const response =
-          await api.getReservation(
-            id,
-            accessToken
-          );
+          setReservation(data);
+          setError(null);
 
-        setReservation(response.data);
-      } catch (error) {
-        console.error(
-          "Failed to load reservation:",
-          error
-        );
+          // The single reservation does not include its
+          // tables; the day list does.
+          return api
+            .getReservationsForDay(
+              toDateString(new Date(data.startTime)),
+              accessToken
+            )
+            .then((dayResponse) =>
+              setAssigned(
+                (dayResponse?.data || []).find(
+                  (item) => item.id === data.id
+                )?.tables ?? []
+              )
+            )
+            .catch(() => setAssigned([]));
+        })
+        .catch((loadError) =>
+          setError(
+            loadError?.message ||
+              "Reservatie kon niet worden geladen."
+          )
+        )
+        .finally(() => setIsLoading(false));
 
-        setError(
-          error.message ||
-            "Reservatie kon niet worden geladen."
-        );
-      } finally {
-        setLoading(false);
+      // Table names come from the table list.
+      if (business?.id) {
+        api
+          .getTables(business.id, accessToken)
+          .then((response) =>
+            setTables(response?.data || response || [])
+          )
+          .catch(() => setTables([]));
       }
-    }
+    }, [accessToken, id, business?.id])
+  );
 
-    loadReservation();
-  }, [id, accessToken]);
-
-  function formatTime(dateString) {
-    if (!dateString) {
-      return "-";
-    }
-
-    return new Date(
-      dateString
-    ).toLocaleTimeString("nl-BE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function formatDate(dateString) {
-    if (!dateString) {
-      return "-";
-    }
-
-    return new Date(
-      dateString
-    ).toLocaleDateString("nl-BE", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  }
-
-  function getStatusText(status) {
-    switch (status) {
-      case "CONFIRMED":
-        return "Bevestigd";
-
-      case "CANCELLED":
-        return "Geannuleerd";
-
-      default:
-        return status;
+  async function changeStatus(request, nextStatus, action) {
+    try {
+      setBusy(action);
+      await request(business.id, reservation.id, accessToken);
+      setReservation((current) => ({
+        ...current,
+        status: nextStatus,
+      }));
+    } catch (actionError) {
+      Alert.alert(
+        "Niet gelukt",
+        actionError?.message ||
+          "De reservatie kon niet worden bijgewerkt."
+      );
+    } finally {
+      setBusy(null);
     }
   }
 
-  function handleCancelReservation() {
+  function confirmCancel() {
     Alert.alert(
       "Reservatie annuleren",
       "Weet je zeker dat je deze reservatie wilt annuleren?",
       [
-        {
-          text: "Nee",
-          style: "cancel",
-        },
+        { text: "Nee", style: "cancel" },
         {
           text: "Ja, annuleren",
           style: "destructive",
-          onPress: cancelReservation,
+          onPress: async () => {
+            try {
+              setBusy("cancel");
+              await api.cancelReservation(id, accessToken);
+              setReservation((current) => ({
+                ...current,
+                status: "CANCELLED",
+              }));
+            } catch (cancelError) {
+              Alert.alert(
+                "Annuleren mislukt",
+                cancelError?.message ||
+                  "De reservatie kon niet worden geannuleerd."
+              );
+            } finally {
+              setBusy(null);
+            }
+          },
         },
       ]
     );
   }
 
-  async function cancelReservation() {
-    if (!id || !accessToken) {
-      return;
-    }
-
-    try {
-      setCancelling(true);
-
-      await api.cancelReservation(
-        id,
-        accessToken
-      );
-
-      setReservation((current) => ({
-        ...current,
-        status: "CANCELLED",
-      }));
-
-      Alert.alert(
-        "Reservatie geannuleerd",
-        "De reservatie is succesvol geannuleerd.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.back(),
-          },
-        ]
-      );
-    } catch (error) {
-      console.error(
-        "Failed to cancel reservation:",
-        error
-      );
-
-      Alert.alert(
-        "Annuleren mislukt",
-        error.message ||
-          "De reservatie kon niet worden geannuleerd."
-      );
-    } finally {
-      setCancelling(false);
-    }
-  }
-
-  function handleEditReservation() {
-    router.push(
-      `/reservation/edit?id=${reservation.id}`
+  if (isLoading || error || !reservation) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <BackBar onBack={() => router.back()} />
+        <View style={styles.center}>
+          {isLoading ? (
+            <ActivityIndicator color={colors.primary} />
+          ) : (
+            <Text style={styles.error}>
+              {error || "Reservatie niet gevonden."}
+            </Text>
+          )}
+        </View>
+      </SafeAreaView>
     );
   }
 
+  const status = STATUS[reservation.status] ?? STATUS.CONFIRMED;
+  const tablesText = tableNames(
+    {
+      tables: reservation.tables?.length
+        ? reservation.tables
+        : assigned,
+    },
+    tables
+  );
+  const isOpen = reservation.status === "CONFIRMED";
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backText}>
-            ‹
+    <SafeAreaView style={styles.screen}>
+      <BackBar onBack={() => router.back()} />
+
+      <ScrollView contentContainerStyle={styles.content}>
+        {/* Who and when */}
+
+        <View style={styles.hero}>
+          <Badge label={status.label} status={status.status} />
+          <Text style={styles.name}>
+            {reservation.firstName} {reservation.lastName}
           </Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>
-          Reservatie
-        </Text>
-
-        <View style={styles.headerSpacer} />
-      </View>
-
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-
-          <Text style={styles.loadingText}>
-            Reservatie laden...
+          <Text style={styles.when}>
+            {capitalize(formatLongDate(reservation.startTime))}
           </Text>
         </View>
-      ) : error ? (
-        <View style={styles.center}>
-          <Text style={styles.errorTitle}>
-            Reservatie kon niet worden geladen
-          </Text>
 
-          <Text style={styles.errorText}>
-            {error}
-          </Text>
+        <Card style={styles.stats}>
+          <Stat
+            label="tijd"
+            value={formatTime(reservation.startTime)}
+            note={`tot ${formatTime(reservation.endTime)}`}
+          />
+          <Stat
+            label="personen"
+            value={String(reservation.guestCount)}
+            note={guestLabel(reservation.guestCount)}
+          />
+          <Stat
+            label="tafel"
+            value={tablesText || "–"}
+            note={tablesText ? "toegewezen" : "nog geen tafel"}
+            last
+          />
+        </Card>
 
-          <TouchableOpacity
-            style={styles.backAction}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.backActionText}>
-              Terug
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={
-            styles.content
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          <Text style={styles.title}>
-            {reservation.firstName}{" "}
-            {reservation.lastName}
-          </Text>
-
-          <Text style={styles.subtitle}>
-            Reservatie
-          </Text>
-
-          <View
-            style={[
-              styles.statusCard,
-              reservation.status ===
-                "CANCELLED" &&
-                styles.cancelledStatusCard,
-            ]}
-          >
-            <Text style={styles.label}>
-              Status
-            </Text>
-
-            <Text style={styles.status}>
-              {getStatusText(
-                reservation.status
-              )}
+        {!!reservation.notes && (
+          <View style={styles.note}>
+            <StickyNote
+              size={16}
+              color="#8A5A14"
+              strokeWidth={1.8}
+            />
+            <Text style={styles.noteText}>
+              {reservation.notes}
             </Text>
           </View>
+        )}
 
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              Datum
-            </Text>
+        <Card style={styles.details}>
+          <DetailRow
+            label="Telefoon"
+            value={reservation.phoneNumber || "–"}
+          />
+          <DetailRow
+            label="E-mail"
+            value={reservation.email || "–"}
+            last
+          />
+        </Card>
 
-            <Text style={styles.value}>
-              {formatDate(
-                reservation.startTime
-              )}
-            </Text>
-          </View>
+        {/* Next steps */}
 
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              Tijdstip
-            </Text>
-
-            <Text style={styles.value}>
-              {formatTime(
-                reservation.startTime
-              )}{" "}
-              –{" "}
-              {formatTime(
-                reservation.endTime
-              )}
-            </Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              Personen
-            </Text>
-
-            <Text style={styles.value}>
-              {reservation.guestCount}
-            </Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              Telefoon
-            </Text>
-
-            <Text style={styles.value}>
-              {reservation.phoneNumber ||
-                "-"}
-            </Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              E-mail
-            </Text>
-
-            <Text style={styles.value}>
-              {reservation.email || "-"}
-            </Text>
-          </View>
-
-          <View style={styles.card}>
-            <Text style={styles.label}>
-              Opmerking
-            </Text>
-
-            <Text style={styles.value}>
-              {reservation.notes || "-"}
-            </Text>
-          </View>
-
-          {reservation.status ===
-            "CONFIRMED" && (
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={
-                  handleEditReservation
-                }
-              >
-                <Text
-                  style={
-                    styles.editButtonText
-                  }
-                >
-                  Reservatie wijzigen
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.cancelButton,
-                  cancelling &&
-                    styles.disabledButton,
-                ]}
-                onPress={
-                  handleCancelReservation
-                }
-                disabled={cancelling}
-              >
-                {cancelling ? (
-                  <ActivityIndicator
-                    color="#fff"
-                  />
-                ) : (
-                  <Text
-                    style={
-                      styles.cancelButtonText
-                    }
-                  >
-                    Reservatie annuleren
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
+        <View style={styles.actions}>
+          {isOpen && (
+            <Button
+              label="Aan tafel"
+              variant="primary"
+              loading={busy === "seat"}
+              onPress={() =>
+                changeStatus(
+                  api.markReservationAsSeated,
+                  "SEATED",
+                  "seat"
+                )
+              }
+              icon={
+                <Armchair
+                  size={18}
+                  color={colors.onPrimary}
+                  strokeWidth={1.8}
+                />
+              }
+            />
           )}
-        </ScrollView>
-      )}
+
+          {reservation.status === "SEATED" && (
+            <Button
+              label="Gasten vertrokken"
+              variant="primary"
+              loading={busy === "complete"}
+              onPress={() =>
+                changeStatus(
+                  api.markReservationAsCompleted,
+                  "COMPLETED",
+                  "complete"
+                )
+              }
+              icon={
+                <DoorOpen
+                  size={18}
+                  color={colors.onPrimary}
+                  strokeWidth={1.8}
+                />
+              }
+            />
+          )}
+
+          <View style={styles.actionRow}>
+            {!!reservation.phoneNumber && (
+              <Button
+                label="Bel"
+                style={styles.actionItem}
+                onPress={() =>
+                  Linking.openURL(`tel:${reservation.phoneNumber}`)
+                }
+                icon={
+                  <Phone
+                    size={16}
+                    color={colors.text}
+                    strokeWidth={1.8}
+                  />
+                }
+              />
+            )}
+            {isOpen && (
+              <Button
+                label="Bewerken"
+                style={styles.actionItem}
+                onPress={() =>
+                  router.push(
+                    `/reservation/edit?id=${reservation.id}`
+                  )
+                }
+                icon={
+                  <Pencil
+                    size={16}
+                    color={colors.text}
+                    strokeWidth={1.8}
+                  />
+                }
+              />
+            )}
+          </View>
+
+          {isOpen && (
+            <Button
+              label="Reservatie annuleren"
+              variant="danger"
+              loading={busy === "cancel"}
+              onPress={confirmCancel}
+              icon={
+                <X
+                  size={16}
+                  color={colors.danger}
+                  strokeWidth={1.8}
+                />
+              }
+            />
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function BackBar({ onBack }) {
+  return (
+    <View style={styles.backBar}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Terug"
+        onPress={onBack}
+        style={({ pressed }) => [
+          styles.backButton,
+          pressed && styles.backPressed,
+        ]}
+      >
+        <ChevronLeft
+          size={20}
+          color={colors.text}
+          strokeWidth={1.8}
+        />
+      </Pressable>
+      <Text style={styles.backTitle}>Reservatie</Text>
+      <View style={styles.backSpacer} />
+    </View>
+  );
+}
+
+function Stat({ label, value, note, last }) {
+  return (
+    <View style={[styles.stat, !last && styles.statDivider]}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue} numberOfLines={1}>
+        {value}
+      </Text>
+      <Text style={type.caption} numberOfLines={1}>
+        {note}
+      </Text>
+    </View>
+  );
+}
+
+function DetailRow({ label, value, last }) {
+  return (
+    <View
+      style={[styles.detailRow, !last && styles.detailDivider]}
+    >
+      <Text style={type.caption}>{label}</Text>
+      <Text
+        style={[type.bodyMedium, styles.detailValue]}
+        numberOfLines={1}
+      >
+        {value}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: "#f7f7f7",
-  },
-
-  header: {
-    height: 110,
-    paddingHorizontal: 24,
-    paddingTop: 58,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-
-  backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  backText: {
-    fontSize: 32,
-    lineHeight: 32,
-    marginTop: -4,
-  },
-
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-
-  headerSpacer: {
-    width: 42,
-  },
-
-  content: {
-    paddingHorizontal: 24,
-    paddingBottom: 40,
-  },
-
-  title: {
-    fontSize: 30,
-    fontWeight: "700",
-    marginTop: 20,
-  },
-
-  subtitle: {
-    fontSize: 16,
-    color: "#888",
-    marginTop: 4,
-    marginBottom: 24,
-  },
-
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 12,
-  },
-
-  statusCard: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 20,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#22c55e",
-  },
-
-  cancelledStatusCard: {
-    borderLeftColor: "#ef4444",
-  },
-
-  label: {
-    fontSize: 14,
-    color: "#888",
-    marginBottom: 6,
-  },
-
-  value: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-
-  status: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-
-  actions: {
-    marginTop: 12,
-  },
-
-  editButton: {
-    backgroundColor: "#087FE5",
-    minHeight: 54,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-
-  editButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  cancelButton: {
-    backgroundColor: "#ef4444",
-    minHeight: 54,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 20,
-  },
-
-  cancelButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-
-  disabledButton: {
-    opacity: 0.6,
+    backgroundColor: colors.background,
   },
 
   center: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
   },
 
-  loadingText: {
-    marginTop: 12,
+  error: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.danger,
+    paddingHorizontal: spacing.xl,
+    textAlign: "center",
+  },
+
+  // Back bar
+
+  backBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+  },
+
+  backButton: {
+    width: touchTarget,
+    height: touchTarget,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  backPressed: {
+    backgroundColor: colors.surfaceMuted,
+  },
+
+  backTitle: {
+    fontFamily: fonts.semibold,
     fontSize: 16,
-    color: "#888",
+    color: colors.text,
   },
 
-  errorTitle: {
+  backSpacer: {
+    width: touchTarget,
+  },
+
+  content: {
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxl,
+    gap: spacing.lg,
+  },
+
+  // Hero
+
+  hero: {
+    alignItems: "flex-start",
+    gap: spacing.sm,
+  },
+
+  name: {
+    fontFamily: fonts.semibold,
+    fontSize: 24,
+    letterSpacing: -0.3,
+    color: colors.text,
+  },
+
+  when: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textMuted,
+    marginTop: -4,
+  },
+
+  // Numbers
+
+  stats: {
+    flexDirection: "row",
+    paddingVertical: spacing.md,
+    paddingHorizontal: 0,
+  },
+
+  stat: {
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    gap: 2,
+  },
+
+  statDivider: {
+    borderRightWidth: 1,
+    borderRightColor: colors.divider,
+  },
+
+  statLabel: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+
+  statValue: {
+    fontFamily: fonts.semibold,
     fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
+    color: colors.text,
   },
 
-  errorText: {
-    fontSize: 15,
-    color: "#888",
-    textAlign: "center",
-    marginTop: 8,
+  note: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.sandSoft,
   },
 
-  backAction: {
-    marginTop: 24,
-    backgroundColor: "#111",
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
+  noteText: {
+    flex: 1,
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: "#6B5326",
   },
 
-  backActionText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  details: {
+    paddingVertical: spacing.xs,
+  },
+
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+  },
+
+  detailDivider: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.divider,
+  },
+
+  detailValue: {
+    flexShrink: 1,
+    textAlign: "right",
+  },
+
+  // Actions
+
+  actions: {
+    gap: spacing.sm,
+  },
+
+  actionRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+
+  actionItem: {
+    flex: 1,
   },
 });

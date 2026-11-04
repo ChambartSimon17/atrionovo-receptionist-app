@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
+import { skin } from "../../theme/skin";
 
 export default function BusinessSettingsScreen() {
   const { accessToken } = useAuth();
@@ -212,10 +213,11 @@ function SettingField({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create(
+  skin({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f7f7",
   },
 
   contentContainer: {
@@ -227,7 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f7f7",
   },
 
   title: {
@@ -284,4 +286,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-});
+})
+);

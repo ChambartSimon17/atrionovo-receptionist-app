@@ -4,41 +4,55 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-import {
-  useEffect,
-  useState,
-} from "react";
-
+import { useEffect } from "react";
 import {
   Gesture,
   GestureDetector,
 } from "react-native-gesture-handler";
-
 import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
 } from "react-native-reanimated";
 
+import { getTableReservationState } from "./table-state";
 import {
-  getTableReservationState,
-} from "./table-state";
+  colors,
+  fonts,
+  radius,
+  tableColors,
+} from "../theme";
+import { formatTime } from "../utils/date";
 
-function formatReservationTime(
-  dateString
-) {
-  const date =
-    new Date(dateString);
+// ======================================================
+// Table map
+// ======================================================
+//
+// The floor plan: every table at its own position, coloured
+// by its reservation state (free, reserved, arriving,
+// seated) with the time of its next reservation.
+//
+// Tapping a table calls onTableSelect. While editing, the
+// tables can be dragged; the new position is passed to
+// onTablePositionChange when the drag ends.
+// ======================================================
 
-  return date.toLocaleTimeString(
-    "nl-BE",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }
-  );
+const MIN_CANVAS_HEIGHT = 420;
+
+function nextReservation(table, reservations, currentTime) {
+  return reservations
+    .filter(
+      (reservation) =>
+        reservation.tables?.some(
+          (reservationTable) =>
+            reservationTable.tableId === table.id
+        ) &&
+        (reservation.status === "SEATED" ||
+          new Date(reservation.endTime) > currentTime)
+    )
+    .sort(
+      (a, b) => new Date(a.startTime) - new Date(b.startTime)
+    )[0];
 }
 
 function Table({
@@ -50,15 +64,19 @@ function Table({
   onSelect,
   onPositionChange,
 }) {
-  const isRound =
-    table.shape === "ROUND";
+  const isRound = table.shape === "ROUND";
 
-  const reservationState =
-    getTableReservationState(
-      table,
-      reservations,
-      currentTime
-    );
+  const state = getTableReservationState(
+    table,
+    reservations,
+    currentTime
+  );
+  const palette = tableColors[state];
+  const next = nextReservation(
+    table,
+    reservations,
+    currentTime
+  );
 
   /*
    * These shared values handle the visual movement
@@ -68,17 +86,10 @@ function Table({
    * can follow the finger without triggering React
    * renders on every movement.
    */
-  const translateX =
-    useSharedValue(0);
-
-  const translateY =
-    useSharedValue(0);
-
-  const startX =
-    useSharedValue(table.x);
-
-  const startY =
-    useSharedValue(table.y);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const startX = useSharedValue(table.x);
+  const startY = useSharedValue(table.y);
 
   /*
    * If the table position changes from the backend
@@ -87,137 +98,113 @@ function Table({
   useEffect(() => {
     translateX.value = 0;
     translateY.value = 0;
-
     startX.value = table.x;
     startY.value = table.y;
-  }, [
-    table.x,
-    table.y,
-  ]);
+  }, [table.x, table.y]);
 
   /*
-   * Called only when the drag finishes.
-   *
-   * This function runs on the JS thread because
-   * runOnJS() is used from the gesture callback.
+   * Called only when the drag finishes, on the JS
+   * thread through runOnJS().
    */
-  const handleDragEnd = (
-    x,
-    y
-  ) => {
-    onPositionChange?.(
-      table.id,
-      {
-        x,
-        y,
-      }
-    );
+  const handleDragEnd = (x, y) => {
+    onPositionChange?.(table.id, {
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+    });
   };
 
-  const dragGesture =
-    Gesture.Pan()
-      .enabled(isEditing)
-      .minDistance(8)
+  const dragGesture = Gesture.Pan()
+    .enabled(isEditing)
+    .minDistance(8)
+    .onBegin(() => {
+      startX.value = table.x;
+      startY.value = table.y;
+      translateX.value = 0;
+      translateY.value = 0;
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd((event) => {
+      runOnJS(handleDragEnd)(
+        startX.value + event.translationX,
+        startY.value + event.translationY
+      );
+    });
 
-      .onBegin(() => {
-        startX.value = table.x;
-        startY.value = table.y;
+  const tapGesture = Gesture.Tap()
+    .enabled(isEditing)
+    .onEnd(() => {
+      runOnJS(onSelect)(table);
+    });
 
-        translateX.value = 0;
-        translateY.value = 0;
-      })
-
-      .onUpdate((event) => {
-        translateX.value =
-          event.translationX;
-
-        translateY.value =
-          event.translationY;
-      })
-
-      .onEnd((event) => {
-        const newX =
-          startX.value +
-          event.translationX;
-
-        const newY =
-          startY.value +
-          event.translationY;
-
-        runOnJS(handleDragEnd)(
-          newX,
-          newY
-        );
-      });
-
-  const tapGesture =
-    Gesture.Tap()
-      .enabled(isEditing)
-      .onEnd(() => {
-        runOnJS(onSelect)(table);
-      });
-
-  const tableGesture =
-    Gesture.Exclusive(
-      tapGesture,
-      dragGesture
-    );
-
-
+  const tableGesture = Gesture.Exclusive(
+    tapGesture,
+    dragGesture
+  );
 
   /*
    * Reanimated applies the translation directly
    * without causing React to render every frame.
    */
-  const animatedStyle =
-    useAnimatedStyle(
-      () => ({
-        transform: [
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  const frame = {
+    width: table.width,
+    height: table.height,
+    left: table.x,
+    top: table.y,
+    borderRadius: isRound ? 999 : radius.lg,
+  };
+
+  const label = (
+    <>
+      <Text
+        style={[
+          styles.tableName,
+          { color: isEditing ? colors.text : palette.text },
+        ]}
+        numberOfLines={1}
+      >
+        {table.name}
+      </Text>
+      <Text
+        style={[
+          styles.tableMeta,
           {
-            translateX:
-              translateX.value,
+            color: isEditing
+              ? colors.textMuted
+              : palette.muted,
           },
-          {
-            translateY:
-              translateY.value,
-          },
-        ],
-      })
-    );
+        ]}
+        numberOfLines={1}
+      >
+        {!isEditing && next && state !== "SEATED"
+          ? formatTime(next.startTime)
+          : `${table.capacity} pl.`}
+      </Text>
+    </>
+  );
 
   if (isEditing) {
     return (
-      <GestureDetector
-        gesture={tableGesture}
-      >
+      <GestureDetector gesture={tableGesture}>
         <Animated.View
           style={[
             styles.table,
             styles.editingTable,
-            {
-              width: table.width,
-              height: table.height,
-              left: table.x,
-              top: table.y,
-              borderRadius:
-                isRound
-                  ? 999
-                  : 12,
-            },
+            frame,
+            isSelected && styles.selectedTable,
             animatedStyle,
           ]}
         >
-          <Text
-            style={styles.tableName}
-          >
-            {table.name}
-          </Text>
-
-          <Text
-            style={styles.tableCapacity}
-          >
-            {table.capacity}
-          </Text>
+          {label}
         </Animated.View>
       </GestureDetector>
     );
@@ -225,211 +212,66 @@ function Table({
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`${table.name}, ${table.capacity} plaatsen`}
       activeOpacity={0.8}
-      onPress={() =>
-        onSelect(table)
-      }
+      onPress={() => onSelect?.(table)}
       style={[
         styles.table,
+        frame,
         {
-          width: table.width,
-          height: table.height,
-          left: table.x,
-          top: table.y,
-          borderRadius: isRound
-            ? 999
-            : 12,
+          backgroundColor: palette.background,
+          borderColor: palette.border,
         },
-
-        reservationState ===
-          "RESERVED" &&
-          styles.reservedTable,
-
-        reservationState ===
-          "ARRIVING" &&
-          styles.arrivingTable,
-
-        reservationState ===
-          "SEATED" &&
-          styles.seatedTable,
-
-        isSelected &&
-          styles.selectedTable,
+        isSelected && styles.selectedTable,
       ]}
     >
-      <Text
-        style={styles.tableName}
-      >
-        {table.name}
-      </Text>
-
-      <Text
-        style={styles.tableCapacity}
-      >
-        {table.capacity}
-      </Text>
+      {label}
     </TouchableOpacity>
   );
 }
 
-function TableMap({
+export default function TableMap({
   tables,
   reservations,
   isEditing = false,
+  selectedTableId = null,
   onTablePositionChange,
   onTableSelect,
+  currentTime = new Date(),
 }) {
-  const currentTime =
-    new Date();
-
-  const [
-    selectedTable,
-    setSelectedTable,
-  ] = useState(null);
-
-  const handleSelectTable = (
-    table
-  ) => {
-    if (isEditing) {
-      onTableSelect?.(table);
-      return;
-    }
-
-    setSelectedTable(table);
-  };
-
-  const handleClearSelection = () => {
-    if (isEditing) {
-      return;
-    }
-
-    setSelectedTable(null);
-  };
-
-  useEffect(() => {
-    if (isEditing) {
-      setSelectedTable(null);
-    }
-  }, [isEditing]);
-
-  const selectedReservations =
-    selectedTable
-      ? reservations.filter(
-          (reservation) =>
-            reservation.tables?.some(
-              (reservationTable) =>
-                reservationTable.tableId ===
-                selectedTable.id
-            )
-        )
-      : [];
+  const height = Math.max(
+    MIN_CANVAS_HEIGHT,
+    ...tables.map((table) => table.y + table.height + 24)
+  );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.canvas}>
-        {tables.map((table) => (
-          <Table
-            key={table.id}
-            table={table}
-            reservations={
-              reservations
-            }
-            currentTime={
-              currentTime
-            }
-            isSelected={
-              selectedTable?.id ===
-              table.id
-            }
-            isEditing={
-              isEditing
-            }
-            onSelect={
-              handleSelectTable
-            }
-            onPositionChange={
-              onTablePositionChange
-            }
-          />
-        ))}
-      </View>
+    <View
+      style={[
+        styles.canvas,
+        isEditing && styles.canvasEditing,
+        { height },
+      ]}
+    >
+      {tables.map((table) => (
+        <Table
+          key={table.id}
+          table={table}
+          reservations={reservations}
+          currentTime={currentTime}
+          isSelected={selectedTableId === table.id}
+          isEditing={isEditing}
+          onSelect={onTableSelect}
+          onPositionChange={onTablePositionChange}
+        />
+      ))}
 
-      {selectedTable && (
-        <View
-          style={styles.selectedInfo}
-        >
-          <Text
-            style={styles.selectedTitle}
-          >
-            {selectedTable.name}
+      {tables.length === 0 && (
+        <View style={styles.emptyCanvas}>
+          <Text style={styles.emptyText}>
+            Nog geen tafels. Tik op “Bewerk vloerplan” om
+            tafels toe te voegen.
           </Text>
-
-          {selectedReservations.length ===
-          0 ? (
-            <Text
-              style={styles.availableText}
-            >
-              Beschikbaar
-            </Text>
-          ) : (
-            selectedReservations.map(
-              (reservation) => (
-                <View
-                  key={
-                    reservation.id
-                  }
-                  style={
-                    styles.reservationInfo
-                  }
-                >
-                  <Text
-                    style={
-                      styles.reservationName
-                    }
-                  >
-                    {
-                      reservation.firstName
-                    }{" "}
-                    {
-                      reservation.lastName
-                    }
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.reservationDetails
-                    }
-                  >
-                    {
-                      reservation.guestCount
-                    }{" "}
-                    {reservation.guestCount ===
-                    1
-                      ? "persoon"
-                      : "personen"}
-                  </Text>
-
-                  <Text
-                    style={
-                      styles.reservationDetails
-                    }
-                  >
-                    {
-                      formatReservationTime(
-                        reservation.startTime
-                      )
-                    }{" "}
-                    –{" "}
-                    {
-                      formatReservationTime(
-                        reservation.endTime
-                      )
-                    }
-                  </Text>
-                </View>
-              )
-            )
-          )}
         </View>
       )}
     </View>
@@ -437,98 +279,66 @@ function TableMap({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 16,
-  },
-
   canvas: {
-    height: 500,
-    backgroundColor: "#f2f2f2",
-    borderRadius: 16,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
     position: "relative",
     overflow: "hidden",
   },
 
+  canvasEditing: {
+    borderStyle: "dashed",
+    borderColor: colors.primaryBorder,
+    backgroundColor: colors.primarySoft,
+  },
+
   table: {
     position: "absolute",
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#d0d0d0",
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 4,
+    shadowColor: "#1C2421",
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
   },
 
   editingTable: {
-    borderWidth: 2,
-    borderColor: "#111111",
-  },
-
-  reservedTable: {
-    backgroundColor: "#fff4e5",
-    borderColor: "#f0a000",
-  },
-
-  arrivingTable: {
-    backgroundColor: "#fff0f0",
-    borderColor: "#d64545",
-  },
-
-  seatedTable: {
-    backgroundColor: "#e8f5e9",
-    borderColor: "#22a06b",
+    backgroundColor: colors.surface,
+    borderColor: colors.primary,
+    borderStyle: "dashed",
   },
 
   selectedTable: {
     borderWidth: 3,
-    borderColor: "#111111",
+    borderColor: colors.text,
   },
 
   tableName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#111",
+    fontFamily: fonts.semibold,
+    fontSize: 13,
   },
 
-  tableCapacity: {
-    fontSize: 12,
-    color: "#777",
-    marginTop: 2,
+  tableMeta: {
+    fontFamily: fonts.regular,
+    fontSize: 11,
+    marginTop: 1,
   },
 
-  selectedInfo: {
-    marginTop: 12,
-    padding: 16,
-    backgroundColor: "#ffffff",
-    borderRadius: 12,
+  emptyCanvas: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
   },
 
-  selectedTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  availableText: {
-    marginTop: 6,
-    fontSize: 14,
-    color: "#22a06b",
-  },
-
-  reservationInfo: {
-    marginTop: 10,
-  },
-
-  reservationName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  reservationDetails: {
-    marginTop: 3,
-    fontSize: 14,
-    color: "#666",
+  emptyText: {
+    fontFamily: fonts.regular,
+    fontSize: 13,
+    textAlign: "center",
+    color: colors.textMuted,
   },
 });
-
-export default TableMap;

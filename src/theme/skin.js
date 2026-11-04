@@ -4,25 +4,18 @@ import { BUSINESS_TYPES } from "../utils/business-type";
 import { colors, fonts } from "./index";
 
 // ======================================================
-// Massage skin
+// Skin
 // ======================================================
 //
-// Some screens are shared by restaurants and massage
-// businesses (opening hours, special opening days, the
-// month calendar). Restaurants keep their own look; for a
-// massage business the same style definitions are run
-// through massageSkin, which swaps the neutral greys and
-// blacks for the Eucalyptus colours and the font weights
-// for Inter. A screen can add overrides for anything the
-// mapping does not cover.
+// Older screens were written with neutral greys, blacks
+// and blues. Their style definitions are run through skin,
+// which swaps those for the Eucalyptus colours and the
+// font weights for Inter, so they match the newer screens
+// without rewriting every style. A screen can add
+// overrides for anything the mapping does not cover.
 //
-//   const restaurantStyles = StyleSheet.create(styleDefs);
-//   const massageStyles = StyleSheet.create(
-//     massageSkin(styleDefs, { ...overrides })
-//   );
-//   const styles = useBusinessStyles(
-//     restaurantStyles,
-//     massageStyles
+//   const styles = StyleSheet.create(
+//     skin(styleDefs, { ...overrides })
 //   );
 // ======================================================
 
@@ -37,7 +30,11 @@ const BACKGROUNDS = {
   "#f5f5f5": colors.background,
   "#fafafa": colors.surface,
   "#eee": colors.surfaceMuted,
+  "#f0f0f0": colors.surfaceMuted,
   "#eef5ff": colors.primarySoft,
+  "#f4f4f4": colors.surfaceMuted,
+  "#dcefdc": colors.primarySoft,
+  "#f0dddd": colors.dangerSoft,
 };
 
 const TEXT = {
@@ -55,6 +52,8 @@ const TEXT = {
   "#087fe5": colors.primary,
   "#0a58ca": colors.primary,
   "#c62828": colors.danger,
+  "#d32f2f": colors.danger,
+  "#2e7d32": colors.primary,
   "#b3261e": colors.danger,
 };
 
@@ -63,7 +62,10 @@ const BORDERS = {
   "#ddd": colors.border,
   "#e1e1e1": colors.border,
   "#eee": colors.divider,
+  "#e2e2e2": colors.border,
   "#111": colors.primary,
+  "#087fe5": colors.primary,
+  "#f0cccc": colors.dangerSoft,
 };
 
 const BORDER_KEYS = [
@@ -111,7 +113,7 @@ function skinStyle(style) {
   return result;
 }
 
-export function massageSkin(styleDefs, overrides = {}) {
+export function skin(styleDefs, overrides = {}) {
   const skinned = {};
 
   Object.entries(styleDefs).forEach(([key, style]) => {
@@ -128,17 +130,6 @@ export function massageSkin(styleDefs, overrides = {}) {
   });
 
   return skinned;
-}
-
-/**
- * The styles for the logged-in business type.
- */
-export function useBusinessStyles(restaurantStyles, massageStyles) {
-  const { businessType } = useAuth();
-
-  return businessType === BUSINESS_TYPES.MASSAGE
-    ? massageStyles
-    : restaurantStyles;
 }
 
 /**
