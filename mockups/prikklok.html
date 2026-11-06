@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prikklok</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--p:#1F5F55;--p2:#3E9481;--ps:#E3EEEA;--bg:#F6F4EF;--b:#E4E0D8;--t:#1C2421;--m:#5B6661;--d:#A32D2D;--ds:#FCEBEB;--w:#633806;--ws:#FAEEDA}
+body{margin:0;background:#E9E6DF;font-family:Inter,system-ui,sans-serif;color:var(--t);padding:28px 16px}
+h2{font-size:18px;font-weight:600;max-width:1240px;margin:34px auto 4px}
+p.sub{font-size:13px;color:var(--m);max-width:1240px;margin:0 auto 18px;line-height:1.5}
+.grid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start;max-width:1240px;margin:0 auto}
+.tab{width:600px;height:420px;background:var(--bg);border-radius:22px;border:9px solid #1C2421;box-sizing:border-box;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.cap{font-size:13px;color:var(--m);text-align:center;margin:10px 0 0;max-width:600px}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 6px;font-size:12px;color:var(--m)}
+.bar b{color:var(--t);font-size:13px}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;flex:none}
+.input{display:flex;align-items:center;gap:10px;height:52px;border-radius:14px;border:1.5px solid var(--p);background:#fff;padding:0 16px;font-size:20px}
+.caret{width:2px;height:24px;background:var(--p)}
+.sugg{background:#fff;border:1px solid var(--b);border-radius:14px;overflow:hidden;margin-top:8px}
+.sugg div{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:15px}
+.sugg div+div{border-top:1px solid #EFECE6}
+.pad{display:grid;grid-template-columns:repeat(3,64px);gap:10px;justify-content:center}
+.pad span{height:52px;border-radius:14px;background:#fff;border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:500}
+.pad span.ghost{background:transparent;border:none;color:var(--m);font-size:13px}
+.dots{display:flex;gap:14px;justify-content:center;margin:12px 0 16px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--p);display:block}
+.dots i.f{background:var(--p)}
+.btn{background:var(--p);color:#fff;border-radius:12px;text-align:center;padding:12px 18px;font-size:14px;font-weight:600}
+.btn2{background:#fff;border:1px solid var(--b);border-radius:12px;text-align:center;padding:11px 18px;font-size:14px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;border-radius:999px;padding:4px 10px;font-weight:600}
+.kb{position:absolute;left:0;right:0;bottom:0;height:120px;background:#D4D1CA;display:grid;grid-template-rows:repeat(3,1fr);gap:5px;padding:8px}
+.kb div{display:flex;gap:5px;justify-content:center}
+.kb span{flex:0 0 46px;height:30px;border-radius:6px;background:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+.notes{max-width:1240px;margin:10px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.note{background:#fff;border:1px solid var(--b);border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.55}
+.note b{display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<h2>Inklokken of uitklokken</h2>
+<p class="sub">Op de iPad aan de receptie: naam typen, pincode, selfie. De app weet zelf of het inklokken of uitklokken is: was de vorige keer een inklokking, dan is dit een uitklokking.</p>
+<div class="grid">
+
+<div><div class="tab">
+<div class="bar"><span><i class="ti ti-lock"></i> Prikklok · Lotus Spa</span><span>Vrijdag 6 november</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 60px;margin-top:-20px">
+<div style="font-size:54px;font-weight:600;letter-spacing:-2px">09:54</div>
+<div style="font-size:15px;color:var(--m);margin-bottom:22px">Typ je naam om in of uit te klokken</div>
+<div class="input" style="width:100%;color:#8A918D;border-color:var(--b)"><i class="ti ti-user" style="font-size:20px"></i>Je naam</div>
+<div style="display:flex;gap:8px;margin-top:16px;font-size:12px;color:var(--m)">
+<span class="chip" style="background:var(--ps);color:var(--p)"><i class="ti ti-circle-filled" style="font-size:8px"></i> 2 aanwezig</span>
+<span class="chip" style="background:#F1EFE8;color:#444441">3 verwacht vandaag</span>
+</div>
+</div>
+<div style="text-align:center;font-size:12.5px;color:var(--p);font-weight:600;padding-bottom:16px">Nieuw in het team? Maak je pincode aan</div>
+</div><p class="cap">1 · Startscherm: klok, één veld, verder niets</p></div>
+
+<div><div class="tab">
+<div class="bar"><span><i class="ti ti-lock"></i> Prikklok · Lotus Spa</span><span>09:54</span></div>
+<div style="padding:4px 70px 0">
+<div class="input"><i class="ti ti-user" style="font-size:20px;color:var(--m)"></i>No<span class="caret"></span></div>
+<div class="sugg">
+<div><span class="av" style="width:36px;height:36px;background:var(--ps);color:var(--p)">N</span><b style="flex:1">Noi</b><span class="chip" style="background:#F1EFE8;color:#444441">Inklokken</span></div>
+<div><span class="av" style="width:36px;height:36px;background:#FAEEDA;color:var(--w)">N</span><span style="flex:1"><b>Nong</b></span><span class="chip" style="background:var(--ps);color:var(--p)">Uitklokken · in sinds 08:02</span></div>
+</div>
+</div>
+<div class="kb">
+<div><span>q</span><span>w</span><span>e</span><span>r</span><span>t</span><span>y</span><span>u</span><span>i</span><span>o</span><span>p</span></div>
+<div><span>a</span><span>s</span><span>d</span><span>f</span><span>g</span><span>h</span><span>j</span><span>k</span><span>l</span></div>
+<div><span>z</span><span>x</span><span>c</span><span>v</span><span>b</span><span>n</span><span>m</span></div>
+</div>
+</div><p class="cap">2 · Naam typen: na twee letters verschijnen de collega's. Elk toont al of het in- of uitklokken wordt</p></div>
+
+<div><div class="tab">
+<div class="bar"><span><i class="ti ti-arrow-left" style="font-size:16px;color:var(--t)"></i></span><span>09:54</span></div>
+<div style="flex:1;display:flex;align-items:center;gap:36px;padding:0 44px">
+<div style="flex:1;text-align:center">
+<span class="av" style="width:76px;height:76px;margin:0 auto;background:var(--ps);color:var(--p);font-size:28px">N</span>
+<div style="font-size:22px;font-weight:600;margin-top:10px">Noi</div>
+<div class="chip" style="background:#F1EFE8;color:#444441;margin-top:8px"><i class="ti ti-login-2"></i> Inklokken</div>
+<div style="font-size:12.5px;color:var(--m);margin-top:10px">Gepland vandaag 10:00 – 18:00</div>
+</div>
+<div>
+<div style="text-align:center;font-weight:600;font-size:15px">Je pincode</div>
+<div class="dots"><i class="f"></i><i class="f"></i><i></i><i></i></div>
+<div class="pad"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="ghost">Vergeten?</span><span>0</span><span class="ghost"><i class="ti ti-backspace" style="font-size:20px"></i></span></div>
+</div>
+</div>
+</div><p class="cap">3 · Pincode van 4 cijfers. Na 5 foute pogingen wacht de tegel 1 minuut</p></div>
+
+<div><div class="tab" style="background:#1E2A27">
+<div style="flex:1;position:relative;background:linear-gradient(160deg,#6d837b,#2a3632)">
+<div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:150px;height:196px;border-radius:50%;border:3px dashed rgba(255,255,255,.75)"></div>
+<div style="position:absolute;top:14px;left:18px;right:18px;display:flex;justify-content:space-between;color:#fff;font-size:13px"><span><b>Noi</b> · inklokken</span><span>Pincode ✓</span></div>
+<div style="position:absolute;top:252px;left:0;right:0;text-align:center;color:#fff;font-size:13px">Kijk in de camera · 3</div>
+</div>
+<div style="background:var(--p);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+<div><div style="font-size:22px;font-weight:600">09:54</div><div style="font-size:12px;color:#C4DED6">Foto wordt automatisch genomen</div></div>
+<div style="width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--p);font-size:24px"><i class="ti ti-camera"></i></div>
+<div style="width:130px;text-align:right;font-size:12px;color:#C4DED6">Annuleren</div>
+</div>
+</div><p class="cap">4 · Selfie: aftellen van 3, of zelf op de knop tikken</p></div>
+
+<div><div class="tab">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+<div style="width:86px;height:86px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:42px"><i class="ti ti-check"></i></div>
+<div style="font-size:26px;font-weight:600;margin-top:16px">Goedemorgen Noi</div>
+<div style="font-size:15px;color:var(--m);margin-top:4px">Ingeklokt om <b style="color:var(--t)">09:54</b> · 6 min op tijd</div>
+<div style="display:flex;gap:10px;margin-top:20px">
+<div style="background:#fff;border:1px solid var(--b);border-radius:14px;padding:10px 16px;text-align:left"><div style="font-size:11px;color:var(--m)">Eerste afspraak</div><div style="font-weight:600">10:00 · Kamer 1</div></div>
+<div style="background:#fff;border:1px solid var(--b);border-radius:14px;padding:10px 16px;text-align:left"><div style="font-size:11px;color:var(--m)">Vandaag</div><div style="font-weight:600">5 massages</div></div>
+</div>
+<div style="font-size:12px;color:var(--m);margin-top:18px">Terug naar het startscherm over 5 s</div>
+</div>
+</div><p class="cap">5a · Ingeklokt</p></div>
+
+<div><div class="tab">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+<div style="width:86px;height:86px;border-radius:50%;background:#FAEEDA;color:var(--w);display:flex;align-items:center;justify-content:center;font-size:40px"><i class="ti ti-logout-2"></i></div>
+<div style="font-size:26px;font-weight:600;margin-top:16px">Tot morgen, Nong</div>
+<div style="font-size:15px;color:var(--m);margin-top:4px">Uitgeklokt om <b style="color:var(--t)">16:31</b></div>
+<div style="display:flex;gap:10px;margin-top:20px">
+<div style="background:#fff;border:1px solid var(--b);border-radius:14px;padding:10px 16px;text-align:left"><div style="font-size:11px;color:var(--m)">Gewerkt vandaag</div><div style="font-weight:600">8u 29m</div></div>
+<div style="background:#fff;border:1px solid var(--b);border-radius:14px;padding:10px 16px;text-align:left"><div style="font-size:11px;color:var(--m)">Volgende shift</div><div style="font-weight:600">Za 7 nov · 10:00</div></div>
+</div>
+<div style="font-size:12px;color:var(--m);margin-top:18px">Terug naar het startscherm over 5 s</div>
+</div>
+</div><p class="cap">5b · Uitgeklokt: de vorige keer was een inklokking</p></div>
+
+</div>
+
+<h2>Eigen pincode aanmaken</h2>
+<p class="sub">Een nieuwe therapeut maakt zelf haar pincode op de prikklok. Jij als eigenaar voegt haar eerst toe bij Team; daarna kiest zij de code. Jij ziet de code nooit.</p>
+<div class="grid">
+
+<div><div class="tab">
+<div class="bar"><span><i class="ti ti-arrow-left" style="font-size:16px;color:var(--t)"></i></span><span>Pincode aanmaken</span></div>
+<div style="padding:4px 70px 0">
+<div style="font-size:20px;font-weight:600;margin:4px 0 12px">Wie ben je?</div>
+<div class="sugg" style="margin-top:0">
+<div><span class="av" style="width:36px;height:36px;background:#E6F1FB;color:#0C447C">S</span><b style="flex:1">Som</b><span class="chip" style="background:#FAEEDA;color:var(--w)">Nog geen pincode</span></div>
+<div style="opacity:.45"><span class="av" style="width:36px;height:36px;background:var(--ps);color:var(--p)">N</span><b style="flex:1">Noi</b><span class="chip" style="background:#F1EFE8;color:#444441">Heeft al een pincode</span></div>
+<div style="opacity:.45"><span class="av" style="width:36px;height:36px;background:#FAEEDA;color:var(--w)">N</span><b style="flex:1">Nong</b><span class="chip" style="background:#F1EFE8;color:#444441">Heeft al een pincode</span></div>
+</div>
+<div style="font-size:12.5px;color:var(--m);margin-top:12px">Sta je er niet tussen? Vraag de eigenaar om je toe te voegen bij Team.</div>
+</div>
+</div><p class="cap">6 · Alleen collega's zonder pincode kunnen er een maken</p></div>
+
+<div><div class="tab">
+<div class="bar"><span><i class="ti ti-arrow-left" style="font-size:16px;color:var(--t)"></i></span><span>Pincode aanmaken</span></div>
+<div style="flex:1;display:flex;align-items:center;gap:36px;padding:0 44px">
+<div style="flex:1;text-align:center">
+<span class="av" style="width:76px;height:76px;margin:0 auto;background:#E6F1FB;color:#0C447C;font-size:28px">S</span>
+<div style="font-size:22px;font-weight:600;margin-top:10px">Som</div>
+<div style="font-size:13px;color:var(--m);margin-top:10px;line-height:1.5">Kies 4 cijfers die je onthoudt.<br>Geen 1234 of 0000.</div>
+<div style="display:flex;gap:6px;justify-content:center;margin-top:12px"><span class="chip" style="background:var(--p);color:#fff">1 Kiezen</span><span class="chip" style="background:#F1EFE8;color:#444441">2 Herhalen</span></div>
+</div>
+<div>
+<div style="text-align:center;font-weight:600;font-size:15px">Nieuwe pincode</div>
+<div class="dots"><i class="f"></i><i class="f"></i><i class="f"></i><i></i></div>
+<div class="pad"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="ghost"></span><span>0</span><span class="ghost"><i class="ti ti-backspace" style="font-size:20px"></i></span></div>
+</div>
+</div>
+</div><p class="cap">7 · Kiezen en herhalen. Daarna kan Som meteen inklokken</p></div>
+
+</div>
+
+<h2>Voor de eigenaar</h2>
+<p class="sub">Bij Team zie je per therapeut of er een pincode is. Vergeten? Dan zet je de pincode terug, en kiest de therapeut een nieuwe op de prikklok.</p>
+<div class="grid">
+
+<div><div class="tab" style="width:340px;height:420px;border-radius:36px">
+<div style="padding:14px 16px 6px;display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:10px;border:1px solid var(--b);background:#fff;display:flex;align-items:center;justify-content:center"><i class="ti ti-chevron-left"></i></span><b>Som</b></div>
+<div style="padding:0 16px">
+<div style="font-size:10.5px;color:var(--m);font-weight:600;letter-spacing:.06em;margin:10px 4px 6px">PRIKKLOK</div>
+<div style="background:#fff;border:1px solid var(--b);border-radius:16px">
+<div style="display:flex;align-items:center;padding:12px 14px;font-size:13.5px"><span style="flex:1">Pincode</span><span class="chip" style="background:var(--ps);color:var(--p)">Ingesteld</span></div>
+<div style="display:flex;align-items:center;padding:12px 14px;font-size:13.5px;border-top:1px solid #EFECE6"><span style="flex:1">Laatst</span><span style="color:var(--m)">In vandaag 09:58</span></div>
+<div style="display:flex;align-items:center;padding:12px 14px;font-size:13.5px;border-top:1px solid #EFECE6;color:var(--d);font-weight:600"><i class="ti ti-key-off" style="margin-right:8px"></i>Pincode terugzetten</div>
+</div>
+<div style="font-size:12px;color:var(--m);margin:10px 4px;line-height:1.5">Vergeten inklokken of uitklokken? Je past de tijd hier aan; de app noteert dat jij het deed.</div>
+<div class="btn2" style="font-size:13px"><i class="ti ti-clock-edit"></i> Tijd toevoegen of aanpassen</div>
+</div>
+</div><p class="cap">8 · Team → therapeut: pincode en correcties</p></div>
+
+</div>
+
+<div class="notes" style="margin-top:30px">
+<div class="note"><b>In of uit, automatisch</b>Was de laatste registratie een inklokking, dan is de volgende een uitklokking, en omgekeerd. De keuzelijst toont dat al bij het typen van de naam, zodat niemand zich vergist.</div>
+<div class="note"><b>Veilig</b>De pincode wordt versleuteld bewaard (zoals een wachtwoord); niemand kan hem uitlezen, ook jij niet. Na 5 foute pogingen 1 minuut wachten. Pincodes als 1234 of 0000 worden geweigerd.</div>
+<div class="note"><b>Vergeten uit te klokken?</b>Wie 's nachts nog ingeklokt staat, krijgt geen uitklok op 00:00 maar een melding bij de eigenaar om de tijd aan te passen. Elke correctie wordt bijgehouden.</div>
+</div>
+</body>
+</html>

@@ -78,6 +78,8 @@ async function request(
       );
 
       error.status = response.status;
+      error.code = data?.code ?? null;
+      error.details = data?.errors ?? [];
 
       throw error;
     }
@@ -1141,5 +1143,242 @@ export const api = {
       method: "DELETE",
       body: JSON.stringify({ token }),
     });
+  },
+
+  // ====================================================
+  // Team (salon): schedule, absences, time clock
+  // ====================================================
+
+  getTeamSchedule(businessId, from, days, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/schedule?from=${from}&days=${days}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  getTeamTherapist(businessId, therapistId, today, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/therapists/${therapistId}?today=${today}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  setScheduleDay(businessId, therapistId, date, periods, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/therapists/${therapistId}/days/${date}`,
+      accessToken,
+      { method: "PUT", body: JSON.stringify({ periods }) }
+    );
+  },
+
+  clearScheduleDay(businessId, therapistId, date, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/therapists/${therapistId}/days/${date}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+  },
+
+  createAbsence(businessId, absence, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/absences`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(absence) }
+    );
+  },
+
+  updateAbsence(businessId, absenceId, changes, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/absences/${absenceId}`,
+      accessToken,
+      { method: "PATCH", body: JSON.stringify(changes) }
+    );
+  },
+
+  deleteAbsence(businessId, absenceId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/absences/${absenceId}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+  },
+
+  getAbsence(businessId, absenceId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/absences/${absenceId}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  reassignAppointment(businessId, appointmentId, therapistId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/appointments/${appointmentId}/reassign`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({ therapistId }) }
+    );
+  },
+
+  getClockStaff(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/clock`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  createClockPin(businessId, therapistId, pin, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/clock/pin`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({ therapistId, pin }) }
+    );
+  },
+
+  verifyClockPin(businessId, therapistId, pin, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/clock/verify`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({ therapistId, pin }) }
+    );
+  },
+
+  punchClock(businessId, therapistId, pin, photo, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/clock/punch`,
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ therapistId, pin, photo }),
+      }
+    );
+  },
+
+  resetClockPin(businessId, therapistId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/therapists/${therapistId}/pin`,
+      accessToken,
+      { method: "DELETE" }
+    );
+  },
+
+  getAttendance(businessId, date, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/attendance?date=${date}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  getAttendanceSummary(businessId, from, to, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/attendance/summary?from=${from}&to=${to}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  /**
+   * The CSV text of the shifts in [from, to].
+   */
+  async getAttendanceCsv(businessId, from, to, accessToken) {
+    const response = await fetch(
+      `${API_URL}/businesses/${businessId}/team/attendance/export?from=${from}&to=${to}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    if (!response.ok) {
+      throw new Error("Er ging iets mis.");
+    }
+
+    return response.text();
+  },
+
+  /**
+   * Image source of a clock photo (in or out).
+   */
+  clockPhotoSource(businessId, entryId, kind, accessToken) {
+    return {
+      uri: `${API_URL}/businesses/${businessId}/team/time-entries/${entryId}/photo/${kind}`,
+      headers: { Authorization: `Bearer ${accessToken}` },
+    };
+  },
+
+  addTimeEntry(businessId, entry, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/time-entries`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(entry) }
+    );
+  },
+
+  updateTimeEntry(businessId, entryId, changes, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/time-entries/${entryId}`,
+      accessToken,
+      { method: "PATCH", body: JSON.stringify(changes) }
+    );
+  },
+
+  deleteTimeEntry(businessId, entryId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/team/time-entries/${entryId}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+  },
+
+  // ====================================================
+  // Payments
+  // ====================================================
+
+  getStripeStatus(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/stripe`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  getStripeOnboardingLink(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/stripe/onboarding`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  },
+
+  createPayment(businessId, payment, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(payment) }
+    );
+  },
+
+  getPayment(businessId, paymentId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/${paymentId}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  cancelPayment(businessId, paymentId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/${paymentId}/cancel`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  },
+
+  getPaymentSummary(businessId, date, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/summary?date=${date}`,
+      accessToken,
+      { method: "GET" }
+    );
   },
 };

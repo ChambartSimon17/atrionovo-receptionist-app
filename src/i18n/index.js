@@ -1,9 +1,12 @@
 import { DevSettings } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
-import nl from "./nl";
-import fr from "./fr";
-import en from "./en";
+import baseNl from "./nl";
+import baseFr from "./fr";
+import baseEn from "./en";
+import staffNl from "./staff/nl";
+import staffFr from "./staff/fr";
+import staffEn from "./staff/en";
 
 // ======================================================
 // Translations
@@ -22,6 +25,12 @@ import en from "./en";
 // ======================================================
 
 const KEY = "app-language";
+
+// The salon team screens (team, time clock, checkout)
+// keep their texts in staff/.
+const nl = { ...baseNl, ...staffNl };
+const fr = { ...baseFr, ...staffFr };
+const en = { ...baseEn, ...staffEn };
 
 const DICTIONARIES = { nl, fr, en };
 

@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
 
   weekday: {
-    width: `${100 / 7}%`,
+    width: "14.28%",
     textAlign: "center",
     fontFamily: fonts.medium,
     fontSize: 11,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   },
 
   cell: {
-    width: `${100 / 7}%`,
+    width: "14.28%",
     height: 40,
     alignItems: "center",
     justifyContent: "center",

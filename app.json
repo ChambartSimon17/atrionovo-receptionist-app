@@ -23,7 +23,8 @@
           "UIInterfaceOrientationPortraitUpsideDown",
           "UIInterfaceOrientationLandscapeLeft",
           "UIInterfaceOrientationLandscapeRight"
-        ]
+        ],
+        "NSCameraUsageDescription": "De prikklok neemt een foto wanneer je in- of uitklokt."
       },
       "supportsTablet": true
     },
@@ -65,6 +66,16 @@
         {
           "organization": "atrionovo",
           "project": "receptionist-app"
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "De prikklok neemt een foto wanneer je in- of uitklokt.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
         }
       ]
     ],

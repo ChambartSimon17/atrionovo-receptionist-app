@@ -6,7 +6,11 @@ import {
   View,
 } from "react-native";
 
+import { useRouter } from "expo-router";
+import { CreditCard } from "lucide-react-native";
+
 import { Badge } from "./ui";
+import { t } from "../i18n";
 import { isInProgress } from "../hooks/useDayAppointments";
 import {
   colors,
@@ -14,7 +18,7 @@ import {
   radius,
   spacing,
 } from "../theme";
-import { formatTime } from "../utils/date";
+import { formatTime, toDateString } from "../utils/date";
 import { formatDuration, formatPrice } from "../utils/price";
 
 // ======================================================
@@ -25,6 +29,9 @@ import { formatDuration, formatPrice } from "../utils/price";
 // screen loads them (useDayAppointments) and passes them
 // in. A confirmed appointment can be marked as completed,
 // no-show or cancelled through onChangeStatus.
+//
+// "Afrekenen" opens the checkout of an appointment that
+// is not paid yet; a paid one shows what was received.
 // ======================================================
 
 const STATUS_LABELS = {
@@ -42,6 +49,8 @@ export default function MassageAgenda({
   onChangeStatus,
   emptyText = "Geen afspraken op deze dag.",
 }) {
+  const router = useRouter();
+
   if (isLoading) {
     return <ActivityIndicator style={styles.loading} />;
   }
@@ -131,6 +140,47 @@ export default function MassageAgenda({
                 </Text>
               )}
 
+              {appointment.payment ? (
+                <View style={styles.paid}>
+                  <CreditCard size={14} color={colors.positive} strokeWidth={2} />
+                  <Text style={styles.paidText}>
+                    {t("checkout.alreadyPaid", {
+                      amount: formatPrice(appointment.payment.totalCents),
+                    })}{" "}
+                    · {t(`checkout.methods.${appointment.payment.method}`)}
+                  </Text>
+                </View>
+              ) : appointment.status === "CONFIRMED" ||
+                appointment.status === "COMPLETED" ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/massage/checkout/[id]",
+                      params: {
+                        id: appointment.id,
+                        date: toDateString(
+                          new Date(appointment.startTime)
+                        ),
+                      },
+                    })
+                  }
+                  style={({ pressed }) => [
+                    styles.checkout,
+                    pressed && styles.checkoutPressed,
+                  ]}
+                >
+                  <CreditCard
+                    size={15}
+                    color={colors.onPrimary}
+                    strokeWidth={2}
+                  />
+                  <Text style={styles.checkoutText}>
+                    {t("checkout.title")}
+                  </Text>
+                </Pressable>
+              ) : null}
+
               {appointment.status === "CONFIRMED" && (
                 <View style={styles.actions}>
                   <ActionButton
@@ -204,6 +254,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.danger,
     marginVertical: spacing.lg,
+  },
+
+  checkout: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    height: 34,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+  },
+
+  checkoutPressed: {
+    backgroundColor: colors.primaryPressed,
+  },
+
+  checkoutText: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.onPrimary,
+  },
+
+  paid: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.xs,
+  },
+
+  paidText: {
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.positive,
   },
 
   emptyBox: {

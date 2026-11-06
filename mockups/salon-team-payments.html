@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rooster, prikklok en betalen</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--p:#1F5F55;--ps:#E3EEEA;--pb:#B9D5CB;--bg:#F6F4EF;--s:#fff;--sm:#EFECE6;--b:#E4E0D8;--t:#1C2421;--m:#5B6661;--d:#A32D2D;--ds:#FCEBEB;--w:#633806;--ws:#FAEEDA;--sand:#F3ECDF}
+body{margin:0;background:#E9E6DF;font-family:Inter,system-ui,sans-serif;color:var(--t);padding:28px 16px}
+h2{font-size:18px;font-weight:600;max-width:1200px;margin:36px auto 4px}
+p.sub{font-size:13px;color:var(--m);max-width:1200px;margin:0 auto 18px;line-height:1.5}
+.grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto}
+.ph{width:320px;height:680px;background:var(--bg);border-radius:38px;border:8px solid #1C2421;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.tab{width:900px;height:600px;background:#1E2A27;border-radius:26px;border:10px solid #1C2421;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.cap{font-size:13px;color:var(--m);text-align:center;margin:10px 0 0}
+.hd{padding:16px 16px 8px}
+.ttl{font-size:21px;font-weight:600;letter-spacing:-.3px}
+.mut{color:var(--m)}
+.card{background:var(--s);border:1px solid var(--b);border-radius:16px}
+.row{display:flex;align-items:center;gap:10px;padding:11px 14px;font-size:13px}
+.row+.row{border-top:1px solid var(--sm)}
+.lbl{font-size:10.5px;color:var(--m);font-weight:600;letter-spacing:.06em;margin:14px 4px 6px}
+.btn{background:var(--p);color:#fff;border-radius:12px;text-align:center;padding:12px;font-size:13.5px;font-weight:600}
+.btn2{background:#fff;border:1px solid var(--b);border-radius:12px;text-align:center;padding:11px;font-size:13px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;border-radius:999px;padding:3px 9px;font-weight:600}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none}
+.seg{display:flex;background:#ECE8E0;border-radius:10px;padding:3px;font-size:12px}
+.seg span{flex:1;text-align:center;padding:6px 4px;border-radius:8px;color:var(--m)}
+.seg span.on{background:#fff;color:var(--t);font-weight:600}
+.tabs{display:flex;justify-content:space-around;border-top:1px solid var(--b);background:#fff;padding:8px 0 14px;font-size:10px;color:var(--m);margin-top:auto}
+.tabs div{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tabs i{font-size:19px}.tabs .on{color:var(--p);font-weight:600}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;padding:10px 16px 18px;box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.grab{width:36px;height:4px;border-radius:2px;background:#D6D2CA;margin:0 auto 10px}
+.dim{position:absolute;inset:0;background:rgba(28,36,33,.45)}
+.wk{display:grid;grid-template-columns:62px repeat(7,1fr);gap:3px;font-size:10px}
+.wk .h{color:var(--m);text-align:center;font-weight:600;padding:4px 0}
+.wk .h.today{color:var(--p)}
+.wk .n{font-weight:600;font-size:11px;display:flex;align-items:center;gap:5px}
+.sh{border-radius:7px;padding:5px 2px;text-align:center;font-weight:600;line-height:1.15}
+.sh.on{background:var(--ps);color:var(--p)}
+.sh.off{background:transparent;color:#B7B2A8;border:1px dashed var(--b)}
+.sh.sick{background:var(--ds);color:var(--d)}
+.sh.leave{background:var(--sand);color:var(--w)}
+.sh.edit{background:var(--ps);color:var(--p);outline:2px solid var(--p)}
+.day{width:38px;flex:none;text-align:center;border-radius:12px;padding:6px 0;font-size:11px;color:var(--m)}
+.day b{display:block;font-size:15px;color:var(--t);font-weight:600}
+.day.on{background:var(--p);color:#CFE3DC}.day.on b{color:#fff}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--pb);margin:3px auto 0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:12px}
+.cal .w{color:var(--m);font-size:10px;font-weight:600;padding:4px 0}
+.cal div.c{height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:10px}
+.cal .c small{font-size:8.5px;color:var(--p);font-weight:600}
+.cal .c.sel{background:var(--p);color:#fff}.cal .c.sel small{color:#CFE3DC}
+.cal .c.td{outline:1.5px solid var(--p)}
+.cal .c.past{color:#B7B2A8}
+.notes{max-width:1200px;margin:10px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.note{background:#fff;border:1px solid var(--b);border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.55}
+.note b{display:block;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<h2>1 · Rooster van de therapeuten</h2>
+<p class="sub">Een weekrooster per therapeut. Elke week begint met de vaste uren; een dag aanpassen, ziek melden of verlof voor een periode gaat met één tik. De AI en de website boeken alleen wie die dag echt werkt.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd"><div style="display:flex;justify-content:space-between;align-items:center"><div class="ttl">Rooster</div><div class="btn2" style="padding:7px 10px;font-size:12px"><i class="ti ti-user-off"></i> Afwezig</div></div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px"><i class="ti ti-chevron-left mut"></i><div style="font-weight:600;font-size:14px">9 – 15 november</div><i class="ti ti-chevron-right mut"></i></div></div>
+<div style="padding:0 10px">
+<div class="wk">
+<div></div><div class="h">MA<br>9</div><div class="h">DI<br>10</div><div class="h">WO<br>11</div><div class="h">DO<br>12</div><div class="h">VR<br>13</div><div class="h">ZA<br>14</div><div class="h">ZO<br>15</div>
+<div class="n"><span class="av" style="background:#E3EEEA;color:#1F5F55;width:22px;height:22px;font-size:9px">N</span>Noi</div>
+<div class="sh on">10<br>18</div><div class="sh on">10<br>18</div><div class="sh on">10<br>18</div><div class="sh off">–</div><div class="sh on">12<br>20</div><div class="sh on">10<br>16</div><div class="sh off">–</div>
+<div class="n"><span class="av" style="background:#FAEEDA;color:#633806;width:22px;height:22px;font-size:9px">P</span>Ploy</div>
+<div class="sh sick">Ziek</div><div class="sh sick">Ziek</div><div class="sh on">10<br>18</div><div class="sh on">10<br>18</div><div class="sh on">10<br>18</div><div class="sh off">–</div><div class="sh off">–</div>
+<div class="n"><span class="av" style="background:#E6F1FB;color:#0C447C;width:22px;height:22px;font-size:9px">M</span>Mali</div>
+<div class="sh off">–</div><div class="sh on">12<br>20</div><div class="sh on">12<br>20</div><div class="sh leave">Verlof</div><div class="sh leave">Verlof</div><div class="sh leave">Verlof</div><div class="sh off">–</div>
+<div class="n"><span class="av" style="background:#F1EFE8;color:#444441;width:22px;height:22px;font-size:9px">A</span>Anong</div>
+<div class="sh on">14<br>20</div><div class="sh off">–</div><div class="sh edit">9<br>13</div><div class="sh on">14<br>20</div><div class="sh on">14<br>20</div><div class="sh on">10<br>18</div><div class="sh off">–</div>
+</div>
+<div class="card" style="margin-top:14px">
+<div class="row"><span class="chip" style="background:#FCEBEB;color:#A32D2D">Ziek</span><span style="flex:1">Ploy · ma 9 – di 10 nov</span><span class="mut" style="font-size:11px">3 afspraken</span></div>
+<div class="row"><span class="chip" style="background:#F3ECDF;color:#633806">Verlof</span><span style="flex:1">Mali · do 12 – za 14 nov</span><span class="mut" style="font-size:11px">huwelijk</span></div>
+</div>
+<div style="font-size:11.5px;color:#633806;background:#FAEEDA;border-radius:10px;padding:8px 10px;margin-top:10px"><i class="ti ti-alert-triangle"></i> 3 afspraken van Ploy vallen op ziektedagen. <b>Herplannen</b></div>
+</div>
+<div class="tabs"><div><i class="ti ti-home"></i>Vandaag</div><div><i class="ti ti-calendar"></i>Agenda</div><div class="on"><i class="ti ti-users"></i>Team</div><div><i class="ti ti-door"></i>Kamers</div><div><i class="ti ti-dots"></i>Meer</div></div>
+</div><p class="cap">Team → rooster van de week</p></div>
+
+<div><div class="ph">
+<div class="hd"><div class="ttl">Rooster</div></div>
+<div style="padding:0 16px;opacity:.35"><div class="card" style="height:300px"></div></div>
+<div class="dim"></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="font-size:17px;font-weight:600;margin-bottom:12px">Afwezigheid melden</div>
+<div class="card"><div class="row"><span class="av" style="background:#FAEEDA;color:#633806">P</span><span style="flex:1;font-weight:600">Ploy</span><i class="ti ti-chevron-down mut"></i></div></div>
+<div class="lbl">REDEN</div>
+<div style="display:flex;gap:6px;flex-wrap:wrap">
+<span class="chip" style="background:#1F5F55;color:#fff;padding:7px 12px">Ziek</span>
+<span class="chip" style="background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 12px">Verlof</span>
+<span class="chip" style="background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 12px">Persoonlijk</span>
+<span class="chip" style="background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 12px">Opleiding</span>
+</div>
+<div class="lbl">WANNEER</div>
+<div class="card" style="padding:10px">
+<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:600;margin-bottom:6px"><i class="ti ti-chevron-left"></i>November 2026<i class="ti ti-chevron-right"></i></div>
+<div class="cal">
+<div class="w">M</div><div class="w">D</div><div class="w">W</div><div class="w">D</div><div class="w">V</div><div class="w">Z</div><div class="w">Z</div>
+<div class="c past">2</div><div class="c past">3</div><div class="c past">4</div><div class="c past">5</div><div class="c td">6</div><div class="c">7</div><div class="c">8</div>
+<div class="c sel">9</div><div class="c sel">10</div><div class="c">11</div><div class="c">12</div><div class="c">13</div><div class="c">14</div><div class="c">15</div>
+</div></div>
+<div class="seg" style="margin-top:10px"><span class="on">Hele dag</span><span>Deel van de dag</span></div>
+<div style="font-size:11.5px;color:#633806;background:#FAEEDA;border-radius:10px;padding:8px 10px;margin:10px 0"><i class="ti ti-alert-triangle"></i> 3 afspraken in die periode. Je kiest daarna: andere therapeut of de klant verwittigen.</div>
+<div class="btn">Ploy afwezig zetten · 2 dagen</div>
+</div>
+</div><p class="cap">Ziek, verlof of een trouw: één periode</p></div>
+
+<div><div class="ph">
+<div class="hd" style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:10px;border:1px solid #E4E0D8;background:#fff;display:flex;align-items:center;justify-content:center"><i class="ti ti-chevron-left"></i></span><div style="font-weight:600">Anong</div></div>
+<div style="padding:0 16px;overflow:hidden">
+<div class="lbl">VASTE WEEK</div>
+<div class="card">
+<div class="row"><b style="width:74px">Maandag</b><span class="chip" style="background:#E3EEEA;color:#1F5F55">14:00 – 20:00</span></div>
+<div class="row"><b style="width:74px">Dinsdag</b><span class="mut">Vrij</span></div>
+<div class="row"><b style="width:74px">Woensdag</b><span class="chip" style="background:#E3EEEA;color:#1F5F55">14:00 – 20:00</span></div>
+<div class="row mut" style="font-size:12px;justify-content:center">+ 4 dagen</div>
+</div>
+<div class="lbl">AFWIJKINGEN</div>
+<div class="card">
+<div class="row"><div class="day" style="background:#E3EEEA;color:#1F5F55;padding:4px 0">NOV<b style="color:#1F5F55">11</b></div><div style="flex:1"><b>Andere uren</b><div class="mut" style="font-size:12px">09:00 – 13:00 i.p.v. 14 – 20</div></div><i class="ti ti-chevron-right mut"></i></div>
+<div class="row"><div class="day" style="background:#F3ECDF;color:#633806;padding:4px 0">DEC<b style="color:#633806">24</b></div><div style="flex:1"><b>Verlof</b><div class="mut" style="font-size:12px">24 dec – 2 jan · 8 dagen</div></div><i class="ti ti-chevron-right mut"></i></div>
+</div>
+<div class="lbl">GEWERKT DEZE MAAND</div>
+<div class="card" style="padding:12px 14px;display:flex;gap:12px">
+<div style="flex:1"><div style="font-size:20px;font-weight:600">62u 15m</div><div class="mut" style="font-size:11.5px">via de prikklok</div></div>
+<div style="flex:1"><div style="font-size:20px;font-weight:600">41</div><div class="mut" style="font-size:11.5px">massages</div></div>
+</div>
+<div class="btn2" style="margin-top:12px"><i class="ti ti-file-spreadsheet"></i> Uren exporteren (CSV)</div>
+</div>
+</div><p class="cap">Eén therapeut: vaste week, afwijkingen, gewerkte uren</p></div>
+
+</div>
+
+<h2>2 · Prikklok met foto</h2>
+<p class="sub">Een iPad of telefoon aan de receptie staat in "prikklokmodus". De therapeut tikt op zichzelf, typt een korte pincode en neemt een selfie. Zo klokt ze in of uit, en ziet de eigenaar wie wanneer kwam.</p>
+<div class="grid">
+
+<div><div class="tab">
+<div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px;color:#E8ECEA"><div><div style="font-size:22px;font-weight:600">Goedemiddag</div><div style="font-size:13px;color:#9AA6A1">Vrijdag 6 november · 13:58</div></div><div style="font-size:12px;color:#9AA6A1"><i class="ti ti-lock"></i> Prikklok · Lotus Spa</div></div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:6px 24px">
+<div style="background:#26332F;border-radius:18px;padding:16px;text-align:center;color:#E8ECEA"><div class="av" style="width:64px;height:64px;margin:0 auto 10px;background:#3E9481;color:#fff;font-size:22px">N</div><b>Noi</b><div style="margin-top:6px"><span class="chip" style="background:#2F7A6C;color:#fff">In sinds 09:54</span></div></div>
+<div style="background:#26332F;border-radius:18px;padding:16px;text-align:center;color:#E8ECEA;outline:2px solid #F0C978"><div class="av" style="width:64px;height:64px;margin:0 auto 10px;background:#F0C978;color:#5A3504;font-size:22px">A</div><b>Anong</b><div style="margin-top:6px"><span class="chip" style="background:#F0C978;color:#5A3504">Begint om 14:00</span></div></div>
+<div style="background:#26332F;border-radius:18px;padding:16px;text-align:center;color:#9AA6A1"><div class="av" style="width:64px;height:64px;margin:0 auto 10px;background:#3A4843;color:#AFC0B9;font-size:22px">M</div><b style="color:#E8ECEA">Mali</b><div style="margin-top:6px"><span class="chip" style="background:#3A4843;color:#AFC0B9">Verlof</span></div></div>
+<div style="background:#26332F;border-radius:18px;padding:16px;text-align:center;color:#9AA6A1"><div class="av" style="width:64px;height:64px;margin:0 auto 10px;background:#3A4843;color:#F08A8A;font-size:22px">P</div><b style="color:#E8ECEA">Ploy</b><div style="margin-top:6px"><span class="chip" style="background:#3A1F1F;color:#F08A8A">Ziek</span></div></div>
+</div>
+<div style="margin:auto 24px 22px;color:#9AA6A1;font-size:12.5px;text-align:center">Tik op je naam om in of uit te klokken</div>
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center">
+<div style="width:540px;height:420px;border-radius:22px;overflow:hidden;position:relative;background:linear-gradient(160deg,#5b6f68,#2a3632)">
+<div style="position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:170px;height:220px;border-radius:50%;border:3px dashed rgba(255,255,255,.7)"></div>
+<div style="position:absolute;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;color:#fff;font-size:13px"><span><b>Anong</b> · inklokken</span><span><i class="ti ti-x"></i></span></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:#1F5F55;color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
+<div><div style="font-size:20px;font-weight:600">13:58</div><div style="font-size:12px;color:#C4DED6">Kijk in de camera</div></div>
+<div style="width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#1F5F55;font-size:24px"><i class="ti ti-camera"></i></div>
+<div style="width:120px;text-align:right;font-size:12px;color:#C4DED6">Pincode ✓</div>
+</div>
+</div></div>
+</div><p class="cap">iPad aan de receptie: tik je naam → pincode → selfie</p></div>
+
+<div><div class="ph">
+<div class="hd"><div style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:10px;border:1px solid #E4E0D8;background:#fff;display:flex;align-items:center;justify-content:center"><i class="ti ti-chevron-left"></i></span><div style="font-weight:600">Aanwezigheid</div></div>
+<div class="seg" style="margin-top:12px"><span class="on">Vandaag</span><span>Week</span><span>Maand</span></div></div>
+<div style="padding:0 16px">
+<div class="card">
+<div class="row"><span class="av" style="background:#E3EEEA;color:#1F5F55">N</span><div style="flex:1"><b>Noi</b><div class="mut" style="font-size:11.5px">In 09:54 · gepland 10:00</div></div><span class="chip" style="background:#1F5F55;color:#fff">Aanwezig</span></div>
+<div class="row"><span class="av" style="background:#FAEEDA;color:#633806">A</span><div style="flex:1"><b>Anong</b><div class="mut" style="font-size:11.5px">In 14:07 · gepland 14:00</div></div><span class="chip" style="background:#FAEEDA;color:#633806">7 min te laat</span></div>
+<div class="row"><span class="av" style="background:#E6F1FB;color:#0C447C">S</span><div style="flex:1"><b>Som</b><div class="mut" style="font-size:11.5px">Gepland 10:00 · niet ingeklokt</div></div><span class="chip" style="background:#FCEBEB;color:#A32D2D">Niet gekomen</span></div>
+</div>
+<div class="lbl">FOTO'S VAN VANDAAG</div>
+<div style="display:flex;gap:8px">
+<div style="flex:1;height:86px;border-radius:12px;background:linear-gradient(160deg,#9cb3aa,#4f645d);position:relative"><span style="position:absolute;bottom:6px;left:8px;color:#fff;font-size:10.5px;font-weight:600">Noi · in 09:54</span></div>
+<div style="flex:1;height:86px;border-radius:12px;background:linear-gradient(160deg,#c9b38f,#6a5a3e);position:relative"><span style="position:absolute;bottom:6px;left:8px;color:#fff;font-size:10.5px;font-weight:600">Anong · in 14:07</span></div>
+</div>
+<div class="mut" style="font-size:11.5px;margin-top:8px;line-height:1.45">Foto's worden na 30 dagen automatisch gewist. Alleen de eigenaar ziet ze.</div>
+<div class="btn2" style="margin-top:12px"><i class="ti ti-device-tablet"></i> Dit toestel als prikklok gebruiken</div>
+</div>
+<div class="tabs"><div><i class="ti ti-home"></i>Vandaag</div><div><i class="ti ti-calendar"></i>Agenda</div><div class="on"><i class="ti ti-users"></i>Team</div><div><i class="ti ti-door"></i>Kamers</div><div><i class="ti ti-dots"></i>Meer</div></div>
+</div><p class="cap">Eigenaar: wie is er, wie te laat, met foto</p></div>
+
+</div>
+
+<h2>3 · Afrekenen in de app</h2>
+<p class="sub">Na de massage tik je op "Afrekenen". Je ziet een overzicht als een kasticket, voegt eventueel een fooi toe en kiest hoe de klant betaalt: tegen je iPhone tikken (kaart, Bancontact, Apple Pay), een QR-code scannen, of contant.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd" style="display:flex;align-items:center;gap:10px"><span style="width:32px;height:32px;border-radius:10px;border:1px solid #E4E0D8;background:#fff;display:flex;align-items:center;justify-content:center"><i class="ti ti-chevron-left"></i></span><div style="font-weight:600">Afrekenen</div></div>
+<div style="padding:0 16px">
+<div class="card" style="padding:16px">
+<div style="text-align:center"><div class="av" style="width:46px;height:46px;margin:0 auto;background:#E3EEEA;color:#1F5F55">LW</div><div style="font-weight:600;font-size:16px;margin-top:6px">Lien Wouters</div><div class="mut" style="font-size:11.5px">Kamer 1 · bij Noi · 14:00 – 15:30</div></div>
+<div style="border-top:1px dashed #E4E0D8;margin:14px 0 10px"></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Thaise massage 90 min</span><b>€ 85,00</b></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Hot stones</span><b>€ 10,00</b></div>
+<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0" class="mut"><span>+ Product toevoegen</span></div>
+<div style="border-top:1px dashed #E4E0D8;margin:10px 0"></div>
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">Fooi voor Noi</div>
+<div style="display:flex;gap:6px"><span class="chip" style="flex:1;justify-content:center;background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 0">Geen</span><span class="chip" style="flex:1;justify-content:center;background:#1F5F55;color:#fff;padding:7px 0">5%</span><span class="chip" style="flex:1;justify-content:center;background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 0">10%</span><span class="chip" style="flex:1;justify-content:center;background:#fff;border:1px solid #E4E0D8;color:#1C2421;padding:7px 0">€ …</span></div>
+<div style="border-top:1px solid #E4E0D8;margin:14px 0 8px"></div>
+<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600">Totaal</span><span style="font-size:24px;font-weight:600">€ 99,75</span></div>
+<div class="mut" style="font-size:11px;text-align:right">incl. 21% btw · fooi € 4,75</div>
+</div>
+<div class="lbl">BETALEN MET</div>
+<div style="display:flex;gap:8px">
+<div class="card" style="flex:1;padding:12px 6px;text-align:center;border:2px solid #1F5F55"><i class="ti ti-device-mobile-dollar" style="font-size:22px;color:#1F5F55"></i><div style="font-size:11.5px;font-weight:600;margin-top:4px">Tik op iPhone</div></div>
+<div class="card" style="flex:1;padding:12px 6px;text-align:center"><i class="ti ti-qrcode" style="font-size:22px"></i><div style="font-size:11.5px;font-weight:600;margin-top:4px">QR-code</div></div>
+<div class="card" style="flex:1;padding:12px 6px;text-align:center"><i class="ti ti-cash" style="font-size:22px"></i><div style="font-size:11.5px;font-weight:600;margin-top:4px">Contant</div></div>
+</div>
+<div class="btn" style="margin-top:12px">€ 99,75 ontvangen</div>
+</div>
+</div><p class="cap">Ticket, fooi en betaalwijze</p></div>
+
+<div><div class="ph" style="background:#fff">
+<div style="height:170px;background:linear-gradient(180deg,#E3EEEA,#fff)"></div>
+<div style="margin-top:-130px;text-align:center;padding:0 22px">
+<div style="display:flex;justify-content:space-between;color:#1C2421"><i class="ti ti-x" style="font-size:20px"></i><span></span></div>
+<div style="font-size:14px;color:#5B6661;margin-top:8px">Lotus Spa</div>
+<div style="font-size:38px;font-weight:600;letter-spacing:-1px">€ 99,75</div>
+<div class="mut" style="font-size:12px">Thaise massage · Lien Wouters</div>
+<div style="width:200px;height:200px;margin:22px auto 10px;border-radius:18px;border:1px solid #E4E0D8;background:repeating-linear-gradient(0deg,#1C2421 0 8px,#fff 8px 14px),repeating-linear-gradient(90deg,#1C2421 0 8px,#fff 8px 14px);background-blend-mode:difference;position:relative">
+<div style="position:absolute;inset:78px;background:#1F5F55;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff"><i class="ti ti-leaf"></i></div></div>
+<div style="font-size:12.5px;color:#5B6661">Scan met de camera of je bank-app</div>
+<div style="display:flex;gap:8px;justify-content:center;margin-top:10px"><span class="chip" style="background:#F1EFE8;color:#444441">Bancontact</span><span class="chip" style="background:#F1EFE8;color:#444441">Apple Pay</span><span class="chip" style="background:#F1EFE8;color:#444441">Kaart</span></div>
+<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:22px;color:#1F5F55;font-size:13px;font-weight:600"><span style="width:8px;height:8px;border-radius:50%;background:#1F5F55"></span>Wachten op betaling…</div>
+<div class="btn" style="margin-top:22px">Link delen (sms of WhatsApp)</div>
+</div>
+</div><p class="cap">QR-code of betaallink</p></div>
+
+<div><div class="ph">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center">
+<div style="width:84px;height:84px;border-radius:50%;background:#1F5F55;display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px"><i class="ti ti-check"></i></div>
+<div style="font-size:22px;font-weight:600;margin-top:16px">Betaald</div>
+<div class="mut" style="font-size:13px;margin-top:4px">€ 99,75 · Bancontact · 15:34</div>
+<div class="card" style="width:100%;margin-top:22px;text-align:left">
+<div class="row"><i class="ti ti-receipt mut"></i><span style="flex:1">Kasticket mailen</span><span class="mut" style="font-size:12px">lien@…</span></div>
+<div class="row"><i class="ti ti-calendar-plus mut"></i><span style="flex:1">Volgende afspraak plannen</span><i class="ti ti-chevron-right mut"></i></div>
+</div>
+<div class="lbl" style="align-self:flex-start">VANDAAG ONTVANGEN</div>
+<div class="card" style="width:100%;padding:12px 14px;text-align:left;display:flex;gap:10px">
+<div style="flex:1"><div style="font-size:19px;font-weight:600">€ 455</div><div class="mut" style="font-size:11px">kaart & QR</div></div>
+<div style="flex:1"><div style="font-size:19px;font-weight:600">€ 65</div><div class="mut" style="font-size:11px">contant</div></div>
+<div style="flex:1"><div style="font-size:19px;font-weight:600">€ 31</div><div class="mut" style="font-size:11px">fooi</div></div>
+</div>
+</div>
+</div><p class="cap">Bevestiging en kassa van de dag</p></div>
+
+</div>
+
+<h2>4 · Naar een andere dag springen</h2>
+<p class="sub">Op Vandaag (en in de Agenda) staat een weekstrip die je opzij kan vegen. Tik op de datum bovenaan om een maandkalender te openen; elke dag toont hoeveel afspraken er zijn. "Vandaag" brengt je altijd terug.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="hd"><div class="mut" style="font-size:13px">Vrijdag 6 november</div><div class="ttl">Goedemiddag, Mila</div></div>
+<div style="padding:0 16px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin:6px 0 8px"><div style="font-weight:600;font-size:15px">November 2026 <i class="ti ti-chevron-down" style="font-size:14px"></i></div><span class="chip" style="background:#E3EEEA;color:#1F5F55">Vandaag</span></div>
+<div style="display:flex;gap:5px;overflow:hidden">
+<div class="day">MA<b>2</b><div class="dot"></div></div><div class="day">DI<b>3</b><div class="dot"></div></div><div class="day">WO<b>4</b><div class="dot"></div></div><div class="day">DO<b>5</b><div class="dot"></div></div><div class="day on">VR<b>6</b><div class="dot" style="background:#fff"></div></div><div class="day">ZA<b>7</b><div class="dot"></div></div><div class="day">ZO<b>8</b></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+<div style="background:#1F5F55;color:#fff;border-radius:16px;padding:14px"><div style="font-size:12px;color:#CFE3DC">Afspraken</div><div style="font-size:26px;font-weight:600">7</div></div>
+<div class="card" style="padding:14px"><div class="mut" style="font-size:12px">Omzet</div><div style="font-size:26px;font-weight:600">€ 455</div></div>
+</div>
+<div class="card" style="margin-top:12px;height:180px"></div>
+</div>
+</div><p class="cap">Weekstrip: vegen voor andere weken</p></div>
+
+<div><div class="ph">
+<div class="hd"><div class="ttl">Goedemiddag, Mila</div></div>
+<div style="padding:0 16px;opacity:.35"><div class="card" style="height:300px"></div></div>
+<div class="dim"></div>
+<div class="sheet">
+<div class="grab"></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><i class="ti ti-chevron-left"></i><div style="font-weight:600;font-size:16px">November 2026</div><i class="ti ti-chevron-right"></i></div>
+<div class="cal">
+<div class="w">M</div><div class="w">D</div><div class="w">W</div><div class="w">D</div><div class="w">V</div><div class="w">Z</div><div class="w">Z</div>
+<div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c"></div><div class="c past">1</div>
+<div class="c past">2<small>5</small></div><div class="c past">3<small>8</small></div><div class="c past">4<small>6</small></div><div class="c past">5<small>9</small></div><div class="c td">6<small>7</small></div><div class="c">7<small>11</small></div><div class="c">8<small>4</small></div>
+<div class="c">9<small>3</small></div><div class="c">10<small>2</small></div><div class="c">11</div><div class="c">12<small>1</small></div><div class="c sel">13<small>6</small></div><div class="c">14<small>9</small></div><div class="c">15</div>
+<div class="c">16</div><div class="c">17<small>1</small></div><div class="c">18</div><div class="c">19</div><div class="c">20<small>2</small></div><div class="c">21<small>3</small></div><div class="c">22</div>
+<div class="c">23</div><div class="c">24</div><div class="c">25</div><div class="c">26</div><div class="c">27</div><div class="c">28<small>1</small></div><div class="c">29</div>
+<div class="c">30</div>
+</div>
+<div style="display:flex;gap:8px;margin-top:14px"><div class="btn2" style="flex:1">Vandaag</div><div class="btn" style="flex:1">Naar vrijdag 13</div></div>
+</div>
+</div><p class="cap">Tik op de maand: kalender met aantallen</p></div>
+
+</div>
+
+<h2>Hoe het werkt</h2>
+<div class="notes">
+<div class="note"><b>Rooster</b>De vaste week blijft de basis. Daarbovenop komen <i>afwijkingen per datum</i>: andere uren, ziek, verlof, persoonlijk. De beschikbaarheid voor de AI, de website en "Nieuwe afspraak" gebruikt het echte rooster van die dag. Wie ziek gemeld wordt met bestaande afspraken, krijgt een voorstel: herplannen naar een vrije collega of de klant verwittigen.</div>
+<div class="note"><b>Prikklok</b>Een toestel aan de receptie in prikklokmodus (vergrendeld, enkel de prikklok). Pincode van 4 cijfers per therapeut + selfie. In- en uitkloktijden en de foto worden bewaard; de foto's 30 dagen. Uren per maand exporteerbaar voor de loonadministratie. Geen gezichtsherkenning: de foto is bewijs, de pincode identificeert.</div>
+<div class="note"><b>Betalen: Stripe</b>Stripe Connect: elke zaak koppelt zijn eigen Stripe-account, het geld gaat rechtstreeks naar de zaak. Tap to Pay op iPhone (geen terminal nodig, kaart/Bancontact/Apple Pay), QR-code en betaallink met Bancontact, en contant registreren. Betaalstatus komt op de afspraak en in Analyse (omzet, fooien).</div>
+<div class="note"><b>Datum kiezen</b>Weekstrip om te vegen, tik op de maand voor een kalender met per dag het aantal afspraken. Zelfde component op Vandaag en Agenda, ook voor restaurants.</div>
+</div>
+</body>
+</html>

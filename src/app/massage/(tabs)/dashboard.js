@@ -16,15 +16,13 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from "lucide-react-native";
+import { Plus } from "lucide-react-native";
 
 import { useAuth } from "../../../context/auth-context";
 import { api } from "../../../services/api";
 import MassageAgenda from "../../../components/MassageAgenda";
+import WeekStrip from "../../../components/WeekStrip";
+import CalendarSheet from "../../../components/CalendarSheet";
 import { Card, StatTile } from "../../../components/ui";
 import useDayAppointments, {
   isActiveAppointment,
@@ -33,13 +31,10 @@ import useDayAppointments, {
 import {
   colors,
   fonts,
-  radius,
   spacing,
-  touchTarget,
   type,
 } from "../../../theme";
 import {
-  addDays,
   formatLongDate,
   formatTime,
   todayString,
@@ -55,8 +50,9 @@ import { RefreshControl } from "react-native";
 // day navigation, four numbers for the day, who is being
 // treated right now and the agenda of the day.
 //
-// The calendar opens this screen with a ?date=YYYY-MM-DD
-// parameter to show another day.
+// The week strip and its month calendar move to another
+// day. The calendar opens this screen with a
+// ?date=YYYY-MM-DD parameter to show another day.
 // ======================================================
 
 function isValidDateParam(value) {
@@ -117,6 +113,32 @@ export default function MassageTodayScreen() {
   } = useDayAppointments(date);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [monthCounts, setMonthCounts] = useState({});
+
+  const loadCounts = useCallback(
+    (year, month) =>
+      api
+        .getMassageAppointmentCountsForMonth(business.id, year, month, accessToken)
+        .then((response) => response?.data ?? {}),
+    [business?.id, accessToken]
+  );
+
+  // Dots under the days of the week strip.
+  const monthKey = date.slice(0, 7);
+
+  useEffect(() => {
+    if (!business?.id) {
+      return;
+    }
+
+    const [year, month] = monthKey.split("-").map(Number);
+
+    loadCounts(year, month)
+      .then(setMonthCounts)
+      .catch(() => setMonthCounts({}));
+  }, [business?.id, monthKey, loadCounts, appointments.length]);
 
   useFocusEffect(
     useCallback(() => {
@@ -194,53 +216,14 @@ export default function MassageTodayScreen() {
           )}
         </View>
 
-        {/* Day navigation */}
+        {/* Days: week strip, calendar */}
 
-        <View style={styles.dayNavigation}>
-          <IconButton
-            label="Vorige dag"
-            onPress={() =>
-              setDate((current) => addDays(current, -1))
-            }
-          >
-            <ChevronLeft
-              size={20}
-              color={colors.text}
-              strokeWidth={1.8}
-            />
-          </IconButton>
-
-          <Pressable
-            accessibilityRole="button"
-            disabled={isToday}
-            onPress={() => setDate(todayString())}
-            style={styles.dayLabel}
-          >
-            <Text style={styles.dayTitle}>
-              {isToday
-                ? "Vandaag"
-                : capitalize(formatLongDate(date))}
-            </Text>
-            {!isToday && (
-              <Text style={styles.dayHint}>
-                Tik voor vandaag
-              </Text>
-            )}
-          </Pressable>
-
-          <IconButton
-            label="Volgende dag"
-            onPress={() =>
-              setDate((current) => addDays(current, 1))
-            }
-          >
-            <ChevronRight
-              size={20}
-              color={colors.text}
-              strokeWidth={1.8}
-            />
-          </IconButton>
-        </View>
+        <WeekStrip
+          date={date}
+          onChange={setDate}
+          counts={monthCounts}
+          onOpenCalendar={() => setCalendarOpen(true)}
+        />
 
         {/* Numbers of the day */}
 
@@ -399,23 +382,18 @@ export default function MassageTodayScreen() {
         />
         <Text style={styles.fabLabel}>Afspraak</Text>
       </Pressable>
-    </SafeAreaView>
-  );
-}
 
-function IconButton({ label, onPress, children }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.iconButton,
-        pressed && styles.iconButtonPressed,
-      ]}
-    >
-      {children}
-    </Pressable>
+      <CalendarSheet
+        visible={calendarOpen}
+        date={date}
+        loadCounts={loadCounts}
+        onClose={() => setCalendarOpen(false)}
+        onSelect={(day) => {
+          setCalendarOpen(false);
+          setDate(day);
+        }}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -451,49 +429,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.regular,
     fontSize: 14,
     color: colors.textMuted,
-  },
-
-  // Day navigation
-
-  dayNavigation: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-
-  iconButton: {
-    width: touchTarget,
-    height: touchTarget,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  iconButtonPressed: {
-    backgroundColor: colors.surfaceMuted,
-  },
-
-  dayLabel: {
-    flex: 1,
-    minHeight: touchTarget,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  dayTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    color: colors.text,
-  },
-
-  dayHint: {
-    fontFamily: fonts.regular,
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 2,
   },
 
   // Tiles

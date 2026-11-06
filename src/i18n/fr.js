@@ -13,6 +13,7 @@ export default {
   },
 
   tabs: {
+    team: "Équipe",
     today: "Aujourd'hui",
     floor: "Salle",
     agenda: "Agenda",
@@ -132,6 +133,8 @@ export default {
   },
 
   more: {
+    clients: "Clients",
+    clientsSubtitle: "Fiches clients et visites",
     analytics: "Analyse",
     analyticsRestaurant: "Couverts, no-shows, habitués",
     analyticsMassage: "Chiffre d'affaires, occupation, habitués",

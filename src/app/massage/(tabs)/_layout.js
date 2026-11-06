@@ -5,7 +5,7 @@ import {
   DoorOpen,
   Ellipsis,
   House,
-  Users,
+  UsersRound,
 } from "lucide-react-native";
 
 import {
@@ -19,10 +19,9 @@ import { t } from "../../../i18n";
 // ======================================================
 //
 // The bottom tab bar of a massage business:
-// Vandaag · Agenda · Kamers · Klanten · Meer.
+// Vandaag · Agenda · Team · Kamers · Meer.
 //
-// Agenda, Kamers, Klanten and Meer show the existing
-// screens for now; they get their new design next.
+// Klanten is opened from Meer.
 // ======================================================
 
 function tabIcon(Icon) {
@@ -69,17 +68,17 @@ export default function MassageTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="team"
+        options={{
+          title: t("tabs.team"),
+          tabBarIcon: tabIcon(UsersRound),
+        }}
+      />
+      <Tabs.Screen
         name="live-rooms"
         options={{
           title: t("tabs.rooms"),
           tabBarIcon: tabIcon(DoorOpen),
-        }}
-      />
-      <Tabs.Screen
-        name="clients"
-        options={{
-          title: t("tabs.clients"),
-          tabBarIcon: tabIcon(Users),
         }}
       />
       <Tabs.Screen

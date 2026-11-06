@@ -13,6 +13,7 @@ export default {
   },
 
   tabs: {
+    team: "Team",
     today: "Today",
     floor: "Floor",
     agenda: "Schedule",
@@ -132,6 +133,8 @@ export default {
   },
 
   more: {
+    clients: "Customers",
+    clientsSubtitle: "Customer cards and visits",
     analytics: "Insights",
     analyticsRestaurant: "Covers, no-shows, regulars",
     analyticsMassage: "Revenue, occupancy, regulars",

@@ -13,6 +13,7 @@ export default {
   },
 
   tabs: {
+    team: "Team",
     today: "Vandaag",
     floor: "Zaal",
     agenda: "Agenda",
@@ -132,6 +133,8 @@ export default {
   },
 
   more: {
+    clients: "Klanten",
+    clientsSubtitle: "Klantenkaarten en bezoeken",
     analytics: "Analyse",
     analyticsRestaurant: "Couverts, no-shows, vaste gasten",
     analyticsMassage: "Omzet, bezetting, vaste klanten",

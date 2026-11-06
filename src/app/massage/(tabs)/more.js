@@ -2,10 +2,12 @@ import {
   BedDouble,
   CalendarClock,
   Clock,
+  CreditCard,
   HandHeart,
   Map,
   Store,
   UserRound,
+  Users,
 } from "lucide-react-native";
 
 import MoreScreen from "../../../components/MoreScreen";
@@ -21,6 +23,18 @@ export default function MassageMoreScreen() {
       analyticsHref="/massage/analytics"
       analyticsSubtitle={t("more.analyticsMassage")}
       settingsLinks={[
+        {
+          href: "/massage/clients",
+          icon: Users,
+          title: t("more.clients"),
+          subtitle: t("more.clientsSubtitle"),
+        },
+        {
+          href: "/massage/payments",
+          icon: CreditCard,
+          title: t("payments.title"),
+          subtitle: t("payments.subtitle"),
+        },
         {
           href: "/settings/business",
           icon: Store,

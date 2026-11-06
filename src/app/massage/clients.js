@@ -21,18 +21,18 @@ import {
   Search,
 } from "lucide-react-native";
 
-import { useAuth } from "../../../context/auth-context";
-import { api } from "../../../services/api";
-import { Badge, Chip } from "../../../components/ui";
+import { useAuth } from "../../context/auth-context";
+import { api } from "../../services/api";
+import { Badge, Chip } from "../../components/ui";
 import {
   colors,
   fonts,
   radius,
   spacing,
   type,
-} from "../../../theme";
+} from "../../theme";
 import { RefreshControl } from "react-native";
-import { SkeletonList } from "../../../components/ui";
+import { SkeletonList } from "../../components/ui";
 
 // ======================================================
 // Klanten
@@ -119,7 +119,7 @@ export default function MassageClientsScreen() {
   ).length;
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <SafeAreaView style={styles.screen} edges={[]}>
       <View style={styles.top}>
         <View style={styles.titleText}>
           <Text style={type.title}>Klanten</Text>
