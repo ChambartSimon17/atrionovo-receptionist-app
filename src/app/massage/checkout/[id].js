@@ -13,11 +13,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import QRCode from "react-native-qrcode-svg";
-import { Banknote, Check, CreditCard, Plus, QrCode, Share2, X } from "lucide-react-native";
+import { Banknote, Check, CreditCard, FileText, Plus, QrCode, Share2, X } from "lucide-react-native";
 
 import { useAuth } from "../../../context/auth-context";
 import { api } from "../../../services/api";
-import { Button, Card, Sheet } from "../../../components/ui";
+import { Button, Card, SegmentedControl, Sheet, Switch } from "../../../components/ui";
+import BuyerForm, { buyerIsComplete, EMPTY_BUYER, Field } from "../../../components/invoicing/BuyerForm";
+import { openDocumentPdf } from "../../../components/invoicing/open-file";
 import { formatClock } from "../../../components/team/team-format";
 import { t } from "../../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../../theme";
@@ -39,6 +41,12 @@ import { formatDuration, formatPrice, parsePriceToCents } from "../../../utils/p
 //
 // Terminal and cash are only registered. A paid
 // appointment is marked as completed.
+//
+// Before paying the owner chooses the proof for the
+// customer: nothing, a receipt (kasticket) by e-mail, or
+// an invoice (factuur) with the customer's company and VAT
+// number, so a self-employed customer can deduct the VAT.
+// The document is made as soon as the payment is paid.
 //
 // Opened with ?date=YYYY-MM-DD, the day of the
 // appointment.
@@ -70,14 +78,27 @@ export default function CheckoutScreen() {
   const [productOpen, setProductOpen] = useState(false);
   const [tipOpen, setTipOpen] = useState(false);
 
+  const [invoicing, setInvoicing] = useState(null);
+  const [proof, setProof] = useState("NONE");
+  const [receiptEmail, setReceiptEmail] = useState("");
+  const [buyer, setBuyer] = useState(EMPTY_BUYER);
+  const [saveBuyer, setSaveBuyer] = useState(true);
+  const [document, setDocument] = useState(null);
+
+  // finish() is also called from the QR step, so it reads
+  // the chosen proof from here.
+  const proofRef = useRef(null);
+  proofRef.current = { proof, receiptEmail, buyer, saveBuyer };
+
   useEffect(() => {
     let active = true;
 
     Promise.all([
       api.getMassageAppointments(business.id, date || todayString(), accessToken),
       api.getStripeStatus(business.id, accessToken).catch(() => null),
+      api.getInvoicing(business.id, accessToken).catch(() => null),
     ])
-      .then(([appointments, stripeStatus]) => {
+      .then(([appointments, stripeStatus, invoicingSettings]) => {
         if (!active) {
           return;
         }
@@ -94,6 +115,21 @@ export default function CheckoutScreen() {
 
         const qrReady = stripeStatus?.data?.chargesEnabled;
         setMethod(qrReady ? "STRIPE_LINK" : "CARD_TERMINAL");
+
+        setInvoicing(invoicingSettings?.data ?? null);
+
+        // A customer with saved company details gets an
+        // invoice again; one with an e-mail a receipt.
+        if (invoicingSettings?.data?.complete) {
+          if (found.billing) {
+            setProof("INVOICE");
+            setBuyer({ ...EMPTY_BUYER, ...found.billing, email: found.billing.email || found.email || "" });
+          } else if (found.email) {
+            setProof("RECEIPT");
+          }
+        }
+
+        setReceiptEmail(found.email ?? "");
       })
       .catch((loadError) => active && setError(loadError.message));
 
@@ -115,6 +151,30 @@ export default function CheckoutScreen() {
     async (paid) => {
       setPayment(paid);
       setStep("paid");
+
+      const chosen = proofRef.current;
+
+      if (chosen.proof !== "NONE") {
+        try {
+          const response = await api.issueDocument(
+            business.id,
+            paid.id,
+            chosen.proof === "INVOICE"
+              ? {
+                  kind: "INVOICE",
+                  buyer: chosen.buyer,
+                  email: chosen.buyer.email || null,
+                  saveToCustomer: chosen.saveBuyer,
+                }
+              : { kind: "RECEIPT", email: chosen.receiptEmail || null },
+            accessToken
+          );
+
+          setDocument(response.data);
+        } catch (documentError) {
+          Alert.alert(t("common.error"), documentError.message);
+        }
+      }
 
       try {
         const response = await api.getPaymentSummary(business.id, todayString(), accessToken);
@@ -185,6 +245,10 @@ export default function CheckoutScreen() {
       <PaidStep
         payment={payment}
         summary={summary}
+        document={document}
+        onDocument={setDocument}
+        defaultEmail={receiptEmail}
+        canInvoice={!!invoicing?.complete}
         onDone={() => router.back()}
         onNext={() => router.replace("/massage/new-appointment")}
       />
@@ -290,6 +354,46 @@ export default function CheckoutScreen() {
           </View>
         </Card>
 
+        {/* Proof for the customer */}
+
+        <Text style={styles.label}>{t("proof.label")}</Text>
+        <SegmentedControl
+          options={[
+            { value: "NONE", label: t("proof.none") },
+            { value: "RECEIPT", label: t("proof.receipt") },
+            { value: "INVOICE", label: t("proof.invoice") },
+          ]}
+          value={proof}
+          onChange={(value) => {
+            if (value !== "NONE" && !invoicing?.complete) {
+              Alert.alert(t("invoicing.incomplete"));
+              return;
+            }
+
+            setProof(value);
+          }}
+        />
+
+        {proof === "RECEIPT" ? (
+          <Field
+            label={t("proof.emailOptional")}
+            value={receiptEmail}
+            onChangeText={setReceiptEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        ) : null}
+
+        {proof === "INVOICE" ? (
+          <>
+            <BuyerForm value={buyer} onChange={setBuyer} />
+            <View style={styles.saveRow}>
+              <Text style={[type.caption, styles.flex]}>{t("proof.save", { name: customer })}</Text>
+              <Switch value={saveBuyer} onValueChange={setSaveBuyer} />
+            </View>
+          </>
+        ) : null}
+
         {/* Method */}
 
         <Text style={styles.label}>{t("checkout.payWith")}</Text>
@@ -321,7 +425,7 @@ export default function CheckoutScreen() {
         <Button
           variant="primary"
           loading={busy}
-          disabled={!method || total <= 0}
+          disabled={!method || total <= 0 || (proof === "INVOICE" && !buyerIsComplete(buyer))}
           label={
             method === "STRIPE_LINK"
               ? t("checkout.showQr")
@@ -541,15 +645,55 @@ function QrStep({ payment, businessName, onPaid, onCancel }) {
 // Paid
 // ------------------------------------------------------
 
-function PaidStep({ payment, summary, onDone, onNext }) {
+function PaidStep({ payment, summary, document, onDocument, defaultEmail, canInvoice, onDone, onNext }) {
+  const { business, accessToken } = useAuth();
+  const [email, setEmail] = useState(defaultEmail ?? "");
+  const [sending, setSending] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [buyer, setBuyer] = useState({ ...EMPTY_BUYER, email: defaultEmail ?? "" });
+
   const methodLabel =
     payment.method === "STRIPE_LINK" && payment.stripeMethod
       ? t(`checkout.methods.${payment.stripeMethod}`) ?? payment.stripeMethod
       : t(`checkout.methods.${payment.method}`);
 
+  async function run(action) {
+    setSending(true);
+
+    try {
+      onDocument((await action()).data);
+    } catch (error) {
+      Alert.alert(t("common.error"), error.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function sendReceipt() {
+    return run(() =>
+      document
+        ? api.emailDocument(business.id, document.id, email, accessToken)
+        : api.issueDocument(business.id, payment.id, { kind: "RECEIPT", email }, accessToken)
+    );
+  }
+
+  async function makeInvoice() {
+    await run(() =>
+      document?.kind === "RECEIPT"
+        ? api.convertDocument(business.id, document.id, { buyer, email: buyer.email || null }, accessToken)
+        : api.issueDocument(
+            business.id,
+            payment.id,
+            { kind: "INVOICE", buyer, email: buyer.email || null, saveToCustomer: true },
+            accessToken
+          )
+    );
+    setInvoiceOpen(false);
+  }
+
   return (
     <SafeAreaView style={styles.screen} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.qrContent}>
+      <ScrollView contentContainerStyle={styles.qrContent} keyboardShouldPersistTaps="handled">
         <View style={styles.paidIcon}>
           <Check size={44} color={colors.onPrimary} strokeWidth={2.5} />
         </View>
@@ -561,6 +705,68 @@ function PaidStep({ payment, summary, onDone, onNext }) {
             time: formatClock(payment.paidAt ?? new Date().toISOString()),
           })}
         </Text>
+
+        {document ? (
+          <Card style={styles.documentCard}>
+            <View style={styles.documentRow}>
+              <FileText size={20} color={colors.primary} strokeWidth={1.8} />
+              <View style={styles.flex}>
+                <Text style={type.bodyMedium}>
+                  {t(document.kind === "INVOICE" ? "proof.invoiceReady" : "proof.receiptReady", {
+                    number: document.number,
+                  })}
+                </Text>
+                <Text style={type.caption}>
+                  {document.emailedAt
+                    ? t("proof.mailedTo", { email: document.emailTo })
+                    : document.emailError
+                      ? t("proof.mailError", { error: document.emailError })
+                      : t("proof.notMailed")}
+                </Text>
+                {document.peppolStatus === "NOT_CONFIGURED" || document.peppolStatus === "PENDING" ? (
+                  <Text style={type.caption}>{t("proof.peppolPending")}</Text>
+                ) : null}
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  openDocumentPdf(business.id, document, accessToken).catch((error) =>
+                    Alert.alert(t("common.error"), error.message)
+                  )
+                }
+                hitSlop={8}
+              >
+                <Text style={styles.link}>{t("proof.view")}</Text>
+              </Pressable>
+            </View>
+          </Card>
+        ) : null}
+
+        {canInvoice && (!document || (document.kind === "RECEIPT" && !document.emailedAt)) ? (
+          <View style={styles.wide}>
+            <Field
+              label={t("proof.email")}
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+        ) : null}
+
+        {canInvoice && (!document || (document.kind === "RECEIPT" && !document.emailedAt)) ? (
+          <Button
+            label={t("proof.sendReceipt")}
+            loading={sending}
+            disabled={!email.includes("@")}
+            onPress={sendReceipt}
+            style={styles.wide}
+          />
+        ) : null}
+
+        {canInvoice && document?.kind !== "INVOICE" ? (
+          <Button label={t("proof.makeInvoice")} onPress={() => setInvoiceOpen(true)} style={styles.wide} />
+        ) : null}
 
         {summary ? (
           <Card style={styles.summary}>
@@ -576,6 +782,23 @@ function PaidStep({ payment, summary, onDone, onNext }) {
         <Button label={t("checkout.nextAppointment")} onPress={onNext} style={styles.wide} />
         <Button label={t("checkout.done")} variant="primary" onPress={onDone} style={styles.wide} />
       </ScrollView>
+
+      <Sheet
+        visible={invoiceOpen}
+        onClose={() => setInvoiceOpen(false)}
+        title={t("proof.makeInvoice")}
+        footer={
+          <Button
+            label={t("documents.send")}
+            variant="primary"
+            loading={sending}
+            disabled={!buyerIsComplete(buyer)}
+            onPress={makeInvoice}
+          />
+        }
+      >
+        <BuyerForm value={buyer} onChange={setBuyer} />
+      </Sheet>
     </SafeAreaView>
   );
 }
@@ -590,6 +813,32 @@ function SummaryItem({ value, label }) {
 }
 
 const styles = StyleSheet.create({
+  saveRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+
+  documentCard: {
+    alignSelf: "stretch",
+    maxWidth: 420,
+    width: "100%",
+    marginTop: spacing.lg,
+  },
+
+  documentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+  },
+
+  link: {
+    fontFamily: fonts.semibold,
+    fontSize: 13,
+    color: colors.primary,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,

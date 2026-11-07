@@ -1381,4 +1381,85 @@ export const api = {
       { method: "GET" }
     );
   },
+
+  // ====================================================
+  // Invoicing: kastickets, facturen, creditnota's
+  // ====================================================
+
+  getInvoicing(businessId, accessToken) {
+    return authenticatedRequest(`/businesses/${businessId}/invoicing`, accessToken, {
+      method: "GET",
+    });
+  },
+
+  updateInvoicing(businessId, settings, accessToken) {
+    return authenticatedRequest(`/businesses/${businessId}/invoicing`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    });
+  },
+
+  lookupVat(businessId, number, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/vat-lookup?number=${encodeURIComponent(number)}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  issueDocument(businessId, paymentId, document, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/payments/${paymentId}/documents`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(document) }
+    );
+  },
+
+  getDocuments(businessId, { month, kind }, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/documents?month=${month}${kind ? `&kind=${kind}` : ""}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  emailDocument(businessId, documentId, email, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/documents/${documentId}/email`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({ email }) }
+    );
+  },
+
+  convertDocument(businessId, documentId, data, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/documents/${documentId}/convert`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+  },
+
+  creditDocument(businessId, documentId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/documents/${documentId}/credit`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  },
+
+  /**
+   * Downloads a file of the business (a PDF, a CSV) with
+   * the access token and returns its bytes.
+   */
+  async downloadBusinessFile(businessId, path, accessToken) {
+    const response = await fetch(`${API_URL}/businesses/${businessId}${path}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+      throw new Error("Er ging iets mis.");
+    }
+
+    return new Uint8Array(await response.arrayBuffer());
+  },
 };

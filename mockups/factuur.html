@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kasticket en factuur</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--p:#1F5F55;--ps:#E3EEEA;--bg:#F6F4EF;--b:#E4E0D8;--sm:#EFECE6;--t:#1C2421;--m:#5B6661;--d:#A32D2D;--ds:#FCEBEB;--w:#633806;--ws:#FAEEDA;--i:#0C447C;--is:#E6F1FB}
+body{margin:0;background:#E9E6DF;font-family:Inter,system-ui,sans-serif;color:var(--t);padding:28px 16px}
+h2{font-size:18px;font-weight:600;max-width:1200px;margin:36px auto 4px}
+p.sub{font-size:13px;color:var(--m);max-width:1200px;margin:0 auto 18px;line-height:1.55}
+.grid{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:flex-start;max-width:1200px;margin:0 auto}
+.ph{width:320px;height:680px;background:var(--bg);border-radius:38px;border:8px solid #1C2421;box-sizing:border-box;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.cap{font-size:13px;color:var(--m);text-align:center;margin:10px 0 0;max-width:320px}
+.in{padding:12px 16px;flex:1;overflow:hidden}
+.ttl{font-size:21px;font-weight:600;letter-spacing:-.3px;margin:4px 0 10px}
+.card{background:#fff;border:1px solid var(--b);border-radius:16px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px}
+.row+.row{border-top:1px solid var(--sm)}
+.lbl{font-size:10.5px;color:var(--m);font-weight:600;letter-spacing:.06em;margin:14px 4px 6px}
+.btn{background:var(--p);color:#fff;border-radius:12px;text-align:center;padding:12px;font-size:13.5px;font-weight:600}
+.btn2{background:#fff;border:1px solid var(--b);border-radius:12px;text-align:center;padding:11px;font-size:13px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;border-radius:999px;padding:3px 9px;font-weight:600}
+.seg{display:flex;background:#ECE8E0;border-radius:10px;padding:3px;font-size:12px}
+.seg span{flex:1;text-align:center;padding:7px 4px;border-radius:8px;color:var(--m)}
+.seg span.on{background:#fff;color:var(--t);font-weight:600}
+.field{background:#fff;border:1px solid var(--b);border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:6px}
+.field small{display:block;font-size:10.5px;color:var(--m);margin-bottom:2px}
+.ok{color:var(--p);font-size:11.5px;font-weight:600}
+.back{display:flex;align-items:center;gap:4px;color:var(--p);font-size:13px;font-weight:500;padding:12px 14px 0}
+.a4{width:430px;background:#fff;border-radius:6px;box-shadow:0 6px 30px rgba(0,0,0,.12);padding:30px 32px;font-size:11px;line-height:1.5;box-sizing:border-box}
+.a4 table{width:100%;border-collapse:collapse;margin-top:14px}
+.a4 th{font-size:9.5px;color:var(--m);text-align:left;font-weight:600;border-bottom:1px solid var(--b);padding:5px 0;text-transform:uppercase;letter-spacing:.04em}
+.a4 td{padding:6px 0;border-bottom:1px solid var(--sm)}
+.a4 .r{text-align:right}
+.hl{background:#FFF6D6;border-radius:3px;padding:0 2px}
+.notes{max-width:1200px;margin:10px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.note{background:#fff;border:1px solid var(--b);border-radius:14px;padding:14px 16px;font-size:13px;line-height:1.55}
+.note b{display:block;margin-bottom:4px}
+.q{border-color:var(--p);background:var(--ps)}
+</style>
+</head>
+<body>
+
+<h2>1 · Afrekenen: kasticket of factuur</h2>
+<p class="sub">Bij het afrekenen kies je wat de klant krijgt. Een gewone klant krijgt een kasticket per mail. Een zelfstandige of bedrijf krijgt een echte factuur met zijn btw-nummer, zodat hij de btw kan aftrekken. Typ je het btw-nummer, dan vult de app naam en adres zelf in uit het Europese btw-register (VIES).</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="back"><i class="ti ti-chevron-left"></i> Terug</div>
+<div class="in">
+<div class="ttl">Afrekenen</div>
+<div class="card" style="padding:10px 14px;font-size:13px">
+<div style="display:flex;justify-content:space-between"><span>Thaise massage 90 min</span><b>€ 85,00</b></div>
+<div style="display:flex;justify-content:space-between;margin-top:6px"><span>Hot stones</span><b>€ 10,00</b></div>
+<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--sm)"><b style="font-size:15px">Totaal</b><b style="font-size:17px">€ 95,00</b></div>
+<div style="font-size:11px;color:var(--m)">waarvan btw 21% € 16,49</div>
+</div>
+<div class="lbl">BEWIJS VOOR DE KLANT</div>
+<div class="seg"><span>Geen</span><span>Kasticket</span><span class="on">Factuur</span></div>
+<div style="margin-top:10px">
+<div class="field"><small>Btw-nummer</small>BE 0712.345.678 <span class="ok" style="float:right"><i class="ti ti-circle-check"></i> Geldig</span></div>
+<div class="field"><small>Bedrijf (uit VIES)</small>Wouters Design BV</div>
+<div class="field"><small>Adres</small>Kerkstraat 12, 9000 Gent</div>
+<div class="field"><small>E-mail voor de kopie</small>lien@woutersdesign.be</div>
+</div>
+<div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--m);margin-top:4px"><i class="ti ti-square-check-filled" style="color:var(--p);font-size:17px"></i>Bewaren bij Lien Wouters voor volgende keer</div>
+</div>
+<div style="padding:0 16px 16px"><div class="btn">Betalen · € 95,00</div></div>
+</div><p class="cap">Factuur gekozen: btw-nummer, en de rest vult zichzelf in</p></div>
+
+<div><div class="ph">
+<div class="in" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:60px">
+<div style="width:76px;height:76px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px"><i class="ti ti-check"></i></div>
+<div style="font-size:24px;font-weight:600;margin-top:12px">Betaald</div>
+<div style="font-size:13px;color:var(--m)">€ 95,00 · Bancontact · 15:34</div>
+<div class="card" style="width:100%;margin-top:22px;text-align:left">
+<div class="row"><i class="ti ti-file-invoice" style="font-size:18px;color:var(--p)"></i><div style="flex:1"><b>Factuur F2026-0147</b><div style="font-size:11.5px;color:var(--m)">Wouters Design BV</div></div></div>
+<div class="row"><i class="ti ti-network" style="font-size:18px;color:var(--p)"></i><div style="flex:1">Via Peppol verstuurd<div style="font-size:11.5px;color:var(--m)">komt rechtstreeks in hun boekhouding</div></div><span class="chip" style="background:var(--ps);color:var(--p)">Afgeleverd</span></div>
+<div class="row"><i class="ti ti-mail" style="font-size:18px;color:var(--p)"></i><div style="flex:1">PDF-kopie gemaild<div style="font-size:11.5px;color:var(--m)">lien@woutersdesign.be</div></div><i class="ti ti-check" style="color:var(--p)"></i></div>
+</div>
+<div style="width:100%;margin-top:14px;display:flex;flex-direction:column;gap:8px">
+<div class="btn2"><i class="ti ti-eye"></i> Factuur bekijken</div>
+<div class="btn">Klaar</div>
+</div>
+</div>
+</div><p class="cap">Na betaling: factuur via Peppol + PDF per mail</p></div>
+
+<div><div class="ph">
+<div class="in" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:60px">
+<div style="width:76px;height:76px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px"><i class="ti ti-check"></i></div>
+<div style="font-size:24px;font-weight:600;margin-top:12px">Betaald</div>
+<div style="font-size:13px;color:var(--m)">€ 49,50 · Contant · 16:02</div>
+<div class="lbl" style="align-self:flex-start;margin-top:22px">KASTICKET MAILEN</div>
+<div class="field" style="width:100%;text-align:left;box-sizing:border-box"><small>E-mail</small>sara.claes@gmail.com</div>
+<div class="btn" style="width:100%;box-sizing:border-box"><i class="ti ti-send"></i> Kasticket versturen</div>
+<div style="font-size:11.5px;color:var(--m);margin-top:10px;line-height:1.5">Toch een factuur nodig? <b style="color:var(--p)">Omzetten naar factuur</b> · kan tot het einde van de maand</div>
+</div>
+</div><p class="cap">Gewone klant: kasticket mailen. Later nog omzetbaar naar factuur</p></div>
+
+</div>
+
+<h2>2 · Hoe de factuur eruitziet</h2>
+<p class="sub">De PDF bevat alles wat een Belgische factuur moet vermelden (geel gemarkeerd). Zo kan een zelfstandige de btw aftrekken. De fooi staat apart en zonder btw, want die gaat naar de therapeut.</p>
+<div class="grid">
+<div class="a4">
+<div style="display:flex;justify-content:space-between;align-items:flex-start">
+<div><div style="font-size:17px;font-weight:600;color:var(--p)">Lotus Spa</div>
+<div><span class="hl">Lotus Spa BV</span><br><span class="hl">Veldstraat 44, 9000 Gent</span><br><span class="hl">Btw BE 0798.111.222</span><br>RPR Gent · IBAN BE71 0961 2345 6769</div></div>
+<div style="text-align:right"><div style="font-size:20px;font-weight:600">FACTUUR</div>
+<div>Nummer <b class="hl">F2026-0147</b></div>
+<div>Factuurdatum <span class="hl">7 november 2026</span></div>
+<div>Datum dienst <span class="hl">7 november 2026</span></div></div>
+</div>
+<div style="margin-top:18px;padding:10px 12px;background:#F6F4EF;border-radius:6px">
+<div style="font-size:9.5px;color:var(--m);font-weight:600;letter-spacing:.04em">FACTUUR AAN</div>
+<span class="hl">Wouters Design BV</span><br><span class="hl">Kerkstraat 12, 9000 Gent</span><br><span class="hl">Btw BE 0712.345.678</span>
+</div>
+<table>
+<tr><th>Omschrijving</th><th class="r">Aantal</th><th class="r">Prijs excl.</th><th class="r">Btw</th><th class="r">Totaal excl.</th></tr>
+<tr><td><span class="hl">Thaise massage 90 min</span></td><td class="r">1</td><td class="r">70,25</td><td class="r"><span class="hl">21%</span></td><td class="r">70,25</td></tr>
+<tr><td><span class="hl">Hot stones</span></td><td class="r">1</td><td class="r">8,26</td><td class="r"><span class="hl">21%</span></td><td class="r">8,26</td></tr>
+</table>
+<table style="width:56%;margin-left:44%">
+<tr><td>Maatstaf 21%</td><td class="r"><span class="hl">€ 78,51</span></td></tr>
+<tr><td>Btw 21%</td><td class="r"><span class="hl">€ 16,49</span></td></tr>
+<tr><td><b>Totaal</b></td><td class="r"><b class="hl">€ 95,00</b></td></tr>
+<tr><td style="color:var(--m)">Fooi (buiten factuur, geen btw)</td><td class="r" style="color:var(--m)">€ 0,00</td></tr>
+</table>
+<div style="margin-top:14px;padding:8px 10px;border:1px solid var(--ps);background:#F3F8F6;border-radius:6px;color:var(--p);font-weight:600">Betaald op 7/11/2026 met Bancontact</div>
+<div style="margin-top:14px;font-size:9.5px;color:var(--m)">Factuur opgemaakt door AtrioNovo voor Lotus Spa BV.</div>
+</div>
+<div class="a4" style="width:300px">
+<div style="text-align:center"><div style="font-size:15px;font-weight:600;color:var(--p)">Lotus Spa</div>Veldstraat 44, 9000 Gent<br>Btw BE 0798.111.222</div>
+<div style="text-align:center;font-weight:600;margin:12px 0 4px;letter-spacing:.08em">KASTICKET</div>
+<div style="text-align:center;color:var(--m)">T2026-0612 · 7/11/2026 16:02</div>
+<table>
+<tr><td>Voetreflex 60 min</td><td class="r">45,00</td></tr>
+<tr><td style="color:var(--m)">Fooi voor Ploy</td><td class="r" style="color:var(--m)">4,50</td></tr>
+</table>
+<table>
+<tr><td>Excl. btw</td><td class="r">37,19</td></tr>
+<tr><td>Btw 21%</td><td class="r">7,81</td></tr>
+<tr><td><b>Totaal</b></td><td class="r"><b>€ 49,50</b></td></tr>
+<tr><td>Contant</td><td class="r">49,50</td></tr>
+</table>
+<div style="text-align:center;margin-top:12px;color:var(--m)">Bedankt en tot een volgende keer!</div>
+</div>
+</div>
+
+<h2>3 · Instellingen en overzicht</h2>
+<p class="sub">Eén keer de gegevens van je zaak invullen. Facturen krijgen automatisch een doorlopend nummer zonder gaten. Een factuur verwijder je nooit: een fout corrigeer je met een creditnota.</p>
+<div class="grid">
+
+<div><div class="ph">
+<div class="back"><i class="ti ti-chevron-left"></i> Terug</div>
+<div class="in">
+<div class="ttl">Facturatie</div>
+<div class="lbl">JE ZAAK OP DE FACTUUR</div>
+<div class="field"><small>Officiële naam</small>Lotus Spa BV</div>
+<div class="field"><small>Btw-nummer</small>BE 0798.111.222 <span class="ok" style="float:right"><i class="ti ti-circle-check"></i></span></div>
+<div class="field"><small>Adres</small>Veldstraat 44, 9000 Gent</div>
+<div class="field"><small>IBAN</small>BE71 0961 2345 6769</div>
+<div class="lbl">BTW</div>
+<div class="card"><div class="row"><span style="flex:1">Massages en producten</span><b>21%</b></div><div class="row"><span style="flex:1">Vrijgesteld (kleine onderneming)</span><i class="ti ti-toggle-left" style="font-size:22px;color:var(--m)"></i></div></div>
+<div class="lbl">PEPPOL</div>
+<div class="card"><div class="row"><i class="ti ti-network" style="color:var(--p)"></i><span style="flex:1">Geregistreerd</span><span class="chip" style="background:var(--ps);color:var(--p)">Actief</span></div></div>
+</div>
+</div><p class="cap">Meer → Facturatie</p></div>
+
+<div><div class="ph">
+<div class="back"><i class="ti ti-chevron-left"></i> Terug</div>
+<div class="in">
+<div class="ttl">Facturen</div>
+<div class="seg" style="margin-bottom:10px"><span class="on">Facturen</span><span>Kastickets</span></div>
+<div class="card">
+<div class="row"><div style="flex:1"><b>F2026-0147</b><div style="font-size:11.5px;color:var(--m)">Wouters Design BV · 7 nov</div></div><div style="text-align:right"><b>€ 95,00</b><div><span class="chip" style="background:var(--ps);color:var(--p)">Peppol</span></div></div></div>
+<div class="row"><div style="flex:1"><b>F2026-0146</b><div style="font-size:11.5px;color:var(--m)">Studio Mertens · 5 nov</div></div><div style="text-align:right"><b>€ 70,00</b><div><span class="chip" style="background:var(--is);color:var(--i)">Gemaild</span></div></div></div>
+<div class="row"><div style="flex:1"><b>C2026-0003</b><div style="font-size:11.5px;color:var(--m)">Creditnota op F2026-0139</div></div><div style="text-align:right"><b style="color:var(--d)">− € 55,00</b></div></div>
+</div>
+<div class="btn2" style="margin-top:12px"><i class="ti ti-download"></i> Exporteer maand voor boekhouder</div>
+</div>
+</div><p class="cap">Meer → Facturen: alles bewaard, export voor je boekhouder</p></div>
+
+</div>
+
+<div class="notes" style="margin-top:30px">
+<div class="note"><b>Waarom Peppol</b>Sinds 1 januari 2026 moeten Belgische bedrijven onder elkaar e-facturen versturen via het Peppol-netwerk. Een PDF per mail volstaat dan niet meer als factuur voor een zelfstandige met een Belgisch btw-nummer. De app verstuurt de factuur daarom via een Peppol-dienst, en mailt een PDF als kopie. Voor klanten zonder Belgisch btw-nummer volstaat de PDF.</div>
+<div class="note"><b>Wat de app regelt</b>Een doorlopende nummering per jaar (F2026-0001…), alle verplichte vermeldingen, de btw per tarief, een controle van het btw-nummer in VIES, een creditnota in plaats van verwijderen, 10 jaar bewaren, en een maandexport (PDF + CSV) voor je boekhouder.</div>
+<div class="note"><b>Fooi</b>Een vrijwillige fooi voor de therapeut komt niet op de factuur en valt niet onder de btw. Op het kasticket staat ze apart, zonder btw. Vraag dit voor de zekerheid na bij je boekhouder.</div>
+<div class="note q"><b>Wat ik van jou nodig heb</b>1. Is je zaak btw-plichtig (21%) of vrijgesteld als kleine onderneming?<br>2. Mag ik een Peppol-dienst kiezen? Ik denk aan <b>Billit</b> of <b>e-invoice.be</b> (enkele euro's per maand per zaak). Jij of je klanten maken daar een account.<br>3. Welk e-mailadres verstuurt de mails, bv. <i>facturen@atrionovo.be</i>? Daarvoor gebruik ik een maildienst zoals Resend of Postmark.</div>
+</div>
+</body>
+</html>

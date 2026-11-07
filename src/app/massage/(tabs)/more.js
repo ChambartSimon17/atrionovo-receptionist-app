@@ -3,7 +3,9 @@ import {
   CalendarClock,
   Clock,
   CreditCard,
+  FileText,
   HandHeart,
+  ReceiptEuro,
   Map,
   Store,
   UserRound,
@@ -28,6 +30,18 @@ export default function MassageMoreScreen() {
           icon: Users,
           title: t("more.clients"),
           subtitle: t("more.clientsSubtitle"),
+        },
+        {
+          href: "/massage/documents",
+          icon: FileText,
+          title: t("documents.title"),
+          subtitle: t("documents.subtitle"),
+        },
+        {
+          href: "/massage/invoicing",
+          icon: ReceiptEuro,
+          title: t("invoicing.title"),
+          subtitle: t("invoicing.subtitle"),
         },
         {
           href: "/massage/payments",
