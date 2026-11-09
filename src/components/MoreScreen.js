@@ -21,6 +21,7 @@ import { Button, Card } from "./ui";
 import { t } from "../i18n";
 import { colors, fonts, radius, spacing, type } from "../theme";
 import { unregisterPushNotifications } from "../services/notifications";
+import useWideLayout from "../hooks/useWideLayout";
 
 // ======================================================
 // Meer
@@ -35,6 +36,9 @@ import { unregisterPushNotifications } from "../services/notifications";
 //   callers still to call back
 //   Instellingen: the links the business type passes in
 //   Uitloggen
+//
+// On a tablet in landscape the settings get their own
+// column on the right.
 // ======================================================
 
 function LinkRow({ link, first, onPress }) {
@@ -69,6 +73,7 @@ function LinkRow({ link, first, onPress }) {
 
 export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubtitle }) {
   const router = useRouter();
+  const wide = useWideLayout();
   const { user, business, accessToken, logout } = useAuth();
 
   const [openCallbacks, setOpenCallbacks] = useState(0);
@@ -121,79 +126,109 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
     },
   ];
 
+  const profile = (
+    <Card style={styles.profile}>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>
+          {(business?.name?.[0] ?? "A").toUpperCase()}
+        </Text>
+      </View>
+      <View style={styles.profileText}>
+        <Text style={type.bodyMedium}>{business?.name}</Text>
+        <Text style={type.caption} numberOfLines={1}>
+          {[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
+          {user?.email ? ` · ${user.email}` : ""}
+        </Text>
+      </View>
+    </Card>
+  );
+
+  const analytics = (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push(analyticsHref)}
+      style={({ pressed }) => [styles.analytics, pressed && styles.analyticsPressed]}
+    >
+      <View style={styles.analyticsIcon}>
+        <ChartColumn size={20} color={colors.onPrimary} strokeWidth={1.8} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={styles.analyticsTitle}>{t("more.analytics")}</Text>
+        <Text style={styles.analyticsSubtitle}>{analyticsSubtitle}</Text>
+      </View>
+      <ChevronRight size={18} color={colors.onPrimaryMuted} strokeWidth={1.8} />
+    </Pressable>
+  );
+
+  const ai = (
+    <View style={styles.section}>
+      <Text style={styles.sectionLabel}>{t("more.ai")}</Text>
+      <Card style={styles.list}>
+        {aiLinks.map((link, index) => (
+          <LinkRow
+            key={link.href}
+            link={link}
+            first={index === 0}
+            onPress={() => router.push(link.href)}
+          />
+        ))}
+      </Card>
+    </View>
+  );
+
+  const settings = (
+    <View style={styles.section}>
+      <Text style={styles.sectionLabel}>{t("more.settings")}</Text>
+      <Card style={styles.list}>
+        {settingsLinks.map((link, index) => (
+          <LinkRow
+            key={link.href}
+            link={link}
+            first={index === 0}
+            onPress={() => router.push(link.href)}
+          />
+        ))}
+      </Card>
+    </View>
+  );
+
+  const logoutButton = (
+    <Button
+      label={t("more.logout")}
+      variant="danger"
+      icon={<LogOut size={18} color={colors.danger} strokeWidth={1.8} />}
+      onPress={async () => {
+        await unregisterPushNotifications(accessToken);
+        await logout();
+        router.replace("/login");
+      }}
+    />
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <Text style={type.title}>{t("tabs.more")}</Text>
 
-        <Card style={styles.profile}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {(business?.name?.[0] ?? "A").toUpperCase()}
-            </Text>
+        {wide ? (
+          <View style={styles.columns}>
+            <View style={styles.column}>
+              {profile}
+              {analytics}
+              {ai}
+              {logoutButton}
+            </View>
+            <View style={styles.column}>{settings}</View>
           </View>
-          <View style={styles.profileText}>
-            <Text style={type.bodyMedium}>{business?.name}</Text>
-            <Text style={type.caption} numberOfLines={1}>
-              {[user?.firstName, user?.lastName].filter(Boolean).join(" ")}
-              {user?.email ? ` · ${user.email}` : ""}
-            </Text>
-          </View>
-        </Card>
-
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.push(analyticsHref)}
-          style={({ pressed }) => [styles.analytics, pressed && styles.analyticsPressed]}
-        >
-          <View style={styles.analyticsIcon}>
-            <ChartColumn size={20} color={colors.onPrimary} strokeWidth={1.8} />
-          </View>
-          <View style={styles.rowText}>
-            <Text style={styles.analyticsTitle}>{t("more.analytics")}</Text>
-            <Text style={styles.analyticsSubtitle}>{analyticsSubtitle}</Text>
-          </View>
-          <ChevronRight size={18} color={colors.onPrimaryMuted} strokeWidth={1.8} />
-        </Pressable>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t("more.ai")}</Text>
-          <Card style={styles.list}>
-            {aiLinks.map((link, index) => (
-              <LinkRow
-                key={link.href}
-                link={link}
-                first={index === 0}
-                onPress={() => router.push(link.href)}
-              />
-            ))}
-          </Card>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>{t("more.settings")}</Text>
-          <Card style={styles.list}>
-            {settingsLinks.map((link, index) => (
-              <LinkRow
-                key={link.href}
-                link={link}
-                first={index === 0}
-                onPress={() => router.push(link.href)}
-              />
-            ))}
-          </Card>
-        </View>
-
-        <Button
-          label={t("more.logout")}
-          variant="danger"
-          icon={<LogOut size={18} color={colors.danger} strokeWidth={1.8} />}
-          onPress={async () => {
-            await unregisterPushNotifications(accessToken);
-            await logout();
-            router.replace("/login");
-          }}
-        />
+        ) : (
+          <>
+            {profile}
+            {analytics}
+            {ai}
+            {settings}
+            {logoutButton}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -212,6 +247,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
+    gap: spacing.xl,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
+  },
+
+  columns: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.xl,
+  },
+
+  column: {
+    flex: 1,
     gap: spacing.xl,
   },
 
