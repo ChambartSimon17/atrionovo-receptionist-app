@@ -82,6 +82,7 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
   const { user, business, accessToken, logout } = useAuth();
 
   const [openHref, setOpenHref] = useState("/calls");
+  const [loggingOut, setLoggingOut] = useState(false);
   const [openCallbacks, setOpenCallbacks] = useState(0);
   const [callsToday, setCallsToday] = useState(null);
 
@@ -141,7 +142,7 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
     }
   }
 
-  const OpenPage = wide ? morePages[openHref] : null;
+  const OpenPage = wide && !loggingOut ? morePages[openHref] : null;
 
   const profile = (
     <Card style={styles.profile}>
@@ -217,6 +218,9 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
       variant="danger"
       icon={<LogOut size={18} color={colors.danger} strokeWidth={1.8} />}
       onPress={async () => {
+        // Close the page next to the list first: it must not
+        // load anything once the business is gone.
+        setLoggingOut(true);
         await unregisterPushNotifications(accessToken);
         await logout();
         router.replace("/login");
