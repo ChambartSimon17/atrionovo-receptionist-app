@@ -224,25 +224,45 @@ function ElementShape({ element, roomState }) {
               ))
             : null}
           {Array.from({ length: beds }, (_, index) => {
-            const bedWidth = 75;
-            const bedHeight = Math.min(195, h * 0.55);
+            // A massage table seen from above: the table, a
+            // folded towel across it and the head rest with
+            // its face hole.
+            const bedWidth = Math.min(80, (w / (beds + 1)) * 0.9);
+            const bedHeight = Math.min(200, h * 0.55);
             const spacing = w / (beds + 1);
             const x = spacing * (index + 1) - bedWidth / 2;
             const y = h / 2 - bedHeight / 2 + h * 0.08;
+            const head = Math.min(34, bedHeight * 0.2);
 
             return (
               <G key={index}>
                 <Rect
                   x={x}
-                  y={y}
+                  y={y + head + 4}
                   width={bedWidth}
-                  height={bedHeight}
-                  rx={14}
-                  fill="none"
+                  height={bedHeight - head - 4}
+                  rx={16}
+                  fill={colors.chair}
+                  opacity={0.35}
                   stroke={colors.chair}
-                  strokeWidth={4}
+                  strokeWidth={3}
                 />
-                <Rect x={x + 14} y={y + 12} width={bedWidth - 28} height={26} rx={8} fill={colors.chair} />
+                <Rect
+                  x={x}
+                  y={y + head + 4 + (bedHeight - head - 4) * 0.55}
+                  width={bedWidth}
+                  height={(bedHeight - head - 4) * 0.2}
+                  fill={colors.chair}
+                  opacity={0.55}
+                />
+                <Rect x={x + bedWidth * 0.18} y={y} width={bedWidth * 0.64} height={head} rx={head / 2} fill={colors.chair} />
+                <Ellipse
+                  cx={x + bedWidth / 2}
+                  cy={y + head / 2}
+                  rx={bedWidth * 0.14}
+                  ry={head * 0.24}
+                  fill={colors.fill}
+                />
               </G>
             );
           })}
@@ -634,33 +654,33 @@ export default function FloorCanvas({
                     }
                   }
 
-                  const maxChars = Math.max(4, Math.floor((screenWidth - 12) / 5.4));
+                  const maxChars = Math.max(4, Math.floor((screenWidth - 16) / 6.6));
                   const fit = (text) => (text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text);
 
                   return (
                     <G key={`label-${element.id}`}>
                       <SvgText
-                        x={topLeft.x + 8}
-                        y={topLeft.y + 17}
-                        fontSize={11.5}
+                        x={topLeft.x + 10}
+                        y={topLeft.y + 21}
+                        fontSize={14}
                         fontFamily={fonts.semibold}
                         fill={colors.text}
                       >
-                        {fit(elementLabel(element))}
+                        {fit(live?.name ?? elementLabel(element))}
                       </SvgText>
                       {live?.progress !== undefined && !isEdit && screenWidth > 40 ? (
                         <>
-                          <Rect x={topLeft.x + 8} y={topLeft.y + 23} width={screenWidth - 16} height={3} rx={1.5} fill="rgba(255,255,255,0.3)" />
-                          <Rect x={topLeft.x + 8} y={topLeft.y + 23} width={(screenWidth - 16) * live.progress} height={3} rx={1.5} fill="#FFFFFF" />
+                          <Rect x={topLeft.x + 10} y={topLeft.y + 29} width={screenWidth - 20} height={4} rx={2} fill="rgba(255,255,255,0.3)" />
+                          <Rect x={topLeft.x + 10} y={topLeft.y + 29} width={(screenWidth - 20) * live.progress} height={4} rx={2} fill="#FFFFFF" />
                         </>
                       ) : null}
                       {screenHeight > 60
                         ? lines.filter(Boolean).map((line, index, all) => (
                             <SvgText
                               key={index}
-                              x={topLeft.x + 8}
-                              y={topLeft.y + screenHeight - 10 - (all.length - 1 - index) * 13}
-                              fontSize={index === 0 ? 10.5 : 10}
+                              x={topLeft.x + 10}
+                              y={topLeft.y + screenHeight - 12 - (all.length - 1 - index) * 16}
+                              fontSize={index === 0 ? 12.5 : 11.5}
                               fontFamily={index === 0 ? fonts.medium : fonts.regular}
                               fill={colors.text}
                               opacity={index === 0 ? 1 : 0.8}

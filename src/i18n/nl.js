@@ -253,6 +253,10 @@ export default {
       legendBusy: "Bezig",
       legendSoon: "Klaar binnen 10 min",
       legendCleaning: "Opruimen",
+      sideTitle: "Vandaag",
+      sideCount: "{count} afspraken",
+      upcoming: "Straks",
+      nowWith: "{name} · bij {therapist}",
       state: {
         free: "Vrij",
         busy: "Bezig",

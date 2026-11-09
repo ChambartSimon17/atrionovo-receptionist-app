@@ -253,6 +253,10 @@ export default {
       legendBusy: "In use",
       legendSoon: "Free within 10 min",
       legendCleaning: "Cleaning",
+      sideTitle: "Today",
+      sideCount: "{count} appointments",
+      upcoming: "Coming up",
+      nowWith: "{name} · with {therapist}",
       state: {
         free: "Free",
         busy: "In use",
