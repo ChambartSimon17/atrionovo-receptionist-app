@@ -27,6 +27,8 @@ import {
   StickyNote,
   X,
 } from "lucide-react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
@@ -102,6 +104,7 @@ export default function ReservationDetailsScreen() {
   const { business, accessToken } = useAuth();
 
   const [reservation, setReservation] = useState(null);
+  const wide = useWideLayout();
   const [tables, setTables] = useState([]);
   const [assigned, setAssigned] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -245,219 +248,230 @@ export default function ReservationDetailsScreen() {
     <SafeAreaView style={styles.screen}>
       <BackBar onBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Who and when */}
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
+        <Columns
+          gap={spacing.lg}
+          left={
+            <>
+              {/* Who and when */}
 
-        <View style={styles.hero}>
-          <Badge label={status.label} status={status.status} />
-          <Text style={styles.name}>
-            {reservation.firstName} {reservation.lastName}
-          </Text>
-          <Text style={styles.when}>
-            {capitalize(formatLongDate(reservation.startTime))}
-          </Text>
-        </View>
+              <View style={styles.hero}>
+                <Badge label={status.label} status={status.status} />
+                <Text style={styles.name}>
+                  {reservation.firstName} {reservation.lastName}
+                </Text>
+                <Text style={styles.when}>
+                  {capitalize(formatLongDate(reservation.startTime))}
+                </Text>
+              </View>
 
-        <Card style={styles.stats}>
-          <Stat
-            label="tijd"
-            value={formatTime(reservation.startTime)}
-            note={`tot ${formatTime(reservation.endTime)}`}
-          />
-          <Stat
-            label="personen"
-            value={String(reservation.guestCount)}
-            note={guestLabel(reservation.guestCount)}
-          />
-          <Stat
-            label="tafel"
-            value={tablesText || "–"}
-            note={tablesText ? "toegewezen" : "nog geen tafel"}
-            last
-          />
-        </Card>
-
-        {!!reservation.notes && (
-          <View style={styles.note}>
-            <StickyNote
-              size={16}
-              color={colors.warning}
-              strokeWidth={1.8}
-            />
-            <Text style={styles.noteText}>
-              {reservation.notes}
-            </Text>
-          </View>
-        )}
-
-        <Card style={styles.details}>
-          <DetailRow
-            label="Telefoon"
-            value={reservation.phoneNumber || "–"}
-          />
-          <DetailRow
-            label="E-mail"
-            value={reservation.email || "–"}
-            last
-          />
-        </Card>
-
-        {/* Next steps */}
-
-        <View style={styles.actions}>
-          {isOpen && (
-            <Button
-              label="Aan tafel"
-              variant="primary"
-              loading={busy === "seat"}
-              onPress={() =>
-                changeStatus(
-                  api.markReservationAsSeated,
-                  "SEATED",
-                  "seat"
-                )
-              }
-              icon={
-                <Armchair
-                  size={18}
-                  color={colors.onPrimary}
-                  strokeWidth={1.8}
+              <Card style={styles.stats}>
+                <Stat
+                  label="tijd"
+                  value={formatTime(reservation.startTime)}
+                  note={`tot ${formatTime(reservation.endTime)}`}
                 />
-              }
-            />
-          )}
-
-          {reservation.status === "SEATED" && (
-            <Button
-              label="Gasten vertrokken"
-              variant="primary"
-              loading={busy === "complete"}
-              onPress={() =>
-                changeStatus(
-                  api.markReservationAsCompleted,
-                  "COMPLETED",
-                  "complete"
-                )
-              }
-              icon={
-                <DoorOpen
-                  size={18}
-                  color={colors.onPrimary}
-                  strokeWidth={1.8}
+                <Stat
+                  label="personen"
+                  value={String(reservation.guestCount)}
+                  note={guestLabel(reservation.guestCount)}
                 />
-              }
-            />
-          )}
+                <Stat
+                  label="tafel"
+                  value={tablesText || "–"}
+                  note={tablesText ? "toegewezen" : "nog geen tafel"}
+                  last
+                />
+              </Card>
 
-          <View style={styles.actionRow}>
-            {!!reservation.phoneNumber && (
-              <Button
-                label="Bel"
-                style={styles.actionItem}
-                onPress={() =>
-                  Linking.openURL(`tel:${reservation.phoneNumber}`)
-                }
-                icon={
-                  <Phone
+              {!!reservation.notes && (
+                <View style={styles.note}>
+                  <StickyNote
                     size={16}
-                    color={colors.text}
+                    color={colors.warning}
                     strokeWidth={1.8}
                   />
-                }
-              />
-            )}
-            {isOpen && (
-              <Button
-                label="Bewerken"
-                style={styles.actionItem}
-                onPress={() =>
-                  router.push(
-                    `/reservation/edit?id=${reservation.id}`
-                  )
-                }
-                icon={
-                  <Pencil
-                    size={16}
-                    color={colors.text}
-                    strokeWidth={1.8}
+                  <Text style={styles.noteText}>
+                    {reservation.notes}
+                  </Text>
+                </View>
+              )}
+
+              <Card style={styles.details}>
+                <DetailRow
+                  label="Telefoon"
+                  value={reservation.phoneNumber || "–"}
+                />
+                <DetailRow
+                  label="E-mail"
+                  value={reservation.email || "–"}
+                  last
+                />
+              </Card>
+
+            </>
+          }
+          right={
+            <>
+              {/* Next steps */}
+
+              <View style={styles.actions}>
+                {isOpen && (
+                  <Button
+                    label="Aan tafel"
+                    variant="primary"
+                    loading={busy === "seat"}
+                    onPress={() =>
+                      changeStatus(
+                        api.markReservationAsSeated,
+                        "SEATED",
+                        "seat"
+                      )
+                    }
+                    icon={
+                      <Armchair
+                        size={18}
+                        color={colors.onPrimary}
+                        strokeWidth={1.8}
+                      />
+                    }
                   />
-                }
-              />
-            )}
-          </View>
+                )}
 
-          {isOpen && new Date(reservation.startTime) < new Date() && (
-            <Button
-              label={t("floor.noShow")}
-              loading={busy === "noShow"}
-              onPress={() =>
-                Alert.alert(
-                  t("floor.noShowTitle"),
-                  t("floor.noShowMessage", { name: reservation.firstName }),
-                  [
-                    { text: t("common.cancel"), style: "cancel" },
-                    {
-                      text: t("floor.noShowConfirm"),
-                      style: "destructive",
-                      onPress: () =>
-                        changeStatus(
-                          api.markReservationAsNoShow,
-                          "NO_SHOW",
-                          "noShow"
-                        ),
-                    },
-                  ]
-                )
-              }
-              icon={
-                <UserX
-                  size={16}
-                  color={colors.text}
-                  strokeWidth={1.8}
-                />
-              }
-            />
-          )}
+                {reservation.status === "SEATED" && (
+                  <Button
+                    label="Gasten vertrokken"
+                    variant="primary"
+                    loading={busy === "complete"}
+                    onPress={() =>
+                      changeStatus(
+                        api.markReservationAsCompleted,
+                        "COMPLETED",
+                        "complete"
+                      )
+                    }
+                    icon={
+                      <DoorOpen
+                        size={18}
+                        color={colors.onPrimary}
+                        strokeWidth={1.8}
+                      />
+                    }
+                  />
+                )}
 
-          {UNDO_TO[reservation.status] && (
-            <Button
-              label={t("reservation.undo", {
-                status: t(`reservation.undoTo.${reservation.status}`),
-              })}
-              loading={busy === "undo"}
-              onPress={() =>
-                changeStatus(
-                  api.undoReservationStatus,
-                  UNDO_TO[reservation.status],
-                  "undo"
-                )
-              }
-              icon={
-                <Undo2
-                  size={16}
-                  color={colors.text}
-                  strokeWidth={1.8}
-                />
-              }
-            />
-          )}
+                <View style={styles.actionRow}>
+                  {!!reservation.phoneNumber && (
+                    <Button
+                      label="Bel"
+                      style={styles.actionItem}
+                      onPress={() =>
+                        Linking.openURL(`tel:${reservation.phoneNumber}`)
+                      }
+                      icon={
+                        <Phone
+                          size={16}
+                          color={colors.text}
+                          strokeWidth={1.8}
+                        />
+                      }
+                    />
+                  )}
+                  {isOpen && (
+                    <Button
+                      label="Bewerken"
+                      style={styles.actionItem}
+                      onPress={() =>
+                        router.push(
+                          `/reservation/edit?id=${reservation.id}`
+                        )
+                      }
+                      icon={
+                        <Pencil
+                          size={16}
+                          color={colors.text}
+                          strokeWidth={1.8}
+                        />
+                      }
+                    />
+                  )}
+                </View>
 
-          {isOpen && (
-            <Button
-              label="Reservatie annuleren"
-              variant="danger"
-              loading={busy === "cancel"}
-              onPress={confirmCancel}
-              icon={
-                <X
-                  size={16}
-                  color={colors.danger}
-                  strokeWidth={1.8}
-                />
-              }
-            />
-          )}
-        </View>
+                {isOpen && new Date(reservation.startTime) < new Date() && (
+                  <Button
+                    label={t("floor.noShow")}
+                    loading={busy === "noShow"}
+                    onPress={() =>
+                      Alert.alert(
+                        t("floor.noShowTitle"),
+                        t("floor.noShowMessage", { name: reservation.firstName }),
+                        [
+                          { text: t("common.cancel"), style: "cancel" },
+                          {
+                            text: t("floor.noShowConfirm"),
+                            style: "destructive",
+                            onPress: () =>
+                              changeStatus(
+                                api.markReservationAsNoShow,
+                                "NO_SHOW",
+                                "noShow"
+                              ),
+                          },
+                        ]
+                      )
+                    }
+                    icon={
+                      <UserX
+                        size={16}
+                        color={colors.text}
+                        strokeWidth={1.8}
+                      />
+                    }
+                  />
+                )}
+
+                {UNDO_TO[reservation.status] && (
+                  <Button
+                    label={t("reservation.undo", {
+                      status: t(`reservation.undoTo.${reservation.status}`),
+                    })}
+                    loading={busy === "undo"}
+                    onPress={() =>
+                      changeStatus(
+                        api.undoReservationStatus,
+                        UNDO_TO[reservation.status],
+                        "undo"
+                      )
+                    }
+                    icon={
+                      <Undo2
+                        size={16}
+                        color={colors.text}
+                        strokeWidth={1.8}
+                      />
+                    }
+                  />
+                )}
+
+                {isOpen && (
+                  <Button
+                    label="Reservatie annuleren"
+                    variant="danger"
+                    loading={busy === "cancel"}
+                    onPress={confirmCancel}
+                    icon={
+                      <X
+                        size={16}
+                        color={colors.danger}
+                        strokeWidth={1.8}
+                      />
+                    }
+                  />
+                )}
+              </View>
+            </>
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -580,6 +594,12 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   // Hero

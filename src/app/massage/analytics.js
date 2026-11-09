@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import {
   Card,
@@ -159,6 +161,7 @@ export default function MassageAnalyticsScreen() {
   const router = useRouter();
 
   const [period, setPeriod] = useState("month");
+  const wide = useWideLayout();
   const [anchor, setAnchor] = useState(todayString);
 
   const days = periodDays(period, anchor);
@@ -226,7 +229,7 @@ export default function MassageAnalyticsScreen() {
         <View style={styles.iconSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <SegmentedControl
           options={PERIODS}
           value={period}
@@ -287,215 +290,226 @@ export default function MassageAnalyticsScreen() {
           <Text style={styles.error}>{error}</Text>
         ) : (
           <>
-            {/* Revenue */}
+            <Columns
+              gap={spacing.md}
+              left={
+                <>
+                  {/* Revenue */}
 
-            <Card tone="primary" style={styles.revenueCard}>
-              <View style={styles.revenueTop}>
-                <View style={styles.revenueText}>
-                  <Text style={styles.revenueLabel}>
-                    Omzet (afgerond)
-                  </Text>
-                  <Text style={styles.revenueValue}>
-                    {formatEuro(
-                      analytics.completedRevenueCents
-                    )}
-                  </Text>
-                </View>
-                {analytics.plannedRevenueCents > 0 && (
-                  <View style={styles.plannedPill}>
-                    <Text style={styles.plannedText}>
-                      + {formatEuro(
-                        analytics.plannedRevenueCents
-                      )}{" "}
-                      gepland
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.bars}>
-                {analytics.days.map((day) => (
-                  <View key={day.day} style={styles.barSlot}>
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: `${Math.max(
-                            4,
-                            (day.revenueCents / maxDayRevenue) *
-                              100
-                          )}%`,
-                          backgroundColor:
-                            bestDay?.day === day.day
-                              ? colors.sand
-                              : "#4E8A7E",
-                        },
-                      ]}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.barLegend}>
-                <Text style={styles.barLegendText}>
-                  {parseDay(days[0]).getDate()}{" "}
-                  {MONTHS[parseDay(days[0]).getMonth()].slice(
-                    0,
-                    3
-                  )}
-                </Text>
-                <Text style={styles.barLegendText}>
-                  {bestDay
-                    ? `Beste dag: ${parseDay(
-                        bestDay.day
-                      ).getDate()} ${MONTHS[
-                        parseDay(bestDay.day).getMonth()
-                      ].slice(0, 3)} · ${formatEuro(
-                        bestDay.revenueCents
-                      )}`
-                    : "Nog geen omzet"}
-                </Text>
-                <Text style={styles.barLegendText}>
-                  {parseDay(days[days.length - 1]).getDate()}{" "}
-                  {MONTHS[
-                    parseDay(days[days.length - 1]).getMonth()
-                  ].slice(0, 3)}
-                </Text>
-              </View>
-            </Card>
-
-            {/* Key numbers */}
-
-            <View style={styles.tiles}>
-              <StatTile
-                style={styles.tile}
-                label="Afspraken"
-                value={String(analytics.appointmentCount)}
-                note={`${analytics.completedCount} afgerond`}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Gem. besteding"
-                value={formatEuro(analytics.averageSpendCents)}
-                note="per afgeronde massage"
-              />
-              <StatTile
-                style={styles.tile}
-                label="Klanten"
-                value={String(analytics.clientCount)}
-                note={`${analytics.newClientCount} nieuw`}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Terugkerend"
-                value={formatPercent(analytics.returningRate)}
-                note="van de klanten"
-              />
-              <StatTile
-                style={[styles.tile, styles.warningTile]}
-                label="No-shows"
-                value={formatPercent(analytics.noShowRate)}
-                note={`${analytics.noShowCount} · ${formatEuro(
-                  analytics.missedRevenueCents
-                )} gemist`}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Geannuleerd"
-                value={String(analytics.cancelledCount)}
-                note="afspraken"
-              />
-            </View>
-
-            <AiInsightsCard {...periodRange(days)} />
-
-            {/* Massages */}
-
-            <BarList
-              title="Populairste massages"
-              caption="omzet"
-              empty="Nog geen afspraken in deze periode."
-              items={analytics.topServices.map((service) => ({
-                key: service.name,
-                label: service.name,
-                value: formatEuro(service.revenueCents),
-                ratio: service.revenueCents / maxService,
-              }))}
-            />
-
-            {/* Therapists */}
-
-            <BarList
-              title="Therapeuten"
-              caption="afspraken"
-              empty="Nog geen afspraken in deze periode."
-              items={analytics.topTherapists.map(
-                (therapist) => ({
-                  key: therapist.name,
-                  label: therapist.name,
-                  value: String(therapist.count),
-                  ratio: therapist.count / maxTherapist,
-                })
-              )}
-            />
-
-            {/* Busiest hours */}
-
-            {analytics.hours.length > 0 && (
-              <Card style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={type.heading}>Drukste uren</Text>
-                  <Text style={type.caption}>
-                    starttijd
-                  </Text>
-                </View>
-                <View style={styles.hourBars}>
-                  {analytics.hours.map((hour) => (
-                    <View
-                      key={hour.hour}
-                      style={styles.hourSlot}
-                    >
-                      <View style={styles.hourTrack}>
-                        <View
-                          style={[
-                            styles.hourBar,
-                            {
-                              height: `${
-                                (hour.count / maxHour) * 100
-                              }%`,
-                            },
-                          ]}
-                        />
+                  <Card tone="primary" style={styles.revenueCard}>
+                    <View style={styles.revenueTop}>
+                      <View style={styles.revenueText}>
+                        <Text style={styles.revenueLabel}>
+                          Omzet (afgerond)
+                        </Text>
+                        <Text style={styles.revenueValue}>
+                          {formatEuro(
+                            analytics.completedRevenueCents
+                          )}
+                        </Text>
                       </View>
-                      <Text style={styles.hourLabel}>
-                        {hour.hour}u
+                      {analytics.plannedRevenueCents > 0 && (
+                        <View style={styles.plannedPill}>
+                          <Text style={styles.plannedText}>
+                            + {formatEuro(
+                              analytics.plannedRevenueCents
+                            )}{" "}
+                            gepland
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.bars}>
+                      {analytics.days.map((day) => (
+                        <View key={day.day} style={styles.barSlot}>
+                          <View
+                            style={[
+                              styles.bar,
+                              {
+                                height: `${Math.max(
+                                  4,
+                                  (day.revenueCents / maxDayRevenue) *
+                                    100
+                                )}%`,
+                                backgroundColor:
+                                  bestDay?.day === day.day
+                                    ? colors.sand
+                                    : "#4E8A7E",
+                              },
+                            ]}
+                          />
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.barLegend}>
+                      <Text style={styles.barLegendText}>
+                        {parseDay(days[0]).getDate()}{" "}
+                        {MONTHS[parseDay(days[0]).getMonth()].slice(
+                          0,
+                          3
+                        )}
+                      </Text>
+                      <Text style={styles.barLegendText}>
+                        {bestDay
+                          ? `Beste dag: ${parseDay(
+                              bestDay.day
+                            ).getDate()} ${MONTHS[
+                              parseDay(bestDay.day).getMonth()
+                            ].slice(0, 3)} · ${formatEuro(
+                              bestDay.revenueCents
+                            )}`
+                          : "Nog geen omzet"}
+                      </Text>
+                      <Text style={styles.barLegendText}>
+                        {parseDay(days[days.length - 1]).getDate()}{" "}
+                        {MONTHS[
+                          parseDay(days[days.length - 1]).getMonth()
+                        ].slice(0, 3)}
                       </Text>
                     </View>
-                  ))}
-                </View>
-              </Card>
-            )}
+                  </Card>
 
-            {/* No-show clients */}
+                  {/* Key numbers */}
 
-            {analytics.noShowClients.length > 0 && (
-              <Card style={styles.section}>
-                <Text style={type.heading}>
-                  Meeste no-shows
-                </Text>
-                {analytics.noShowClients.map((client) => (
-                  <View
-                    key={client.name}
-                    style={styles.noShowRow}
-                  >
-                    <Text style={type.body}>{client.name}</Text>
-                    <Text style={styles.noShowCount}>
-                      {client.count}×
-                    </Text>
+                  <View style={styles.tiles}>
+                    <StatTile
+                      style={styles.tile}
+                      label="Afspraken"
+                      value={String(analytics.appointmentCount)}
+                      note={`${analytics.completedCount} afgerond`}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Gem. besteding"
+                      value={formatEuro(analytics.averageSpendCents)}
+                      note="per afgeronde massage"
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Klanten"
+                      value={String(analytics.clientCount)}
+                      note={`${analytics.newClientCount} nieuw`}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Terugkerend"
+                      value={formatPercent(analytics.returningRate)}
+                      note="van de klanten"
+                    />
+                    <StatTile
+                      style={[styles.tile, styles.warningTile]}
+                      label="No-shows"
+                      value={formatPercent(analytics.noShowRate)}
+                      note={`${analytics.noShowCount} · ${formatEuro(
+                        analytics.missedRevenueCents
+                      )} gemist`}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Geannuleerd"
+                      value={String(analytics.cancelledCount)}
+                      note="afspraken"
+                    />
                   </View>
-                ))}
-              </Card>
-            )}
+
+                  <AiInsightsCard {...periodRange(days)} />
+
+                </>
+              }
+              right={
+                <>
+                  {/* Massages */}
+
+                  <BarList
+                    title="Populairste massages"
+                    caption="omzet"
+                    empty="Nog geen afspraken in deze periode."
+                    items={analytics.topServices.map((service) => ({
+                      key: service.name,
+                      label: service.name,
+                      value: formatEuro(service.revenueCents),
+                      ratio: service.revenueCents / maxService,
+                    }))}
+                  />
+
+                  {/* Therapists */}
+
+                  <BarList
+                    title="Therapeuten"
+                    caption="afspraken"
+                    empty="Nog geen afspraken in deze periode."
+                    items={analytics.topTherapists.map(
+                      (therapist) => ({
+                        key: therapist.name,
+                        label: therapist.name,
+                        value: String(therapist.count),
+                        ratio: therapist.count / maxTherapist,
+                      })
+                    )}
+                  />
+
+                  {/* Busiest hours */}
+
+                  {analytics.hours.length > 0 && (
+                    <Card style={styles.section}>
+                      <View style={styles.sectionHeader}>
+                        <Text style={type.heading}>Drukste uren</Text>
+                        <Text style={type.caption}>
+                          starttijd
+                        </Text>
+                      </View>
+                      <View style={styles.hourBars}>
+                        {analytics.hours.map((hour) => (
+                          <View
+                            key={hour.hour}
+                            style={styles.hourSlot}
+                          >
+                            <View style={styles.hourTrack}>
+                              <View
+                                style={[
+                                  styles.hourBar,
+                                  {
+                                    height: `${
+                                      (hour.count / maxHour) * 100
+                                    }%`,
+                                  },
+                                ]}
+                              />
+                            </View>
+                            <Text style={styles.hourLabel}>
+                              {hour.hour}u
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </Card>
+                  )}
+
+                  {/* No-show clients */}
+
+                  {analytics.noShowClients.length > 0 && (
+                    <Card style={styles.section}>
+                      <Text style={type.heading}>
+                        Meeste no-shows
+                      </Text>
+                      {analytics.noShowClients.map((client) => (
+                        <View
+                          key={client.name}
+                          style={styles.noShowRow}
+                        >
+                          <Text style={type.body}>{client.name}</Text>
+                          <Text style={styles.noShowCount}>
+                            {client.count}×
+                          </Text>
+                        </View>
+                      ))}
+                    </Card>
+                  )}
+                </>
+              }
+            />
           </>
         )}
       </ScrollView>
@@ -588,6 +602,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     gap: spacing.md,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   periodRow: {

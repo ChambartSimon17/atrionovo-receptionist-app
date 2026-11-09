@@ -17,6 +17,8 @@ import {
 } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Check, X } from "lucide-react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
@@ -56,6 +58,7 @@ export default function NewAppointmentScreen() {
   const businessId = business?.id;
 
   const [services, setServices] = useState([]);
+  const wide = useWideLayout();
   const [isLoadingServices, setIsLoadingServices] =
     useState(true);
 
@@ -269,204 +272,215 @@ export default function NewAppointmentScreen() {
         }
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, wide && styles.contentWide]}
           keyboardShouldPersistTaps="handled"
         >
-          <SectionLabel number={1} title="Massage" />
+          <Columns
+            gap={spacing.md}
+            left={
+              <>
+                <SectionLabel number={1} title="Massage" />
 
-          {services.length === 0 && (
-            <Text style={styles.empty}>
-              Je hebt nog geen massages. Voeg ze eerst toe
-              bij "Massages en prijzen".
-            </Text>
-          )}
+                {services.length === 0 && (
+                  <Text style={styles.empty}>
+                    Je hebt nog geen massages. Voeg ze eerst toe
+                    bij "Massages en prijzen".
+                  </Text>
+                )}
 
-          <View style={styles.services}>
-            {services.map((candidate) => {
-              const selected = candidate.id === serviceId;
+                <View style={styles.services}>
+                  {services.map((candidate) => {
+                    const selected = candidate.id === serviceId;
 
-              return (
-                <Pressable
-                  key={candidate.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  style={[
-                    styles.serviceCard,
-                    selected && styles.serviceCardSelected,
-                  ]}
-                  onPress={() => setServiceId(candidate.id)}
+                    return (
+                      <Pressable
+                        key={candidate.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        style={[
+                          styles.serviceCard,
+                          selected && styles.serviceCardSelected,
+                        ]}
+                        onPress={() => setServiceId(candidate.id)}
+                      >
+                        <View style={styles.serviceText}>
+                          <Text style={styles.serviceName}>
+                            {candidate.name}
+                          </Text>
+                          <Text style={styles.serviceMeta}>
+                            {formatDuration(
+                              candidate.durationMinutes
+                            )}
+                          </Text>
+                        </View>
+                        <Text style={styles.servicePrice}>
+                          {formatPrice(candidate.priceCents)}
+                        </Text>
+                        <View
+                          style={[
+                            styles.radio,
+                            selected && styles.radioSelected,
+                          ]}
+                        >
+                          {selected && (
+                            <Check
+                              size={14}
+                              color={colors.onPrimary}
+                              strokeWidth={2.5}
+                            />
+                          )}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+              </>
+            }
+            right={
+              <>
+                <SectionLabel number={2} title="Dag en tijd" />
+
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.dayStrip}
                 >
-                  <View style={styles.serviceText}>
-                    <Text style={styles.serviceName}>
-                      {candidate.name}
-                    </Text>
-                    <Text style={styles.serviceMeta}>
-                      {formatDuration(
-                        candidate.durationMinutes
-                      )}
-                    </Text>
+                  {days.map((day) => {
+                    const selected = day === date;
+                    const [weekday, number] = formatLongDate(day)
+                      .split(" ");
+
+                    return (
+                      <Pressable
+                        key={day}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setDate(day)}
+                        style={[
+                          styles.day,
+                          selected && styles.daySelected,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.dayName,
+                            selected && styles.onPrimary,
+                          ]}
+                        >
+                          {day === today
+                            ? "Vandaag"
+                            : weekday.slice(0, 2)}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.dayNumber,
+                            selected && styles.onPrimary,
+                          ]}
+                        >
+                          {number}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+
+                {!serviceId ? (
+                  <Text style={styles.empty}>
+                    Kies eerst een massage.
+                  </Text>
+                ) : isLoadingSlots ? (
+                  <ActivityIndicator style={styles.slotLoading} />
+                ) : slots.length === 0 ? (
+                  <Text style={styles.empty}>
+                    Geen vrije momenten op{" "}
+                    {formatLongDate(date)}.
+                  </Text>
+                ) : (
+                  <View style={styles.slotGrid}>
+                    {slots.map((candidate) => {
+                      const selected =
+                        slot?.startTime === candidate.startTime;
+
+                      return (
+                        <Pressable
+                          key={candidate.startTime}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          style={[
+                            styles.slot,
+                            selected && styles.slotSelected,
+                          ]}
+                          onPress={() => setSlot(candidate)}
+                        >
+                          <Text
+                            style={[
+                              styles.slotText,
+                              selected && styles.slotTextSelected,
+                            ]}
+                          >
+                            {candidate.time}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
-                  <Text style={styles.servicePrice}>
-                    {formatPrice(candidate.priceCents)}
-                  </Text>
-                  <View
-                    style={[
-                      styles.radio,
-                      selected && styles.radioSelected,
-                    ]}
-                  >
-                    {selected && (
-                      <Check
-                        size={14}
-                        color={colors.onPrimary}
-                        strokeWidth={2.5}
-                      />
-                    )}
+                )}
+
+                <Text style={styles.hint}>
+                  De therapeut en de kamer worden automatisch
+                  gekozen. Een voorkeur kun je in de notitie
+                  zetten.
+                </Text>
+
+                <SectionLabel number={3} title="Klant" />
+
+                <View style={styles.card}>
+                  <View style={styles.nameRow}>
+                    <Field
+                      label="Voornaam"
+                      value={firstName}
+                      onChangeText={setFirstName}
+                      autoCapitalize="words"
+                      style={styles.flex}
+                    />
+                    <Field
+                      label="Achternaam"
+                      value={lastName}
+                      onChangeText={setLastName}
+                      autoCapitalize="words"
+                      style={styles.flex}
+                    />
                   </View>
-                </Pressable>
-              );
-            })}
-          </View>
 
-          <SectionLabel number={2} title="Dag en tijd" />
+                  <Field
+                    label="Telefoonnummer"
+                    value={phoneNumber}
+                    onChangeText={setPhoneNumber}
+                    keyboardType="phone-pad"
+                    placeholder="+32 470 12 34 56"
+                  />
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dayStrip}
-          >
-            {days.map((day) => {
-              const selected = day === date;
-              const [weekday, number] = formatLongDate(day)
-                .split(" ");
+                  <Field
+                    label="E-mailadres (optioneel)"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="naam@voorbeeld.be"
+                  />
 
-              return (
-                <Pressable
-                  key={day}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => setDate(day)}
-                  style={[
-                    styles.day,
-                    selected && styles.daySelected,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.dayName,
-                      selected && styles.onPrimary,
-                    ]}
-                  >
-                    {day === today
-                      ? "Vandaag"
-                      : weekday.slice(0, 2)}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      selected && styles.onPrimary,
-                    ]}
-                  >
-                    {number}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {!serviceId ? (
-            <Text style={styles.empty}>
-              Kies eerst een massage.
-            </Text>
-          ) : isLoadingSlots ? (
-            <ActivityIndicator style={styles.slotLoading} />
-          ) : slots.length === 0 ? (
-            <Text style={styles.empty}>
-              Geen vrije momenten op{" "}
-              {formatLongDate(date)}.
-            </Text>
-          ) : (
-            <View style={styles.slotGrid}>
-              {slots.map((candidate) => {
-                const selected =
-                  slot?.startTime === candidate.startTime;
-
-                return (
-                  <Pressable
-                    key={candidate.startTime}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    style={[
-                      styles.slot,
-                      selected && styles.slotSelected,
-                    ]}
-                    onPress={() => setSlot(candidate)}
-                  >
-                    <Text
-                      style={[
-                        styles.slotText,
-                        selected && styles.slotTextSelected,
-                      ]}
-                    >
-                      {candidate.time}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          )}
-
-          <Text style={styles.hint}>
-            De therapeut en de kamer worden automatisch
-            gekozen. Een voorkeur kun je in de notitie
-            zetten.
-          </Text>
-
-          <SectionLabel number={3} title="Klant" />
-
-          <View style={styles.card}>
-            <View style={styles.nameRow}>
-              <Field
-                label="Voornaam"
-                value={firstName}
-                onChangeText={setFirstName}
-                autoCapitalize="words"
-                style={styles.flex}
-              />
-              <Field
-                label="Achternaam"
-                value={lastName}
-                onChangeText={setLastName}
-                autoCapitalize="words"
-                style={styles.flex}
-              />
-            </View>
-
-            <Field
-              label="Telefoonnummer"
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              keyboardType="phone-pad"
-              placeholder="+32 470 12 34 56"
-            />
-
-            <Field
-              label="E-mailadres (optioneel)"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholder="naam@voorbeeld.be"
-            />
-
-            <Field
-              label="Notitie (optioneel)"
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Bijvoorbeeld: liefst bij Anna"
-              multiline
-            />
-          </View>
+                  <Field
+                    label="Notitie (optioneel)"
+                    value={notes}
+                    onChangeText={setNotes}
+                    placeholder="Bijvoorbeeld: liefst bij Anna"
+                    multiline
+                  />
+                </View>
+              </>
+            }
+          />
         </ScrollView>
 
         <View
@@ -601,6 +615,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     gap: spacing.md,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   sectionLabel: {

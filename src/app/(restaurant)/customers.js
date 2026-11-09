@@ -29,6 +29,9 @@ import {
 } from "../../theme";
 import { RefreshControl } from "react-native";
 import { SkeletonList } from "../../components/ui";
+import { EmbeddedContext } from "../../components/embedded";
+import useWideLayout from "../../hooks/useWideLayout";
+import GuestProfileScreen from "../customers/[id]";
 
 // ======================================================
 // Gasten
@@ -86,6 +89,8 @@ function initials(customer) {
 
 export default function RestaurantGuestsScreen() {
   const router = useRouter();
+  const wide = useWideLayout();
+  const [selectedId, setSelectedId] = useState(null);
 
   const { guests, list, error, reload } = useGuestHistory();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -155,167 +160,194 @@ export default function RestaurantGuestsScreen() {
     { key: "vip", label: `VIP (${count("vip")})` },
   ];
 
-  return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.top}>
-        <View style={styles.titleText}>
-          <Text style={type.title}>Gasten</Text>
-          <Text style={type.caption}>
-            {customers.length === 1
-              ? "1 gast"
-              : `${customers.length} gasten`}
-            {list && !guests ? " · bezoeken laden…" : ""}
-          </Text>
-        </View>
+  // On a tablet the chosen guest opens next to the list.
+  const openId = wide
+    ? visible.some((customer) => customer.id === selectedId)
+      ? selectedId
+      : visible[0]?.id ?? null
+    : null;
 
-        <View style={styles.searchBox}>
-          <Search
-            size={18}
-            color={colors.textMuted}
-            strokeWidth={1.8}
-          />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Zoek op naam, telefoon of e-mail"
-            placeholderTextColor={colors.textDisabled}
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            style={styles.searchInput}
-          />
-        </View>
-
-        <ScrollView
-          horizontal
-          style={styles.filterScroll}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {filters.map((item) => (
-            <Chip
-              key={item.key}
-              label={item.label}
-              selected={filter === item.key}
-              onPress={() => setFilter(item.key)}
-            />
-          ))}
-        </ScrollView>
-      </View>
-
-      {isLoading ? (
-        <View style={styles.list}>
-          <SkeletonList rows={7} />
-        </View>
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
-        <FlatList
-          data={visible}
-          keyExtractor={(customer) => customer.id}
-          contentContainerStyle={styles.list}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={async () => {
-                setIsRefreshing(true);
-                await reload();
-                setIsRefreshing(false);
-              }}
-              tintColor={colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <Text style={styles.empty}>
-              {query || filter !== "all"
-                ? "Geen gasten gevonden."
-                : "Nog geen gasten. Ze verschijnen hier na hun eerste reservatie."}
+  const guestList = (
+    <>
+        <View style={styles.top}>
+          <View style={styles.titleText}>
+            <Text style={type.title}>Gasten</Text>
+            <Text style={type.caption}>
+              {customers.length === 1
+                ? "1 gast"
+                : `${customers.length} gasten`}
+              {list && !guests ? " · bezoeken laden…" : ""}
             </Text>
-          }
-          renderItem={({ item, index }) => {
-            const summary = summaryOf(item);
+          </View>
 
-            return (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() =>
-                  router.push(`/customers/${item.id}`)
-                }
-                style={({ pressed }) => [
-                  styles.row,
-                  index === 0 && styles.firstRow,
-                  index === visible.length - 1 &&
-                    styles.lastRow,
-                  pressed && styles.rowPressed,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.avatar,
-                    item.isVip && styles.vipAvatar,
+          <View style={styles.searchBox}>
+            <Search
+              size={18}
+              color={colors.textMuted}
+              strokeWidth={1.8}
+            />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Zoek op naam, telefoon of e-mail"
+              placeholderTextColor={colors.textDisabled}
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+              style={styles.searchInput}
+            />
+          </View>
+
+          <ScrollView
+            horizontal
+            style={styles.filterScroll}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filters}
+          >
+            {filters.map((item) => (
+              <Chip
+                key={item.key}
+                label={item.label}
+                selected={filter === item.key}
+                onPress={() => setFilter(item.key)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
+        {isLoading ? (
+          <View style={styles.list}>
+            <SkeletonList rows={7} />
+          </View>
+        ) : error ? (
+          <Text style={styles.error}>{error}</Text>
+        ) : (
+          <FlatList
+            data={visible}
+            keyExtractor={(customer) => customer.id}
+            contentContainerStyle={styles.list}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={async () => {
+                  setIsRefreshing(true);
+                  await reload();
+                  setIsRefreshing(false);
+                }}
+                tintColor={colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                {query || filter !== "all"
+                  ? "Geen gasten gevonden."
+                  : "Nog geen gasten. Ze verschijnen hier na hun eerste reservatie."}
+              </Text>
+            }
+            renderItem={({ item, index }) => {
+              const summary = summaryOf(item);
+
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    wide
+                      ? setSelectedId(item.id)
+                      : router.push(`/customers/${item.id}`)
+                  }
+                  style={({ pressed }) => [
+                    styles.row,
+                    index === 0 && styles.firstRow,
+                    index === visible.length - 1 &&
+                      styles.lastRow,
+                    item.id === openId && styles.rowSelected,
+                    pressed && styles.rowPressed,
                   ]}
                 >
-                  <Text
+                  <View
                     style={[
-                      styles.avatarText,
-                      item.isVip && styles.vipAvatarText,
+                      styles.avatar,
+                      item.isVip && styles.vipAvatar,
                     ]}
                   >
-                    {initials(item)}
-                  </Text>
-                </View>
-                <View style={styles.rowText}>
-                  <View style={styles.nameRow}>
                     <Text
-                      style={[type.bodyMedium, styles.name]}
-                      numberOfLines={1}
+                      style={[
+                        styles.avatarText,
+                        item.isVip && styles.vipAvatarText,
+                      ]}
                     >
-                      {item.firstName} {item.lastName}
+                      {initials(item)}
                     </Text>
-                    {item.isVip && (
-                      <Badge
-                        label="VIP"
-                        background={colors.sandSoft}
-                        color={colors.noteText}
-                      />
-                    )}
-                    {summary?.missed > 0 && (
-                      <Badge
-                        label={`${summary.missed}× niet gekomen`}
-                        status="NO_SHOW"
-                      />
-                    )}
                   </View>
-                  <Text style={type.caption} numberOfLines={1}>
-                    {summary
-                      ? [
-                          summary.visits === 1
-                            ? "1 bezoek"
-                            : `${summary.visits} bezoeken`,
-                          summary.lastVisit
-                            ? `laatst ${shortDate(
-                                summary.lastVisit.startTime
-                              )}`
-                            : null,
-                          summary.upcoming > 0
-                            ? `${summary.upcoming} gepland`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")
-                      : item.phoneNumber}
-                  </Text>
-                </View>
-                <ChevronRight
-                  size={18}
-                  color={colors.textMuted}
-                  strokeWidth={1.8}
-                />
-              </Pressable>
-            );
-          }}
-        />
+                  <View style={styles.rowText}>
+                    <View style={styles.nameRow}>
+                      <Text
+                        style={[type.bodyMedium, styles.name]}
+                        numberOfLines={1}
+                      >
+                        {item.firstName} {item.lastName}
+                      </Text>
+                      {item.isVip && (
+                        <Badge
+                          label="VIP"
+                          background={colors.sandSoft}
+                          color={colors.noteText}
+                        />
+                      )}
+                      {summary?.missed > 0 && (
+                        <Badge
+                          label={`${summary.missed}× niet gekomen`}
+                          status="NO_SHOW"
+                        />
+                      )}
+                    </View>
+                    <Text style={type.caption} numberOfLines={1}>
+                      {summary
+                        ? [
+                            summary.visits === 1
+                              ? "1 bezoek"
+                              : `${summary.visits} bezoeken`,
+                            summary.lastVisit
+                              ? `laatst ${shortDate(
+                                  summary.lastVisit.startTime
+                                )}`
+                              : null,
+                            summary.upcoming > 0
+                              ? `${summary.upcoming} gepland`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : item.phoneNumber}
+                    </Text>
+                  </View>
+                  <ChevronRight
+                    size={18}
+                    color={colors.textMuted}
+                    strokeWidth={1.8}
+                  />
+                </Pressable>
+              );
+            }}
+          />
+        )}
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      {wide ? (
+        <View style={styles.split}>
+          <View style={styles.listPane}>{guestList}</View>
+          <View style={styles.detailPane}>
+            <EmbeddedContext.Provider value={true}>
+              {openId ? <GuestProfileScreen key={openId} customerId={openId} /> : null}
+            </EmbeddedContext.Provider>
+          </View>
+        </View>
+      ) : (
+        guestList
       )}
     </SafeAreaView>
   );
@@ -415,6 +447,27 @@ const styles = StyleSheet.create({
   lastRow: {
     borderBottomLeftRadius: radius.xl,
     borderBottomRightRadius: radius.xl,
+  },
+
+  rowSelected: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  // Tablet in landscape: list left, guest right
+
+  split: {
+    flex: 1,
+    flexDirection: "row",
+  },
+
+  listPane: {
+    width: 440,
+  },
+
+  detailPane: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
   },
 
   rowPressed: {

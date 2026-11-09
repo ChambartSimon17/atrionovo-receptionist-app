@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useEffect, useState } from "react";
 import {
@@ -20,6 +22,7 @@ import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
 
 export default function ReservationConfirm() {
+  const wide = useWideLayout();
   const {
     date,
     startTime,
@@ -198,9 +201,10 @@ export default function ReservationConfirm() {
       style={styles.container}
     >
       <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={[
+          styles.content,
+          wide && styles.contentWide,
+        ]}
         showsVerticalScrollIndicator={
           false
         }
@@ -231,168 +235,179 @@ export default function ReservationConfirm() {
           je de reservatie aanmaakt.
         </Text>
 
-        {/* Customer */}
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Klant
-          </Text>
-
-          {customer ? (
+        <Columns
+          gap={0}
+          left={
             <>
-              <Text
-                style={styles.customerName}
-              >
-                {customer.firstName}{" "}
-                {customer.lastName}
-              </Text>
+              {/* Customer */}
 
-              {customer.phoneNumber && (
-                <Text
-                  style={
-                    styles.detailText
-                  }
-                >
-                  {customer.phoneNumber}
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  Klant
                 </Text>
-              )}
 
-              {customer.email && (
-                <Text
-                  style={
-                    styles.detailText
-                  }
-                >
-                  {customer.email}
-                </Text>
-              )}
+                {customer ? (
+                  <>
+                    <Text
+                      style={styles.customerName}
+                    >
+                      {customer.firstName}{" "}
+                      {customer.lastName}
+                    </Text>
+
+                    {customer.phoneNumber && (
+                      <Text
+                        style={
+                          styles.detailText
+                        }
+                      >
+                        {customer.phoneNumber}
+                      </Text>
+                    )}
+
+                    {customer.email && (
+                      <Text
+                        style={
+                          styles.detailText
+                        }
+                      >
+                        {customer.email}
+                      </Text>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.errorText}>
+                    Klantgegevens konden niet
+                    worden geladen.
+                  </Text>
+                )}
+              </View>
+
             </>
-          ) : (
-            <Text style={styles.errorText}>
-              Klantgegevens konden niet
-              worden geladen.
-            </Text>
-          )}
-        </View>
+          }
+          right={
+            <>
+              {/* Reservation */}
 
-        {/* Reservation */}
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>
+                  Reservatie
+                </Text>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>
-            Reservatie
-          </Text>
+                <View style={styles.row}>
+                  <Text style={styles.label}>
+                    Datum
+                  </Text>
 
-          <View style={styles.row}>
-            <Text style={styles.label}>
-              Datum
-            </Text>
+                  <Text style={styles.value}>
+                    {date
+                      ? new Date(
+                          date
+                        ).toLocaleDateString(
+                          "nl-BE",
+                          {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )
+                      : "-"}
+                  </Text>
+                </View>
 
-            <Text style={styles.value}>
-              {date
-                ? new Date(
-                    date
-                  ).toLocaleDateString(
-                    "nl-BE",
-                    {
-                      weekday: "long",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
+                <View style={styles.row}>
+                  <Text style={styles.label}>
+                    Tijd
+                  </Text>
+
+                  <Text style={styles.value}>
+                    {startTime || "-"}
+                  </Text>
+                </View>
+
+                <View style={styles.row}>
+                  <Text style={styles.label}>
+                    Personen
+                  </Text>
+
+                  <Text style={styles.value}>
+                    {guestCount}{" "}
+                    {Number(guestCount) === 1
+                      ? "persoon"
+                      : "personen"}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Error */}
+
+              {error && (
+                <View
+                  style={styles.errorCard}
+                >
+                  <Text
+                    style={styles.errorTitle}
+                  >
+                    Reservatie mislukt
+                  </Text>
+
+                  <Text
+                    style={styles.errorText}
+                  >
+                    {error}
+                  </Text>
+                </View>
+              )}
+
+              {/* Confirm */}
+
+              <TouchableOpacity
+                style={[
+                  styles.confirmButton,
+                  creating &&
+                    styles.disabledButton,
+                ]}
+                activeOpacity={0.8}
+                onPress={
+                  handleCreateReservation
+                }
+                disabled={
+                  creating || !customer
+                }
+              >
+                {creating ? (
+                  <ActivityIndicator
+                    color="#fff"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.confirmButtonText
                     }
-                  )
-                : "-"}
-            </Text>
-          </View>
+                  >
+                    Reservatie bevestigen
+                  </Text>
+                )}
+              </TouchableOpacity>
 
-          <View style={styles.row}>
-            <Text style={styles.label}>
-              Tijd
-            </Text>
-
-            <Text style={styles.value}>
-              {startTime || "-"}
-            </Text>
-          </View>
-
-          <View style={styles.row}>
-            <Text style={styles.label}>
-              Personen
-            </Text>
-
-            <Text style={styles.value}>
-              {guestCount}{" "}
-              {Number(guestCount) === 1
-                ? "persoon"
-                : "personen"}
-            </Text>
-          </View>
-        </View>
-
-        {/* Error */}
-
-        {error && (
-          <View
-            style={styles.errorCard}
-          >
-            <Text
-              style={styles.errorTitle}
-            >
-              Reservatie mislukt
-            </Text>
-
-            <Text
-              style={styles.errorText}
-            >
-              {error}
-            </Text>
-          </View>
-        )}
-
-        {/* Confirm */}
-
-        <TouchableOpacity
-          style={[
-            styles.confirmButton,
-            creating &&
-              styles.disabledButton,
-          ]}
-          activeOpacity={0.8}
-          onPress={
-            handleCreateReservation
+              <TouchableOpacity
+                style={styles.cancelButton}
+                activeOpacity={0.8}
+                onPress={() => router.back()}
+                disabled={creating}
+              >
+                <Text
+                  style={
+                    styles.cancelButtonText
+                  }
+                >
+                  Terug
+                </Text>
+              </TouchableOpacity>
+            </>
           }
-          disabled={
-            creating || !customer
-          }
-        >
-          {creating ? (
-            <ActivityIndicator
-              color="#fff"
-            />
-          ) : (
-            <Text
-              style={
-                styles.confirmButtonText
-              }
-            >
-              Reservatie bevestigen
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.cancelButton}
-          activeOpacity={0.8}
-          onPress={() => router.back()}
-          disabled={creating}
-        >
-          <Text
-            style={
-              styles.cancelButtonText
-            }
-          >
-            Terug
-          </Text>
-        </TouchableOpacity>
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -408,6 +423,14 @@ const styles = StyleSheet.create(
   content: {
     padding: 24,
     paddingBottom: 50,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
 
   center: {

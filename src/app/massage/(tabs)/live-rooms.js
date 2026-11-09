@@ -28,6 +28,7 @@ import {
 import MassageFloorView from "../../../components/floor/MassageFloorView";
 import { SegmentedControl, SkeletonList } from "../../../components/ui";
 import useFloorPlan from "../../../hooks/useFloorPlan";
+import useWideLayout from "../../../hooks/useWideLayout";
 import { t } from "../../../i18n";
 import useDayAppointments, {
   isActiveAppointment,
@@ -131,6 +132,7 @@ function roomState(room, appointments, now, bufferMinutes) {
 
 export default function LiveRoomsScreen() {
   const router = useRouter();
+  const wide = useWideLayout();
 
   const { business, accessToken } = useAuth();
 
@@ -259,7 +261,7 @@ export default function LiveRoomsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <View style={styles.titleRow}>
           <View style={styles.titleText}>
             <Text style={type.title}>Kamers</Text>
@@ -315,6 +317,7 @@ export default function LiveRoomsScreen() {
                 <RoomCard
                   key={item.room.id}
                   item={item}
+                  wide={wide}
                   now={now}
                   onBook={() =>
                     router.push("/massage/new-appointment")
@@ -418,7 +421,7 @@ export default function LiveRoomsScreen() {
   );
 }
 
-function RoomCard({ item, now, onBook }) {
+function RoomCard({ item, now, wide, onBook }) {
   const { room, state, current, cleaning, next } = item;
 
   if (state === "BUSY") {
@@ -434,7 +437,7 @@ function RoomCard({ item, now, onBook }) {
     );
 
     return (
-      <Card style={styles.roomCard}>
+      <Card style={[styles.roomCard, wide && styles.roomCardWide]}>
         <RoomHeader
           name={room.name}
           label="Bezet"
@@ -468,7 +471,7 @@ function RoomCard({ item, now, onBook }) {
 
   if (state === "CLEANING") {
     return (
-      <Card style={[styles.roomCard, styles.cleaningCard]}>
+      <Card style={[styles.roomCard, wide && styles.roomCardWide, styles.cleaningCard]}>
         <RoomHeader
           name={room.name}
           label="Schoonmaak"
@@ -491,7 +494,7 @@ function RoomCard({ item, now, onBook }) {
   }
 
   return (
-    <Card style={styles.roomCard}>
+    <Card style={[styles.roomCard, wide && styles.roomCardWide]}>
       <RoomHeader
         name={room.name}
         label="Vrij"
@@ -608,6 +611,12 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
 
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
+  },
+
   titleRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -656,6 +665,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minHeight: 178,
     gap: 10,
+  },
+
+  // Tablet in landscape: four rooms per row
+
+  roomCardWide: {
+    flexBasis: "23%",
   },
 
   cleaningCard: {

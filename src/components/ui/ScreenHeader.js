@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
+import { useEmbedded } from "../embedded";
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
 
@@ -11,23 +12,27 @@ import { colors, fonts, radius, spacing } from "../../theme";
 //
 // The top of a pushed screen: a square back button, the
 // title, and an optional element on the right (a "Klaar"
-// text button, an icon).
+// text button, an icon). Embedded next to Meer on a
+// tablet there is nothing to go back to: no back button.
 // ======================================================
 
 export default function ScreenHeader({ title, right, onBack }) {
   const router = useRouter();
+  const embedded = useEmbedded();
 
   return (
     <View style={styles.bar}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={t("common.back")}
-        hitSlop={8}
-        onPress={onBack ?? (() => router.back())}
-        style={({ pressed }) => [styles.back, pressed && styles.pressed]}
-      >
-        <ChevronLeft size={20} color={colors.text} strokeWidth={1.8} />
-      </Pressable>
+      {embedded ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t("common.back")}
+          hitSlop={8}
+          onPress={onBack ?? (() => router.back())}
+          style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+        >
+          <ChevronLeft size={20} color={colors.text} strokeWidth={1.8} />
+        </Pressable>
+      )}
 
       <Text style={styles.title} numberOfLines={1}>
         {title}

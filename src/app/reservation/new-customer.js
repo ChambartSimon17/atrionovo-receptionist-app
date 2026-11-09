@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useState } from "react";
 import {
@@ -20,6 +22,7 @@ import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
 
 export default function NewCustomer() {
+  const wide = useWideLayout();
   const {
     date,
     startTime,
@@ -134,9 +137,10 @@ export default function NewCustomer() {
       style={styles.container}
     >
       <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={[
+          styles.content,
+          wide && styles.contentWide,
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -162,144 +166,155 @@ export default function NewCustomer() {
           klant in.
         </Text>
 
-        {/* Reservation summary */}
+        <Columns
+          gap={0}
+          left={
+            <>
+              {/* Reservation summary */}
 
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>
-            Reservatie
-          </Text>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryTitle}>
+                  Reservatie
+                </Text>
 
-          <Text style={styles.summaryText}>
-            {startTime}
-          </Text>
+                <Text style={styles.summaryText}>
+                  {startTime}
+                </Text>
 
-          <Text style={styles.summaryText}>
-            {guestCount}{" "}
-            {Number(guestCount) === 1
-              ? "persoon"
-              : "personen"}
-          </Text>
-        </View>
+                <Text style={styles.summaryText}>
+                  {guestCount}{" "}
+                  {Number(guestCount) === 1
+                    ? "persoon"
+                    : "personen"}
+                </Text>
+              </View>
 
-        {/* First name */}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Voornaam
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={firstName}
-            onChangeText={setFirstName}
-            placeholder="Voornaam"
-            placeholderTextColor="#999"
-            autoCapitalize="words"
-            autoCorrect={false}
-          />
-        </View>
-
-        {/* Last name */}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Achternaam
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={lastName}
-            onChangeText={setLastName}
-            placeholder="Achternaam"
-            placeholderTextColor="#999"
-            autoCapitalize="words"
-            autoCorrect={false}
-          />
-        </View>
-
-        {/* Phone */}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Telefoonnummer
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            placeholder="+32..."
-            placeholderTextColor="#999"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        {/* Email */}
-
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            E-mail
-          </Text>
-
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="email@example.com"
-            placeholderTextColor="#999"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </View>
-
-        {/* Error */}
-
-        {error && (
-          <View style={styles.errorCard}>
-            <Text style={styles.errorText}>
-              {error}
-            </Text>
-          </View>
-        )}
-
-        {/* Create */}
-
-        <TouchableOpacity
-          style={[
-            styles.primaryButton,
-            creating &&
-              styles.disabledButton,
-          ]}
-          activeOpacity={0.8}
-          onPress={
-            handleCreateCustomer
+            </>
           }
-          disabled={creating}
-        >
-          {creating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text
-              style={
-                styles.primaryButtonText
-              }
-            >
-              Klant aanmaken
-            </Text>
-          )}
-        </TouchableOpacity>
+          right={
+            <>
+              {/* First name */}
 
-        <TouchableOpacity
-          style={styles.cancelButton}
-          activeOpacity={0.8}
-          onPress={() => router.back()}
-          disabled={creating}
-        >
-          <Text style={styles.cancelButtonText}>
-            Terug
-          </Text>
-        </TouchableOpacity>
+              <View style={styles.field}>
+                <Text style={styles.label}>
+                  Voornaam
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Voornaam"
+                  placeholderTextColor="#999"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
+
+              {/* Last name */}
+
+              <View style={styles.field}>
+                <Text style={styles.label}>
+                  Achternaam
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Achternaam"
+                  placeholderTextColor="#999"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                />
+              </View>
+
+              {/* Phone */}
+
+              <View style={styles.field}>
+                <Text style={styles.label}>
+                  Telefoonnummer
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="+32..."
+                  placeholderTextColor="#999"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              {/* Email */}
+
+              <View style={styles.field}>
+                <Text style={styles.label}>
+                  E-mail
+                </Text>
+
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="email@example.com"
+                  placeholderTextColor="#999"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+
+              {/* Error */}
+
+              {error && (
+                <View style={styles.errorCard}>
+                  <Text style={styles.errorText}>
+                    {error}
+                  </Text>
+                </View>
+              )}
+
+              {/* Create */}
+
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  creating &&
+                    styles.disabledButton,
+                ]}
+                activeOpacity={0.8}
+                onPress={
+                  handleCreateCustomer
+                }
+                disabled={creating}
+              >
+                {creating ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text
+                    style={
+                      styles.primaryButtonText
+                    }
+                  >
+                    Klant aanmaken
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                activeOpacity={0.8}
+                onPress={() => router.back()}
+                disabled={creating}
+              >
+                <Text style={styles.cancelButtonText}>
+                  Terug
+                </Text>
+              </TouchableOpacity>
+            </>
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -315,6 +330,14 @@ const styles = StyleSheet.create(
   content: {
     padding: 24,
     paddingBottom: 50,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
 
   backButton: {

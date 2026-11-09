@@ -13,6 +13,8 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react-native";
+import Columns from "../components/ui/Columns";
+import useWideLayout from "../hooks/useWideLayout";
 
 import {
   Card,
@@ -168,6 +170,7 @@ export default function RestaurantAnalyticsScreen() {
   const router = useRouter();
 
   const [period, setPeriod] = useState("month");
+  const wide = useWideLayout();
   const [anchor, setAnchor] = useState(todayString);
 
   const days = periodDays(period, anchor);
@@ -237,7 +240,7 @@ export default function RestaurantAnalyticsScreen() {
         <View style={styles.iconSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <SegmentedControl
           options={PERIODS}
           value={period}
@@ -298,260 +301,271 @@ export default function RestaurantAnalyticsScreen() {
           <Text style={styles.error}>{error}</Text>
         ) : (
           <>
-            {/* Covers */}
+            <Columns
+              gap={spacing.md}
+              left={
+                <>
+                  {/* Covers */}
 
-            <Card tone="primary" style={styles.coversCard}>
-              <View style={styles.coversTop}>
-                <View style={styles.coversText}>
-                  <Text style={styles.coversLabel}>Couverts</Text>
-                  <Text style={styles.coversValue}>
-                    {analytics.covers}
+                  <Card tone="primary" style={styles.coversCard}>
+                    <View style={styles.coversTop}>
+                      <View style={styles.coversText}>
+                        <Text style={styles.coversLabel}>Couverts</Text>
+                        <Text style={styles.coversValue}>
+                          {analytics.covers}
+                        </Text>
+                      </View>
+                      {analytics.upcomingCount > 0 && (
+                        <View style={styles.plannedPill}>
+                          <Text style={styles.plannedText}>
+                            {analytics.upcomingCount} nog gepland
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.bars}>
+                      {analytics.days.map((day) => (
+                        <View key={day.day} style={styles.barSlot}>
+                          <View
+                            style={[
+                              styles.bar,
+                              {
+                                height: `${Math.max(
+                                  4,
+                                  (day.covers / maxDayCovers) * 100
+                                )}%`,
+                                backgroundColor:
+                                  bestDay?.day === day.day
+                                    ? colors.sand
+                                    : "#4E8A7E",
+                              },
+                            ]}
+                          />
+                        </View>
+                      ))}
+                    </View>
+
+                    <View style={styles.barLegend}>
+                      <Text style={styles.barLegendText}>
+                        {shortDay(days[0])}
+                      </Text>
+                      <Text style={styles.barLegendText}>
+                        {bestDay
+                          ? `Drukste dag: ${shortDay(bestDay.day)} · ${bestDay.covers} couverts`
+                          : "Nog geen couverts"}
+                      </Text>
+                      <Text style={styles.barLegendText}>
+                        {shortDay(days[days.length - 1])}
+                      </Text>
+                    </View>
+                  </Card>
+
+                  {/* Key numbers */}
+
+                  <View style={styles.tiles}>
+                    <StatTile
+                      style={styles.tile}
+                      label="Reservaties"
+                      value={String(analytics.reservationCount)}
+                      note={`${analytics.cameCount} gekomen`}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Gem. groep"
+                      value={
+                        analytics.averageParty
+                          ? String(
+                              Math.round(analytics.averageParty * 10) /
+                                10
+                            )
+                          : "–"
+                      }
+                      note="personen per tafel"
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Gasten"
+                      value={String(analytics.guestCount)}
+                      note={`${analytics.newGuestCount} nieuw`}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Terugkerend"
+                      value={formatPercent(analytics.returningRate)}
+                      note="van de gasten"
+                    />
+                    <StatTile
+                      style={[styles.tile, styles.warningTile]}
+                      label="Niet gekomen"
+                      value={formatPercent(analytics.missedRate)}
+                      note={reservationsLabel(analytics.missedCount)}
+                    />
+                    <StatTile
+                      style={styles.tile}
+                      label="Geannuleerd"
+                      value={formatPercent(analytics.cancelledRate)}
+                      note={reservationsLabel(analytics.cancelledCount)}
+                    />
+                  </View>
+
+                  <AiInsightsCard {...periodRange(days)} />
+
+                  {/* Lunch and dinner */}
+
+                  {analytics.services.length > 0 && (
+                    <Card style={styles.section}>
+                      <View style={styles.sectionHeader}>
+                        <Text style={type.heading}>Per service</Text>
+                        <Text style={type.caption}>couverts</Text>
+                      </View>
+                      <View style={styles.splitTrack}>
+                        {analytics.services.map((service, index) => (
+                          <View
+                            key={service.name}
+                            style={[
+                              styles.splitPart,
+                              {
+                                flex: Math.max(service.covers, 0.01),
+                                backgroundColor:
+                                  SERVICE_COLORS[
+                                    index % SERVICE_COLORS.length
+                                  ],
+                              },
+                            ]}
+                          />
+                        ))}
+                      </View>
+                      {analytics.services.map((service, index) => (
+                        <View key={service.name} style={styles.splitRow}>
+                          <View
+                            style={[
+                              styles.splitDot,
+                              {
+                                backgroundColor:
+                                  SERVICE_COLORS[
+                                    index % SERVICE_COLORS.length
+                                  ],
+                              },
+                            ]}
+                          />
+                          <Text style={[type.body, styles.splitName]}>
+                            {service.name}
+                          </Text>
+                          <Text style={type.caption}>
+                            {service.count} res. ·{" "}
+                            {serviceCovers
+                              ? formatPercent(
+                                  service.covers / serviceCovers
+                                )
+                              : "0%"}
+                          </Text>
+                          <Text style={styles.barItemValue}>
+                            {service.covers}
+                          </Text>
+                        </View>
+                      ))}
+                    </Card>
+                  )}
+
+                </>
+              }
+              right={
+                <>
+                  {/* Busiest hours */}
+
+                  {analytics.hours.length > 0 && (
+                    <ColumnChart
+                      title="Drukste uren"
+                      caption="reservaties per starttijd"
+                      items={analytics.hours.map((hour) => ({
+                        key: String(hour.hour),
+                        label: `${hour.hour}u`,
+                        ratio: hour.count / maxHour,
+                      }))}
+                    />
+                  )}
+
+                  {/* Weekdays */}
+
+                  {analytics.covers > 0 && (
+                    <ColumnChart
+                      title="Drukste dagen"
+                      caption="couverts per weekdag"
+                      items={analytics.weekdays.map((day) => ({
+                        key: day.label,
+                        label: day.label,
+                        ratio: day.covers / maxWeekday,
+                      }))}
+                    />
+                  )}
+
+                  {/* Party sizes */}
+
+                  <BarList
+                    title="Grootte van de groep"
+                    caption="reservaties"
+                    empty="Nog geen reservaties in deze periode."
+                    items={
+                      analytics.reservationCount
+                        ? analytics.parties.map((size) => ({
+                            key: size.label,
+                            label: `${size.label} personen`,
+                            value: String(size.count),
+                            ratio: size.count / maxParty,
+                          }))
+                        : []
+                    }
+                  />
+
+                  {/* Best guests */}
+
+                  <BarList
+                    title="Vaste gasten"
+                    caption="reservaties"
+                    empty="Nog geen gasten in deze periode."
+                    items={analytics.topGuests.map((guest) => ({
+                      key: guest.id,
+                      label: guest.name,
+                      value: String(guest.count - guest.missed),
+                      ratio: (guest.count - guest.missed) / maxGuest,
+                      onPress: () => router.push(`/customers/${guest.id}`),
+                    }))}
+                  />
+
+                  {/* Guests who did not come */}
+
+                  {analytics.missedGuests.length > 0 && (
+                    <Card style={styles.section}>
+                      <Text style={type.heading}>
+                        Meeste keren niet gekomen
+                      </Text>
+                      {analytics.missedGuests.map((guest) => (
+                        <Pressable
+                          key={guest.id}
+                          accessibilityRole="button"
+                          onPress={() =>
+                            router.push(`/customers/${guest.id}`)
+                          }
+                          style={styles.noShowRow}
+                        >
+                          <Text style={type.body}>{guest.name}</Text>
+                          <Text style={styles.noShowCount}>
+                            {guest.missed}×
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </Card>
+                  )}
+
+                  <Text style={styles.footnote}>
+                    Een bevestigde reservatie die voorbij is zonder
+                    dat de gasten aan tafel zijn gezet, telt als
+                    niet gekomen.
                   </Text>
-                </View>
-                {analytics.upcomingCount > 0 && (
-                  <View style={styles.plannedPill}>
-                    <Text style={styles.plannedText}>
-                      {analytics.upcomingCount} nog gepland
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.bars}>
-                {analytics.days.map((day) => (
-                  <View key={day.day} style={styles.barSlot}>
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: `${Math.max(
-                            4,
-                            (day.covers / maxDayCovers) * 100
-                          )}%`,
-                          backgroundColor:
-                            bestDay?.day === day.day
-                              ? colors.sand
-                              : "#4E8A7E",
-                        },
-                      ]}
-                    />
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.barLegend}>
-                <Text style={styles.barLegendText}>
-                  {shortDay(days[0])}
-                </Text>
-                <Text style={styles.barLegendText}>
-                  {bestDay
-                    ? `Drukste dag: ${shortDay(bestDay.day)} · ${bestDay.covers} couverts`
-                    : "Nog geen couverts"}
-                </Text>
-                <Text style={styles.barLegendText}>
-                  {shortDay(days[days.length - 1])}
-                </Text>
-              </View>
-            </Card>
-
-            {/* Key numbers */}
-
-            <View style={styles.tiles}>
-              <StatTile
-                style={styles.tile}
-                label="Reservaties"
-                value={String(analytics.reservationCount)}
-                note={`${analytics.cameCount} gekomen`}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Gem. groep"
-                value={
-                  analytics.averageParty
-                    ? String(
-                        Math.round(analytics.averageParty * 10) /
-                          10
-                      )
-                    : "–"
-                }
-                note="personen per tafel"
-              />
-              <StatTile
-                style={styles.tile}
-                label="Gasten"
-                value={String(analytics.guestCount)}
-                note={`${analytics.newGuestCount} nieuw`}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Terugkerend"
-                value={formatPercent(analytics.returningRate)}
-                note="van de gasten"
-              />
-              <StatTile
-                style={[styles.tile, styles.warningTile]}
-                label="Niet gekomen"
-                value={formatPercent(analytics.missedRate)}
-                note={reservationsLabel(analytics.missedCount)}
-              />
-              <StatTile
-                style={styles.tile}
-                label="Geannuleerd"
-                value={formatPercent(analytics.cancelledRate)}
-                note={reservationsLabel(analytics.cancelledCount)}
-              />
-            </View>
-
-            <AiInsightsCard {...periodRange(days)} />
-
-            {/* Lunch and dinner */}
-
-            {analytics.services.length > 0 && (
-              <Card style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={type.heading}>Per service</Text>
-                  <Text style={type.caption}>couverts</Text>
-                </View>
-                <View style={styles.splitTrack}>
-                  {analytics.services.map((service, index) => (
-                    <View
-                      key={service.name}
-                      style={[
-                        styles.splitPart,
-                        {
-                          flex: Math.max(service.covers, 0.01),
-                          backgroundColor:
-                            SERVICE_COLORS[
-                              index % SERVICE_COLORS.length
-                            ],
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-                {analytics.services.map((service, index) => (
-                  <View key={service.name} style={styles.splitRow}>
-                    <View
-                      style={[
-                        styles.splitDot,
-                        {
-                          backgroundColor:
-                            SERVICE_COLORS[
-                              index % SERVICE_COLORS.length
-                            ],
-                        },
-                      ]}
-                    />
-                    <Text style={[type.body, styles.splitName]}>
-                      {service.name}
-                    </Text>
-                    <Text style={type.caption}>
-                      {service.count} res. ·{" "}
-                      {serviceCovers
-                        ? formatPercent(
-                            service.covers / serviceCovers
-                          )
-                        : "0%"}
-                    </Text>
-                    <Text style={styles.barItemValue}>
-                      {service.covers}
-                    </Text>
-                  </View>
-                ))}
-              </Card>
-            )}
-
-            {/* Busiest hours */}
-
-            {analytics.hours.length > 0 && (
-              <ColumnChart
-                title="Drukste uren"
-                caption="reservaties per starttijd"
-                items={analytics.hours.map((hour) => ({
-                  key: String(hour.hour),
-                  label: `${hour.hour}u`,
-                  ratio: hour.count / maxHour,
-                }))}
-              />
-            )}
-
-            {/* Weekdays */}
-
-            {analytics.covers > 0 && (
-              <ColumnChart
-                title="Drukste dagen"
-                caption="couverts per weekdag"
-                items={analytics.weekdays.map((day) => ({
-                  key: day.label,
-                  label: day.label,
-                  ratio: day.covers / maxWeekday,
-                }))}
-              />
-            )}
-
-            {/* Party sizes */}
-
-            <BarList
-              title="Grootte van de groep"
-              caption="reservaties"
-              empty="Nog geen reservaties in deze periode."
-              items={
-                analytics.reservationCount
-                  ? analytics.parties.map((size) => ({
-                      key: size.label,
-                      label: `${size.label} personen`,
-                      value: String(size.count),
-                      ratio: size.count / maxParty,
-                    }))
-                  : []
+                </>
               }
             />
-
-            {/* Best guests */}
-
-            <BarList
-              title="Vaste gasten"
-              caption="reservaties"
-              empty="Nog geen gasten in deze periode."
-              items={analytics.topGuests.map((guest) => ({
-                key: guest.id,
-                label: guest.name,
-                value: String(guest.count - guest.missed),
-                ratio: (guest.count - guest.missed) / maxGuest,
-                onPress: () => router.push(`/customers/${guest.id}`),
-              }))}
-            />
-
-            {/* Guests who did not come */}
-
-            {analytics.missedGuests.length > 0 && (
-              <Card style={styles.section}>
-                <Text style={type.heading}>
-                  Meeste keren niet gekomen
-                </Text>
-                {analytics.missedGuests.map((guest) => (
-                  <Pressable
-                    key={guest.id}
-                    accessibilityRole="button"
-                    onPress={() =>
-                      router.push(`/customers/${guest.id}`)
-                    }
-                    style={styles.noShowRow}
-                  >
-                    <Text style={type.body}>{guest.name}</Text>
-                    <Text style={styles.noShowCount}>
-                      {guest.missed}×
-                    </Text>
-                  </Pressable>
-                ))}
-              </Card>
-            )}
-
-            <Text style={styles.footnote}>
-              Een bevestigde reservatie die voorbij is zonder
-              dat de gasten aan tafel zijn gezet, telt als
-              niet gekomen.
-            </Text>
           </>
         )}
       </ScrollView>
@@ -678,6 +692,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     gap: spacing.md,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   periodRow: {

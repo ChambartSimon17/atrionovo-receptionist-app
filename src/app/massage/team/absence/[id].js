@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import Columns from "../../../../components/ui/Columns";
+import useWideLayout from "../../../../hooks/useWideLayout";
 
 import { useAuth } from "../../../../context/auth-context";
 import { api } from "../../../../services/api";
@@ -33,6 +35,7 @@ export default function AbsenceScreen() {
   const { business, accessToken } = useAuth();
 
   const [absence, setAbsence] = useState(null);
+  const wide = useWideLayout();
   const [conflicts, setConflicts] = useState(null);
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState(null);
@@ -121,83 +124,94 @@ export default function AbsenceScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {absence ? (
-          <View style={styles.header}>
-            <View style={[styles.reason, { backgroundColor: palette.background }]}>
-              <Text style={[styles.reasonText, { color: palette.text }]}>{reasonLabel(absence.reason)}</Text>
-            </View>
-            <Text style={type.title}>{absence.therapistName}</Text>
-            <Text style={type.caption}>
-              {[
-                formatDateRange(absence.startDate, absence.endDate),
-                plural("team.dayCount", dayCount(absence.startDate, absence.endDate)),
-                absence.startMinutes !== null && absence.startMinutes !== undefined
-                  ? `${formatMinutes(absence.startMinutes)} – ${formatMinutes(absence.endMinutes)}`
-                  : null,
-                absence.note,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </Text>
-          </View>
-        ) : null}
-
-        <Text style={styles.label}>{t("team.affected")}</Text>
-
-        {conflicts.length === 0 ? (
-          <Text style={type.caption}>{t("team.noAffected")}</Text>
-        ) : (
-          conflicts.map((appointment) => (
-            <Card key={appointment.id} style={styles.card}>
-              <Text style={type.bodyMedium}>
-                {new Date(appointment.startTime).toLocaleDateString(locale, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}{" "}
-                · {formatClock(appointment.startTime)} – {formatClock(appointment.endTime)}
-              </Text>
-              <Text style={type.body}>
-                {appointment.firstName} {appointment.lastName} · {appointment.serviceName}
-              </Text>
-              <Text style={type.caption}>
-                {appointment.roomName} · {appointment.phoneNumber}
-              </Text>
-
-              <View style={styles.actions}>
-                {appointment.alternatives.length === 0 ? (
-                  <Text style={styles.none}>{t("team.noColleague")}</Text>
-                ) : (
-                  appointment.alternatives.map((colleague) => (
-                    <Button
-                      key={colleague.id}
-                      variant="primary"
-                      label={t("team.giveTo", { name: colleague.name })}
-                      loading={busyId === appointment.id}
-                      onPress={() => giveTo(appointment, colleague)}
-                    />
-                  ))
-                )}
-                <View style={styles.secondary}>
-                  <Button
-                    style={styles.half}
-                    label={t("team.callCustomer")}
-                    onPress={() => Linking.openURL(`tel:${appointment.phoneNumber}`)}
-                  />
-                  <Button
-                    style={styles.half}
-                    variant="danger"
-                    label={t("team.cancelAppointment")}
-                    onPress={() => cancel(appointment)}
-                  />
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]} showsVerticalScrollIndicator={false}>
+        <Columns
+          gap={spacing.md}
+          left={
+            <>
+              {absence ? (
+                <View style={styles.header}>
+                  <View style={[styles.reason, { backgroundColor: palette.background }]}>
+                    <Text style={[styles.reasonText, { color: palette.text }]}>{reasonLabel(absence.reason)}</Text>
+                  </View>
+                  <Text style={type.title}>{absence.therapistName}</Text>
+                  <Text style={type.caption}>
+                    {[
+                      formatDateRange(absence.startDate, absence.endDate),
+                      plural("team.dayCount", dayCount(absence.startDate, absence.endDate)),
+                      absence.startMinutes !== null && absence.startMinutes !== undefined
+                        ? `${formatMinutes(absence.startMinutes)} – ${formatMinutes(absence.endMinutes)}`
+                        : null,
+                      absence.note,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </Text>
                 </View>
-              </View>
-            </Card>
-          ))
-        )}
+              ) : null}
 
-        <Button label={t("team.deleteAbsence")} variant="danger" onPress={removeAbsence} style={styles.delete} />
+            </>
+          }
+          right={
+            <>
+              <Text style={styles.label}>{t("team.affected")}</Text>
+
+              {conflicts.length === 0 ? (
+                <Text style={type.caption}>{t("team.noAffected")}</Text>
+              ) : (
+                conflicts.map((appointment) => (
+                  <Card key={appointment.id} style={styles.card}>
+                    <Text style={type.bodyMedium}>
+                      {new Date(appointment.startTime).toLocaleDateString(locale, {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                      })}{" "}
+                      · {formatClock(appointment.startTime)} – {formatClock(appointment.endTime)}
+                    </Text>
+                    <Text style={type.body}>
+                      {appointment.firstName} {appointment.lastName} · {appointment.serviceName}
+                    </Text>
+                    <Text style={type.caption}>
+                      {appointment.roomName} · {appointment.phoneNumber}
+                    </Text>
+
+                    <View style={styles.actions}>
+                      {appointment.alternatives.length === 0 ? (
+                        <Text style={styles.none}>{t("team.noColleague")}</Text>
+                      ) : (
+                        appointment.alternatives.map((colleague) => (
+                          <Button
+                            key={colleague.id}
+                            variant="primary"
+                            label={t("team.giveTo", { name: colleague.name })}
+                            loading={busyId === appointment.id}
+                            onPress={() => giveTo(appointment, colleague)}
+                          />
+                        ))
+                      )}
+                      <View style={styles.secondary}>
+                        <Button
+                          style={styles.half}
+                          label={t("team.callCustomer")}
+                          onPress={() => Linking.openURL(`tel:${appointment.phoneNumber}`)}
+                        />
+                        <Button
+                          style={styles.half}
+                          variant="danger"
+                          label={t("team.cancelAppointment")}
+                          onPress={() => cancel(appointment)}
+                        />
+                      </View>
+                    </View>
+                  </Card>
+                ))
+              )}
+
+              <Button label={t("team.deleteAbsence")} variant="danger" onPress={removeAbsence} style={styles.delete} />
+            </>
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -226,6 +240,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 48,
     gap: spacing.md,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   header: {

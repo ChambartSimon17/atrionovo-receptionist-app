@@ -25,6 +25,9 @@ import {
   Phone,
   Plus,
 } from "lucide-react-native";
+import Columns from "../../components/ui/Columns";
+import { useEmbedded } from "../../components/embedded";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
@@ -97,14 +100,19 @@ function isMissed(reservation, now) {
   );
 }
 
-export default function GuestProfileScreen() {
+export default function GuestProfileScreen({ customerId }) {
   const router = useRouter();
 
-  const { id } = useLocalSearchParams();
+  // On a tablet the guest list passes the guest in; as a
+  // screen of its own it comes from the address.
+  const params = useLocalSearchParams();
+  const id = customerId ?? params.id;
+  const embedded = useEmbedded();
 
   const { accessToken } = useAuth();
 
   const [customer, setCustomer] = useState(null);
+  const wide = useWideLayout();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -139,7 +147,7 @@ export default function GuestProfileScreen() {
   if (isLoading || error || !customer) {
     return (
       <SafeAreaView style={styles.screen}>
-        <BackBar onBack={() => router.back()} />
+        {embedded ? null : <BackBar onBack={() => router.back()} />}
         <View style={styles.center}>
           {isLoading ? (
             <View style={{ width: "100%", gap: 12 }}>
@@ -163,235 +171,246 @@ export default function GuestProfileScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <BackBar onBack={() => router.back()} />
+      {embedded ? null : <BackBar onBack={() => router.back()} />}
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile */}
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
+        <Columns
+          gap={spacing.lg}
+          left={
+            <>
+              {/* Profile */}
 
-        <View style={styles.profile}>
-          <View
-            style={[
-              styles.avatar,
-              customer.isVip && styles.vipAvatar,
-            ]}
-          >
-            <Text
-              style={[
-                styles.avatarText,
-                customer.isVip && styles.vipAvatarText,
-              ]}
-            >
-              {initials(customer)}
-            </Text>
-          </View>
-          <View style={styles.profileText}>
-            <Text style={styles.name}>
-              {customer.firstName} {customer.lastName}
-            </Text>
-            <View style={styles.tags}>
-              {customer.isVip && (
-                <Badge
-                  label="VIP"
-                  background={colors.sandSoft}
-                  color={colors.noteText}
-                />
-              )}
-              {stats.visits >= 3 && (
-                <Badge label="Vaste gast" status="SEATED" />
-              )}
-              {stats.missed > 0 && (
-                <Badge
-                  label={`${stats.missed}× niet gekomen`}
-                  status="NO_SHOW"
-                />
-              )}
-              {!!customer.createdAt && (
-                <Badge
-                  label={`Sinds ${formatShortDate(
-                    customer.createdAt
-                  )}`}
-                />
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Contact */}
-
-        <View style={styles.contactRow}>
-          <ContactButton
-            label="Bel"
-            icon={Phone}
-            onPress={() =>
-              Linking.openURL(`tel:${customer.phoneNumber}`)
-            }
-          />
-          <ContactButton
-            label="SMS"
-            icon={MessageSquare}
-            onPress={() =>
-              Linking.openURL(`sms:${customer.phoneNumber}`)
-            }
-          />
-          <ContactButton
-            label="E-mail"
-            icon={Mail}
-            disabled={!customer.email}
-            onPress={() =>
-              Linking.openURL(`mailto:${customer.email}`)
-            }
-          />
-        </View>
-
-        {/* Numbers */}
-
-        <Card style={styles.stats}>
-          <Stat label="bezoeken" value={String(stats.visits)} />
-          <Stat
-            label="gem. groep"
-            value={
-              stats.averageParty === null
-                ? "–"
-                : String(Math.round(stats.averageParty * 10) / 10)
-            }
-          />
-          <Stat
-            label="niet gekomen"
-            value={String(stats.missed)}
-          />
-          <Stat
-            label="geannuleerd"
-            value={String(stats.cancelled)}
-            last
-          />
-        </Card>
-
-        {/* Details */}
-
-        <Card style={styles.details}>
-          <DetailRow
-            label="Laatste bezoek"
-            value={
-              stats.lastVisit
-                ? formatShortDate(stats.lastVisit.startTime)
-                : "–"
-            }
-          />
-          <DetailRow
-            label="Gepland"
-            value={
-              stats.upcoming === 1
-                ? "1 reservatie"
-                : `${stats.upcoming} reservaties`
-            }
-          />
-          <DetailRow
-            label="Telefoon"
-            value={customer.phoneNumber}
-          />
-          <DetailRow
-            label="E-mail"
-            value={customer.email || "–"}
-            last
-          />
-        </Card>
-
-        {!!customer.notes && (
-          <View style={styles.notes}>
-            <Text style={styles.notesLabel}>Notitie</Text>
-            <Text style={styles.notesText}>
-              {customer.notes}
-            </Text>
-          </View>
-        )}
-
-        {/* History */}
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={type.heading}>Geschiedenis</Text>
-            <Text style={type.caption}>
-              {customer.reservations.length}
-            </Text>
-          </View>
-
-          {customer.reservations.length === 0 ? (
-            <Card>
-              <Text style={type.caption}>
-                Nog geen reservaties.
-              </Text>
-            </Card>
-          ) : (
-            <Card style={styles.history}>
-              {customer.reservations.map(
-                (reservation, index) => {
-                  const status = isMissed(reservation, now)
-                    ? "NO_SHOW"
-                    : reservation.status;
-
-                  return (
-                    <Pressable
-                      key={reservation.id}
-                      accessibilityRole="button"
-                      onPress={() =>
-                        router.push(
-                          `/reservation/${reservation.id}`
-                        )
-                      }
-                      style={({ pressed }) => [
-                        styles.historyRow,
-                        index > 0 && styles.historyDivider,
-                        pressed && styles.historyPressed,
-                      ]}
-                    >
-                      <View style={styles.historyText}>
-                        <Text style={type.bodyMedium}>
-                          {formatShortDate(
-                            reservation.startTime
-                          )}
-                        </Text>
-                        <Text
-                          style={type.caption}
-                          numberOfLines={1}
-                        >
-                          {formatTime(reservation.startTime)} ·{" "}
-                          {reservation.guestCount === 1
-                            ? "1 persoon"
-                            : `${reservation.guestCount} personen`}
-                          {reservation.notes
-                            ? ` · ${reservation.notes}`
-                            : ""}
-                        </Text>
-                      </View>
+              <View style={styles.profile}>
+                <View
+                  style={[
+                    styles.avatar,
+                    customer.isVip && styles.vipAvatar,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.avatarText,
+                      customer.isVip && styles.vipAvatarText,
+                    ]}
+                  >
+                    {initials(customer)}
+                  </Text>
+                </View>
+                <View style={styles.profileText}>
+                  <Text style={styles.name}>
+                    {customer.firstName} {customer.lastName}
+                  </Text>
+                  <View style={styles.tags}>
+                    {customer.isVip && (
                       <Badge
-                        label={STATUS_LABELS[status]}
-                        status={status}
+                        label="VIP"
+                        background={colors.sandSoft}
+                        color={colors.noteText}
                       />
-                      <ChevronRight
-                        size={16}
-                        color={colors.textMuted}
-                        strokeWidth={1.8}
+                    )}
+                    {stats.visits >= 3 && (
+                      <Badge label="Vaste gast" status="SEATED" />
+                    )}
+                    {stats.missed > 0 && (
+                      <Badge
+                        label={`${stats.missed}× niet gekomen`}
+                        status="NO_SHOW"
                       />
-                    </Pressable>
-                  );
-                }
-              )}
-            </Card>
-          )}
-        </View>
+                    )}
+                    {!!customer.createdAt && (
+                      <Badge
+                        label={`Sinds ${formatShortDate(
+                          customer.createdAt
+                        )}`}
+                      />
+                    )}
+                  </View>
+                </View>
+              </View>
 
-        <Button
-          label="Nieuwe reservatie"
-          variant="primary"
-          icon={
-            <Plus
-              size={18}
-              color={colors.onPrimary}
-              strokeWidth={2}
-            />
+              {/* Contact */}
+
+              <View style={styles.contactRow}>
+                <ContactButton
+                  label="Bel"
+                  icon={Phone}
+                  onPress={() =>
+                    Linking.openURL(`tel:${customer.phoneNumber}`)
+                  }
+                />
+                <ContactButton
+                  label="SMS"
+                  icon={MessageSquare}
+                  onPress={() =>
+                    Linking.openURL(`sms:${customer.phoneNumber}`)
+                  }
+                />
+                <ContactButton
+                  label="E-mail"
+                  icon={Mail}
+                  disabled={!customer.email}
+                  onPress={() =>
+                    Linking.openURL(`mailto:${customer.email}`)
+                  }
+                />
+              </View>
+
+              {/* Numbers */}
+
+              <Card style={styles.stats}>
+                <Stat label="bezoeken" value={String(stats.visits)} />
+                <Stat
+                  label="gem. groep"
+                  value={
+                    stats.averageParty === null
+                      ? "–"
+                      : String(Math.round(stats.averageParty * 10) / 10)
+                  }
+                />
+                <Stat
+                  label="niet gekomen"
+                  value={String(stats.missed)}
+                />
+                <Stat
+                  label="geannuleerd"
+                  value={String(stats.cancelled)}
+                  last
+                />
+              </Card>
+
+              {/* Details */}
+
+              <Card style={styles.details}>
+                <DetailRow
+                  label="Laatste bezoek"
+                  value={
+                    stats.lastVisit
+                      ? formatShortDate(stats.lastVisit.startTime)
+                      : "–"
+                  }
+                />
+                <DetailRow
+                  label="Gepland"
+                  value={
+                    stats.upcoming === 1
+                      ? "1 reservatie"
+                      : `${stats.upcoming} reservaties`
+                  }
+                />
+                <DetailRow
+                  label="Telefoon"
+                  value={customer.phoneNumber}
+                />
+                <DetailRow
+                  label="E-mail"
+                  value={customer.email || "–"}
+                  last
+                />
+              </Card>
+
+              {!!customer.notes && (
+                <View style={styles.notes}>
+                  <Text style={styles.notesLabel}>Notitie</Text>
+                  <Text style={styles.notesText}>
+                    {customer.notes}
+                  </Text>
+                </View>
+              )}
+
+            </>
           }
-          onPress={() =>
-            router.push("/reservation/new")
+          right={
+            <>
+              {/* History */}
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={type.heading}>Geschiedenis</Text>
+                  <Text style={type.caption}>
+                    {customer.reservations.length}
+                  </Text>
+                </View>
+
+                {customer.reservations.length === 0 ? (
+                  <Card>
+                    <Text style={type.caption}>
+                      Nog geen reservaties.
+                    </Text>
+                  </Card>
+                ) : (
+                  <Card style={styles.history}>
+                    {customer.reservations.map(
+                      (reservation, index) => {
+                        const status = isMissed(reservation, now)
+                          ? "NO_SHOW"
+                          : reservation.status;
+
+                        return (
+                          <Pressable
+                            key={reservation.id}
+                            accessibilityRole="button"
+                            onPress={() =>
+                              router.push(
+                                `/reservation/${reservation.id}`
+                              )
+                            }
+                            style={({ pressed }) => [
+                              styles.historyRow,
+                              index > 0 && styles.historyDivider,
+                              pressed && styles.historyPressed,
+                            ]}
+                          >
+                            <View style={styles.historyText}>
+                              <Text style={type.bodyMedium}>
+                                {formatShortDate(
+                                  reservation.startTime
+                                )}
+                              </Text>
+                              <Text
+                                style={type.caption}
+                                numberOfLines={1}
+                              >
+                                {formatTime(reservation.startTime)} ·{" "}
+                                {reservation.guestCount === 1
+                                  ? "1 persoon"
+                                  : `${reservation.guestCount} personen`}
+                                {reservation.notes
+                                  ? ` · ${reservation.notes}`
+                                  : ""}
+                              </Text>
+                            </View>
+                            <Badge
+                              label={STATUS_LABELS[status]}
+                              status={status}
+                            />
+                            <ChevronRight
+                              size={16}
+                              color={colors.textMuted}
+                              strokeWidth={1.8}
+                            />
+                          </Pressable>
+                        );
+                      }
+                    )}
+                  </Card>
+                )}
+              </View>
+
+              <Button
+                label="Nieuwe reservatie"
+                variant="primary"
+                icon={
+                  <Plus
+                    size={18}
+                    color={colors.onPrimary}
+                    strokeWidth={2}
+                  />
+                }
+                onPress={() =>
+                  router.push("/reservation/new")
+                }
+              />
+            </>
           }
         />
       </ScrollView>
@@ -530,6 +549,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   profile: {

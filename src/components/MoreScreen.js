@@ -22,6 +22,8 @@ import { t } from "../i18n";
 import { colors, fonts, radius, spacing, type } from "../theme";
 import { unregisterPushNotifications } from "../services/notifications";
 import useWideLayout from "../hooks/useWideLayout";
+import { EmbeddedContext } from "./embedded";
+import { morePages } from "./more-pages";
 
 // ======================================================
 // Meer
@@ -37,11 +39,13 @@ import useWideLayout from "../hooks/useWideLayout";
 //   Instellingen: the links the business type passes in
 //   Uitloggen
 //
-// On a tablet in landscape the settings get their own
-// column on the right.
+// On a tablet in landscape Meer works like the iPad
+// Settings app: the list stays on the left and the chosen
+// page opens on the right (see more-pages.js). Pages that
+// need the whole screen still open on their own.
 // ======================================================
 
-function LinkRow({ link, first, onPress }) {
+function LinkRow({ link, first, selected, onPress }) {
   const Icon = link.icon;
 
   return (
@@ -51,6 +55,7 @@ function LinkRow({ link, first, onPress }) {
       style={({ pressed }) => [
         styles.row,
         !first && styles.rowDivider,
+        selected && styles.rowSelected,
         pressed && styles.rowPressed,
       ]}
     >
@@ -76,6 +81,7 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
   const wide = useWideLayout();
   const { user, business, accessToken, logout } = useAuth();
 
+  const [openHref, setOpenHref] = useState("/calls");
   const [openCallbacks, setOpenCallbacks] = useState(0);
   const [callsToday, setCallsToday] = useState(null);
 
@@ -126,6 +132,17 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
     },
   ];
 
+  // Next to the list on a tablet, on its own screen on a phone.
+  function open(href) {
+    if (wide && morePages[href]) {
+      setOpenHref(href);
+    } else {
+      router.push(href);
+    }
+  }
+
+  const OpenPage = wide ? morePages[openHref] : null;
+
   const profile = (
     <Card style={styles.profile}>
       <View style={styles.avatar}>
@@ -169,7 +186,8 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
             key={link.href}
             link={link}
             first={index === 0}
-            onPress={() => router.push(link.href)}
+            selected={wide && link.href === openHref}
+            onPress={() => open(link.href)}
           />
         ))}
       </Card>
@@ -185,7 +203,8 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
             key={link.href}
             link={link}
             first={index === 0}
-            onPress={() => router.push(link.href)}
+            selected={wide && link.href === openHref}
+            onPress={() => open(link.href)}
           />
         ))}
       </Card>
@@ -205,30 +224,38 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
     />
   );
 
-  return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
-        <Text style={type.title}>{t("tabs.more")}</Text>
-
-        {wide ? (
-          <View style={styles.columns}>
-            <View style={styles.column}>
-              {profile}
-              {analytics}
-              {ai}
-              {logoutButton}
-            </View>
-            <View style={styles.column}>{settings}</View>
-          </View>
-        ) : (
-          <>
+  if (wide) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <View style={styles.split}>
+          <ScrollView style={styles.sidebar} contentContainerStyle={styles.sidebarContent}>
+            <Text style={type.title}>{t("tabs.more")}</Text>
             {profile}
             {analytics}
             {ai}
             {settings}
             {logoutButton}
-          </>
-        )}
+          </ScrollView>
+
+          <View style={styles.page}>
+            <EmbeddedContext.Provider value={true}>
+              {OpenPage ? <OpenPage key={openHref} /> : null}
+            </EmbeddedContext.Provider>
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <ScrollView contentContainerStyle={styles.content}>
+        <Text style={type.title}>{t("tabs.more")}</Text>
+        {profile}
+        {analytics}
+        {ai}
+        {settings}
+        {logoutButton}
       </ScrollView>
     </SafeAreaView>
   );
@@ -250,21 +277,30 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
 
-  // Tablet in landscape: two columns
+  // Tablet in landscape: the list left, the page right
 
-  contentWide: {
-    maxWidth: 1180,
-  },
-
-  columns: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.xl,
-  },
-
-  column: {
+  split: {
     flex: 1,
+    flexDirection: "row",
+  },
+
+  sidebar: {
+    width: 400,
+    flexGrow: 0,
+  },
+
+  sidebarContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xxl,
     gap: spacing.xl,
+  },
+
+  page: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    backgroundColor: colors.background,
   },
 
   profile: {
@@ -361,6 +397,10 @@ const styles = StyleSheet.create({
 
   rowPressed: {
     backgroundColor: colors.surfaceMuted,
+  },
+
+  rowSelected: {
+    backgroundColor: colors.primarySoft,
   },
 
   rowIcon: {

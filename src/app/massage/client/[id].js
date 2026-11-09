@@ -24,6 +24,8 @@ import {
   Phone,
   Plus,
 } from "lucide-react-native";
+import Columns from "../../../components/ui/Columns";
+import useWideLayout from "../../../hooks/useWideLayout";
 
 import { useAuth } from "../../../context/auth-context";
 import { api } from "../../../services/api";
@@ -155,6 +157,7 @@ export default function MassageClientScreen() {
   const { accessToken } = useAuth();
 
   const [customer, setCustomer] = useState(null);
+  const wide = useWideLayout();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -214,207 +217,218 @@ export default function MassageClientScreen() {
     <SafeAreaView style={styles.screen}>
       <BackBar onBack={() => router.back()} />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile */}
+      <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
+        <Columns
+          gap={spacing.lg}
+          left={
+            <>
+              {/* Profile */}
 
-        <View style={styles.profile}>
-          <View
-            style={[
-              styles.avatar,
-              customer.isVip && styles.vipAvatar,
-            ]}
-          >
-            <Text
-              style={[
-                styles.avatarText,
-                customer.isVip && styles.vipAvatarText,
-              ]}
-            >
-              {initials(customer)}
-            </Text>
-          </View>
-          <View style={styles.profileText}>
-            <Text style={styles.name}>
-              {customer.firstName} {customer.lastName}
-            </Text>
-            <View style={styles.tags}>
-              {customer.isVip && (
-                <Badge
-                  label="VIP"
-                  background={colors.sandSoft}
-                  color={colors.noteText}
-                />
-              )}
-              {stats.noShows > 0 && (
-                <Badge
-                  label={`${stats.noShows}× no-show`}
-                  status="NO_SHOW"
-                />
-              )}
-              {!!customer.createdAt && (
-                <Badge
-                  label={`Sinds ${formatShortDate(
-                    customer.createdAt
-                  )}`}
-                />
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Contact */}
-
-        <View style={styles.contactRow}>
-          <ContactButton
-            label="Bel"
-            icon={Phone}
-            onPress={() =>
-              Linking.openURL(`tel:${customer.phoneNumber}`)
-            }
-          />
-          <ContactButton
-            label="SMS"
-            icon={MessageSquare}
-            onPress={() =>
-              Linking.openURL(`sms:${customer.phoneNumber}`)
-            }
-          />
-          <ContactButton
-            label="E-mail"
-            icon={Mail}
-            disabled={!customer.email}
-            onPress={() =>
-              Linking.openURL(`mailto:${customer.email}`)
-            }
-          />
-        </View>
-
-        {/* Numbers */}
-
-        <Card style={styles.stats}>
-          <Stat label="bezoeken" value={String(stats.visits)} />
-          <Stat
-            label="besteed"
-            value={formatPrice(stats.spentCents).replace(
-              ",00",
-              ""
-            )}
-          />
-          <Stat
-            label="komt elke"
-            value={
-              stats.weeksBetween === null
-                ? "–"
-                : `${Math.max(
-                    1,
-                    Math.round(stats.weeksBetween)
-                  )} wk`
-            }
-          />
-          <Stat
-            label="no-shows"
-            value={String(stats.noShows)}
-            last
-          />
-        </Card>
-
-        {/* Details */}
-
-        <Card style={styles.details}>
-          <DetailRow
-            label="Favoriete massage"
-            value={stats.favourite || "–"}
-          />
-          <DetailRow
-            label="Laatste bezoek"
-            value={
-              stats.lastVisit
-                ? formatShortDate(stats.lastVisit.startTime)
-                : "–"
-            }
-          />
-          <DetailRow
-            label="Telefoon"
-            value={customer.phoneNumber}
-          />
-          <DetailRow
-            label="E-mail"
-            value={customer.email || "–"}
-            last
-          />
-        </Card>
-
-        {!!customer.notes && (
-          <View style={styles.notes}>
-            <Text style={styles.notesLabel}>Notitie</Text>
-            <Text style={styles.notesText}>
-              {customer.notes}
-            </Text>
-          </View>
-        )}
-
-        {/* History */}
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={type.heading}>Geschiedenis</Text>
-            <Text style={type.caption}>
-              {customer.appointments.length}
-            </Text>
-          </View>
-
-          {customer.appointments.length === 0 ? (
-            <Card>
-              <Text style={type.caption}>
-                Nog geen afspraken.
-              </Text>
-            </Card>
-          ) : (
-            <Card style={styles.history}>
-              {customer.appointments.map(
-                (appointment, index) => (
-                  <View
-                    key={appointment.id}
+              <View style={styles.profile}>
+                <View
+                  style={[
+                    styles.avatar,
+                    customer.isVip && styles.vipAvatar,
+                  ]}
+                >
+                  <Text
                     style={[
-                      styles.historyRow,
-                      index > 0 && styles.historyDivider,
+                      styles.avatarText,
+                      customer.isVip && styles.vipAvatarText,
                     ]}
                   >
-                    <View style={styles.historyText}>
-                      <Text style={type.bodyMedium}>
-                        {appointment.serviceName}
-                      </Text>
-                      <Text style={type.caption}>
-                        {formatShortDate(
-                          appointment.startTime
-                        )}{" "}
-                        · {formatTime(appointment.startTime)}{" "}
-                        · {formatPrice(appointment.priceCents)}
-                      </Text>
-                    </View>
-                    <Badge
-                      label={STATUS_LABELS[appointment.status]}
-                      status={appointment.status}
-                    />
+                    {initials(customer)}
+                  </Text>
+                </View>
+                <View style={styles.profileText}>
+                  <Text style={styles.name}>
+                    {customer.firstName} {customer.lastName}
+                  </Text>
+                  <View style={styles.tags}>
+                    {customer.isVip && (
+                      <Badge
+                        label="VIP"
+                        background={colors.sandSoft}
+                        color={colors.noteText}
+                      />
+                    )}
+                    {stats.noShows > 0 && (
+                      <Badge
+                        label={`${stats.noShows}× no-show`}
+                        status="NO_SHOW"
+                      />
+                    )}
+                    {!!customer.createdAt && (
+                      <Badge
+                        label={`Sinds ${formatShortDate(
+                          customer.createdAt
+                        )}`}
+                      />
+                    )}
                   </View>
-                )
-              )}
-            </Card>
-          )}
-        </View>
+                </View>
+              </View>
 
-        <Button
-          label="Nieuwe afspraak"
-          variant="primary"
-          icon={
-            <Plus
-              size={18}
-              color={colors.onPrimary}
-              strokeWidth={2}
-            />
+              {/* Contact */}
+
+              <View style={styles.contactRow}>
+                <ContactButton
+                  label="Bel"
+                  icon={Phone}
+                  onPress={() =>
+                    Linking.openURL(`tel:${customer.phoneNumber}`)
+                  }
+                />
+                <ContactButton
+                  label="SMS"
+                  icon={MessageSquare}
+                  onPress={() =>
+                    Linking.openURL(`sms:${customer.phoneNumber}`)
+                  }
+                />
+                <ContactButton
+                  label="E-mail"
+                  icon={Mail}
+                  disabled={!customer.email}
+                  onPress={() =>
+                    Linking.openURL(`mailto:${customer.email}`)
+                  }
+                />
+              </View>
+
+              {/* Numbers */}
+
+              <Card style={styles.stats}>
+                <Stat label="bezoeken" value={String(stats.visits)} />
+                <Stat
+                  label="besteed"
+                  value={formatPrice(stats.spentCents).replace(
+                    ",00",
+                    ""
+                  )}
+                />
+                <Stat
+                  label="komt elke"
+                  value={
+                    stats.weeksBetween === null
+                      ? "–"
+                      : `${Math.max(
+                          1,
+                          Math.round(stats.weeksBetween)
+                        )} wk`
+                  }
+                />
+                <Stat
+                  label="no-shows"
+                  value={String(stats.noShows)}
+                  last
+                />
+              </Card>
+
+              {/* Details */}
+
+              <Card style={styles.details}>
+                <DetailRow
+                  label="Favoriete massage"
+                  value={stats.favourite || "–"}
+                />
+                <DetailRow
+                  label="Laatste bezoek"
+                  value={
+                    stats.lastVisit
+                      ? formatShortDate(stats.lastVisit.startTime)
+                      : "–"
+                  }
+                />
+                <DetailRow
+                  label="Telefoon"
+                  value={customer.phoneNumber}
+                />
+                <DetailRow
+                  label="E-mail"
+                  value={customer.email || "–"}
+                  last
+                />
+              </Card>
+
+              {!!customer.notes && (
+                <View style={styles.notes}>
+                  <Text style={styles.notesLabel}>Notitie</Text>
+                  <Text style={styles.notesText}>
+                    {customer.notes}
+                  </Text>
+                </View>
+              )}
+
+            </>
           }
-          onPress={() =>
-            router.push("/massage/new-appointment")
+          right={
+            <>
+              {/* History */}
+
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={type.heading}>Geschiedenis</Text>
+                  <Text style={type.caption}>
+                    {customer.appointments.length}
+                  </Text>
+                </View>
+
+                {customer.appointments.length === 0 ? (
+                  <Card>
+                    <Text style={type.caption}>
+                      Nog geen afspraken.
+                    </Text>
+                  </Card>
+                ) : (
+                  <Card style={styles.history}>
+                    {customer.appointments.map(
+                      (appointment, index) => (
+                        <View
+                          key={appointment.id}
+                          style={[
+                            styles.historyRow,
+                            index > 0 && styles.historyDivider,
+                          ]}
+                        >
+                          <View style={styles.historyText}>
+                            <Text style={type.bodyMedium}>
+                              {appointment.serviceName}
+                            </Text>
+                            <Text style={type.caption}>
+                              {formatShortDate(
+                                appointment.startTime
+                              )}{" "}
+                              · {formatTime(appointment.startTime)}{" "}
+                              · {formatPrice(appointment.priceCents)}
+                            </Text>
+                          </View>
+                          <Badge
+                            label={STATUS_LABELS[appointment.status]}
+                            status={appointment.status}
+                          />
+                        </View>
+                      )
+                    )}
+                  </Card>
+                )}
+              </View>
+
+              <Button
+                label="Nieuwe afspraak"
+                variant="primary"
+                icon={
+                  <Plus
+                    size={18}
+                    color={colors.onPrimary}
+                    strokeWidth={2}
+                  />
+                }
+                onPress={() =>
+                  router.push("/massage/new-appointment")
+                }
+              />
+            </>
           }
         />
       </ScrollView>
@@ -553,6 +567,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl,
     gap: spacing.lg,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    maxWidth: 1180,
   },
 
   profile: {

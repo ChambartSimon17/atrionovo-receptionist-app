@@ -9,6 +9,8 @@ import {
 } from "react-native";
 import { useMemo, useState } from "react";
 import { router } from "expo-router";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
@@ -39,6 +41,7 @@ function formatAlternativeTime(
 }
 
 export default function NewReservation() {
+  const wide = useWideLayout();
   const {
     business,
   } = useAuth();
@@ -194,9 +197,10 @@ export default function NewReservation() {
       style={styles.container}
     >
       <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={[
+          styles.content,
+          wide && styles.contentWide,
+        ]}
         showsVerticalScrollIndicator={
           false
         }
@@ -230,460 +234,471 @@ export default function NewReservation() {
           </View>
         </View>
 
-        {/* Date */}
+        <Columns
+          gap={0}
+          left={
+            <>
+              {/* Date */}
 
-        <View style={styles.section}>
-          <Text
-            style={styles.sectionLabel}
-          >
-            Datum
-          </Text>
-
-          <View
-            style={
-              styles.navigationRow
-            }
-          >
-            <TouchableOpacity
-              style={
-                styles.navigationButton
-              }
-              activeOpacity={0.7}
-              onPress={() =>
-                changeDate(-1)
-              }
-            >
-              <Text
-                style={
-                  styles.navigationArrow
-                }
-              >
-                ‹
-              </Text>
-            </TouchableOpacity>
-
-            <View
-              style={
-                styles.selectedValue
-              }
-            >
-              <Text
-                style={
-                  styles.selectedValueText
-                }
-              >
-                {formatDate(
-                  selectedDate
-                )}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={
-                styles.navigationButton
-              }
-              activeOpacity={0.7}
-              onPress={() =>
-                changeDate(1)
-              }
-            >
-              <Text
-                style={
-                  styles.navigationArrow
-                }
-              >
-                ›
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Time */}
-
-        <View style={styles.section}>
-          <Text
-            style={styles.sectionLabel}
-          >
-            Tijd
-          </Text>
-
-          <View
-            style={
-              styles.navigationRow
-            }
-          >
-            <TouchableOpacity
-              style={
-                styles.navigationButton
-              }
-              activeOpacity={0.7}
-              onPress={() =>
-                changeTime(-15)
-              }
-            >
-              <Text
-                style={
-                  styles.navigationArrow
-                }
-              >
-                −
-              </Text>
-            </TouchableOpacity>
-
-            <View
-              style={
-                styles.selectedValue
-              }
-            >
-              <Text
-                style={
-                  styles.timeValue
-                }
-              >
-                {formatTime(
-                  selectedStartTime
-                )}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={
-                styles.navigationButton
-              }
-              activeOpacity={0.7}
-              onPress={() =>
-                changeTime(15)
-              }
-            >
-              <Text
-                style={
-                  styles.navigationArrow
-                }
-              >
-                +
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text
-            style={styles.helperText}
-          >
-            Per 15 minuten
-          </Text>
-        </View>
-
-        {/* Guests */}
-
-        <View style={styles.section}>
-          <Text
-            style={styles.sectionLabel}
-          >
-            Aantal personen
-          </Text>
-
-          <View
-            style={
-              styles.guestSelector
-            }
-          >
-            <TouchableOpacity
-              style={
-                styles.guestButton
-              }
-              activeOpacity={0.7}
-              onPress={
-                decreaseGuests
-              }
-              disabled={
-                guestCount <= 1
-              }
-            >
-              <Text
-                style={
-                  styles.guestButtonText
-                }
-              >
-                −
-              </Text>
-            </TouchableOpacity>
-
-            <View
-              style={
-                styles.guestValue
-              }
-            >
-              <Text
-                style={
-                  styles.guestNumber
-                }
-              >
-                {guestCount}
-              </Text>
-
-              <Text
-                style={
-                  styles.guestLabel
-                }
-              >
-                {guestCount === 1
-                  ? "persoon"
-                  : "personen"}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              style={
-                styles.guestButton
-              }
-              activeOpacity={0.7}
-              onPress={
-                increaseGuests
-              }
-            >
-              <Text
-                style={
-                  styles.guestButtonText
-                }
-              >
-                +
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Check availability */}
-
-        <TouchableOpacity
-          style={[
-            styles.checkButton,
-            isChecking &&
-              styles.checkButtonDisabled,
-          ]}
-          activeOpacity={0.8}
-          disabled={isChecking}
-          onPress={
-            handleCheckAvailability
-          }
-        >
-          {isChecking ? (
-            <ActivityIndicator
-              color="#fff"
-            />
-          ) : (
-            <Text
-              style={
-                styles.checkButtonText
-              }
-            >
-              Controleer beschikbaarheid
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Error */}
-
-        {error && (
-          <View
-            style={styles.errorCard}
-          >
-            <Text
-              style={styles.errorTitle}
-            >
-              Er ging iets mis
-            </Text>
-
-            <Text
-              style={styles.errorText}
-            >
-              {error}
-            </Text>
-          </View>
-        )}
-
-        {/* Availability result */}
-
-        {availability && (
-          <View
-            style={
-              styles.resultContainer
-            }
-          >
-            {availability.available ? (
-              <View
-                style={
-                  styles.availableCard
-                }
-              >
+              <View style={styles.section}>
                 <Text
-                  style={
-                    styles.availableIcon
-                  }
+                  style={styles.sectionLabel}
                 >
-                  ✓
+                  Datum
                 </Text>
 
-                <Text
+                <View
                   style={
-                    styles.resultTitle
+                    styles.navigationRow
                   }
                 >
-                  Beschikbaar
-                </Text>
-
-                <Text
-                  style={
-                    styles.resultSubtitle
-                  }
-                >
-                  {formatTime(
-                    selectedStartTime
-                  )}{" "}
-                  ·{" "}
-                  {guestCount}{" "}
-                  {guestCount === 1
-                    ? "persoon"
-                    : "personen"}
-                </Text>
-
-                <TouchableOpacity
-                  style={
-                    styles.continueButton
-                  }
-                  activeOpacity={0.8}
-                  onPress={() => {
-                    router.push({
-                      pathname:
-                        "/reservation/customer",
-                      params: {
-                        date: selectedStartTime.toISOString(),
-                        startTime:
-                          formatTime(
-                            selectedStartTime
-                          ),
-                        guestCount: String(
-                          guestCount
-                        ),
-                      },
-                    });
-                  }}
-                >
-                  <Text
+                  <TouchableOpacity
                     style={
-                      styles.continueButtonText
+                      styles.navigationButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      changeDate(-1)
                     }
                   >
-                    Verder
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View
-                style={
-                  styles.unavailableCard
-                }
-              >
-                <Text
-                  style={
-                    styles.unavailableIcon
-                  }
-                >
-                  ×
-                </Text>
-
-                <Text
-                  style={
-                    styles.resultTitle
-                  }
-                >
-                  Geen beschikbaarheid
-                </Text>
-
-                <Text
-                  style={
-                    styles.resultSubtitle
-                  }
-                >
-                  {formatTime(
-                    selectedStartTime
-                  )}{" "}
-                  ·{" "}
-                  {guestCount}{" "}
-                  {guestCount === 1
-                    ? "persoon"
-                    : "personen"}
-                </Text>
-
-                {availability
-                  .alternativeSlots
-                  ?.length > 0 && (
-                  <>
                     <Text
                       style={
-                        styles.alternativeTitle
+                        styles.navigationArrow
                       }
                     >
-                      Mogelijke tijden
+                      ‹
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View
+                    style={
+                      styles.selectedValue
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.selectedValueText
+                      }
+                    >
+                      {formatDate(
+                        selectedDate
+                      )}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={
+                      styles.navigationButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      changeDate(1)
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.navigationArrow
+                      }
+                    >
+                      ›
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Time */}
+
+              <View style={styles.section}>
+                <Text
+                  style={styles.sectionLabel}
+                >
+                  Tijd
+                </Text>
+
+                <View
+                  style={
+                    styles.navigationRow
+                  }
+                >
+                  <TouchableOpacity
+                    style={
+                      styles.navigationButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      changeTime(-15)
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.navigationArrow
+                      }
+                    >
+                      −
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View
+                    style={
+                      styles.selectedValue
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.timeValue
+                      }
+                    >
+                      {formatTime(
+                        selectedStartTime
+                      )}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={
+                      styles.navigationButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={() =>
+                      changeTime(15)
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.navigationArrow
+                      }
+                    >
+                      +
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text
+                  style={styles.helperText}
+                >
+                  Per 15 minuten
+                </Text>
+              </View>
+
+              {/* Guests */}
+
+              <View style={styles.section}>
+                <Text
+                  style={styles.sectionLabel}
+                >
+                  Aantal personen
+                </Text>
+
+                <View
+                  style={
+                    styles.guestSelector
+                  }
+                >
+                  <TouchableOpacity
+                    style={
+                      styles.guestButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={
+                      decreaseGuests
+                    }
+                    disabled={
+                      guestCount <= 1
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.guestButtonText
+                      }
+                    >
+                      −
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View
+                    style={
+                      styles.guestValue
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.guestNumber
+                      }
+                    >
+                      {guestCount}
                     </Text>
 
-                    <View
+                    <Text
                       style={
-                        styles.alternativeList
+                        styles.guestLabel
                       }
                     >
-                      {availability.alternativeSlots.map(
-                        (slot) => (
-                          <TouchableOpacity
-                            key={
-                              slot.startTime
-                            }
+                      {guestCount === 1
+                        ? "persoon"
+                        : "personen"}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={
+                      styles.guestButton
+                    }
+                    activeOpacity={0.7}
+                    onPress={
+                      increaseGuests
+                    }
+                  >
+                    <Text
+                      style={
+                        styles.guestButtonText
+                      }
+                    >
+                      +
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+            </>
+          }
+          right={
+            <>
+              {/* Check availability */}
+
+              <TouchableOpacity
+                style={[
+                  styles.checkButton,
+                  isChecking &&
+                    styles.checkButtonDisabled,
+                ]}
+                activeOpacity={0.8}
+                disabled={isChecking}
+                onPress={
+                  handleCheckAvailability
+                }
+              >
+                {isChecking ? (
+                  <ActivityIndicator
+                    color="#fff"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.checkButtonText
+                    }
+                  >
+                    Controleer beschikbaarheid
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Error */}
+
+              {error && (
+                <View
+                  style={styles.errorCard}
+                >
+                  <Text
+                    style={styles.errorTitle}
+                  >
+                    Er ging iets mis
+                  </Text>
+
+                  <Text
+                    style={styles.errorText}
+                  >
+                    {error}
+                  </Text>
+                </View>
+              )}
+
+              {/* Availability result */}
+
+              {availability && (
+                <View
+                  style={
+                    styles.resultContainer
+                  }
+                >
+                  {availability.available ? (
+                    <View
+                      style={
+                        styles.availableCard
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.availableIcon
+                        }
+                      >
+                        ✓
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.resultTitle
+                        }
+                      >
+                        Beschikbaar
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.resultSubtitle
+                        }
+                      >
+                        {formatTime(
+                          selectedStartTime
+                        )}{" "}
+                        ·{" "}
+                        {guestCount}{" "}
+                        {guestCount === 1
+                          ? "persoon"
+                          : "personen"}
+                      </Text>
+
+                      <TouchableOpacity
+                        style={
+                          styles.continueButton
+                        }
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          router.push({
+                            pathname:
+                              "/reservation/customer",
+                            params: {
+                              date: selectedStartTime.toISOString(),
+                              startTime:
+                                formatTime(
+                                  selectedStartTime
+                                ),
+                              guestCount: String(
+                                guestCount
+                              ),
+                            },
+                          });
+                        }}
+                      >
+                        <Text
+                          style={
+                            styles.continueButtonText
+                          }
+                        >
+                          Verder
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View
+                      style={
+                        styles.unavailableCard
+                      }
+                    >
+                      <Text
+                        style={
+                          styles.unavailableIcon
+                        }
+                      >
+                        ×
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.resultTitle
+                        }
+                      >
+                        Geen beschikbaarheid
+                      </Text>
+
+                      <Text
+                        style={
+                          styles.resultSubtitle
+                        }
+                      >
+                        {formatTime(
+                          selectedStartTime
+                        )}{" "}
+                        ·{" "}
+                        {guestCount}{" "}
+                        {guestCount === 1
+                          ? "persoon"
+                          : "personen"}
+                      </Text>
+
+                      {availability
+                        .alternativeSlots
+                        ?.length > 0 && (
+                        <>
+                          <Text
                             style={
-                              styles.alternativeButton
+                              styles.alternativeTitle
                             }
-                            activeOpacity={
-                              0.75
-                            }
-                            onPress={() => {
-                              const date =
-                                new Date(
-                                  slot.startTime
-                                );
-
-                              setSelectedDate(
-                                date
-                              );
-
-                              setSelectedHour(
-                                date.getHours()
-                              );
-
-                              setSelectedMinute(
-                                date.getMinutes()
-                              );
-
-                              setAvailability(
-                                null
-                              );
-                            }}
                           >
-                            <Text
-                              style={
-                                styles.alternativeButtonText
-                              }
-                            >
-                              {formatAlternativeTime(
-                                slot.startTime
-                              )}
-                            </Text>
-                          </TouchableOpacity>
-                        )
+                            Mogelijke tijden
+                          </Text>
+
+                          <View
+                            style={
+                              styles.alternativeList
+                            }
+                          >
+                            {availability.alternativeSlots.map(
+                              (slot) => (
+                                <TouchableOpacity
+                                  key={
+                                    slot.startTime
+                                  }
+                                  style={
+                                    styles.alternativeButton
+                                  }
+                                  activeOpacity={
+                                    0.75
+                                  }
+                                  onPress={() => {
+                                    const date =
+                                      new Date(
+                                        slot.startTime
+                                      );
+
+                                    setSelectedDate(
+                                      date
+                                    );
+
+                                    setSelectedHour(
+                                      date.getHours()
+                                    );
+
+                                    setSelectedMinute(
+                                      date.getMinutes()
+                                    );
+
+                                    setAvailability(
+                                      null
+                                    );
+                                  }}
+                                >
+                                  <Text
+                                    style={
+                                      styles.alternativeButtonText
+                                    }
+                                  >
+                                    {formatAlternativeTime(
+                                      slot.startTime
+                                    )}
+                                  </Text>
+                                </TouchableOpacity>
+                              )
+                            )}
+                          </View>
+                        </>
                       )}
                     </View>
-                  </>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+                  )}
+                </View>
+              )}
+            </>
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -699,6 +714,14 @@ const styles = StyleSheet.create(
   content: {
     padding: 24,
     paddingBottom: 50,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
 
   header: {

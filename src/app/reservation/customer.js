@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
@@ -17,6 +19,7 @@ import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
 
 export default function ReservationCustomer() {
+  const wide = useWideLayout();
   const {
     date,
     startTime,
@@ -136,9 +139,10 @@ export default function ReservationCustomer() {
       style={styles.container}
     >
       <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={[
+          styles.content,
+          wide && styles.contentWide,
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={
           false
@@ -169,240 +173,251 @@ export default function ReservationCustomer() {
           of maak een nieuwe klant aan.
         </Text>
 
-        {/* Reservation summary */}
+        <Columns
+          gap={0}
+          left={
+            <>
+              {/* Reservation summary */}
 
-        <View
-          style={styles.summaryCard}
-        >
-          <Text
-            style={styles.summaryTitle}
-          >
-            Reservatie
-          </Text>
-
-          <Text
-            style={styles.summaryText}
-          >
-            {startTime}
-          </Text>
-
-          <Text
-            style={styles.summaryText}
-          >
-            {guestCount}{" "}
-            {Number(guestCount) === 1
-              ? "persoon"
-              : "personen"}
-          </Text>
-        </View>
-
-        {/* Search */}
-
-        <Text
-          style={styles.sectionLabel}
-        >
-          Bestaande klant
-        </Text>
-
-        <TextInput
-          style={styles.searchInput}
-          value={query}
-          onChangeText={(text) => {
-            setQuery(text);
-            setSelectedCustomer(null);
-          }}
-          placeholder="Zoek op voornaam of achternaam"
-          placeholderTextColor="#999"
-          autoCapitalize="words"
-          autoCorrect={false}
-        />
-
-        {/* Loading */}
-
-        {isSearching && (
-          <View
-            style={styles.loadingContainer}
-          >
-            <ActivityIndicator />
-            <Text
-              style={styles.loadingText}
-            >
-              Klanten zoeken...
-            </Text>
-          </View>
-        )}
-
-        {/* Error */}
-
-        {error && (
-          <View
-            style={styles.errorCard}
-          >
-            <Text
-              style={styles.errorText}
-            >
-              {error}
-            </Text>
-          </View>
-        )}
-
-        {/* Results */}
-
-        {!isSearching &&
-          query.trim().length > 0 &&
-          customers.length === 0 &&
-          !error && (
-            <View
-              style={
-                styles.emptyState
-              }
-            >
-              <Text
-                style={styles.emptyTitle}
+              <View
+                style={styles.summaryCard}
               >
-                Geen klant gevonden
-              </Text>
+                <Text
+                  style={styles.summaryTitle}
+                >
+                  Reservatie
+                </Text>
+
+                <Text
+                  style={styles.summaryText}
+                >
+                  {startTime}
+                </Text>
+
+                <Text
+                  style={styles.summaryText}
+                >
+                  {guestCount}{" "}
+                  {Number(guestCount) === 1
+                    ? "persoon"
+                    : "personen"}
+                </Text>
+              </View>
+
+              {/* Search */}
 
               <Text
-                style={styles.emptyText}
+                style={styles.sectionLabel}
               >
-                Deze naam staat nog niet in
-                de klantenlijst.
+                Bestaande klant
               </Text>
-            </View>
-          )}
 
-        <View
-          style={styles.customerList}
-        >
-          {customers.map(
-            (customer) => {
-              const isSelected =
-                selectedCustomer?.id ===
-                customer.id;
+              <TextInput
+                style={styles.searchInput}
+                value={query}
+                onChangeText={(text) => {
+                  setQuery(text);
+                  setSelectedCustomer(null);
+                }}
+                placeholder="Zoek op voornaam of achternaam"
+                placeholderTextColor="#999"
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
 
-              return (
-                <TouchableOpacity
-                  key={customer.id}
-                  style={[
-                    styles.customerCard,
-                    isSelected &&
-                      styles.customerCardSelected,
-                  ]}
-                  activeOpacity={0.75}
-                  onPress={() =>
-                    handleSelectCustomer(
-                      customer
-                    )
+            </>
+          }
+          right={
+            <>
+              {/* Loading */}
+
+              {isSearching && (
+                <View
+                  style={styles.loadingContainer}
+                >
+                  <ActivityIndicator />
+                  <Text
+                    style={styles.loadingText}
+                  >
+                    Klanten zoeken...
+                  </Text>
+                </View>
+              )}
+
+              {/* Error */}
+
+              {error && (
+                <View
+                  style={styles.errorCard}
+                >
+                  <Text
+                    style={styles.errorText}
+                  >
+                    {error}
+                  </Text>
+                </View>
+              )}
+
+              {/* Results */}
+
+              {!isSearching &&
+                query.trim().length > 0 &&
+                customers.length === 0 &&
+                !error && (
+                  <View
+                    style={
+                      styles.emptyState
+                    }
+                  >
+                    <Text
+                      style={styles.emptyTitle}
+                    >
+                      Geen klant gevonden
+                    </Text>
+
+                    <Text
+                      style={styles.emptyText}
+                    >
+                      Deze naam staat nog niet in
+                      de klantenlijst.
+                    </Text>
+                  </View>
+                )}
+
+              <View
+                style={styles.customerList}
+              >
+                {customers.map(
+                  (customer) => {
+                    const isSelected =
+                      selectedCustomer?.id ===
+                      customer.id;
+
+                    return (
+                      <TouchableOpacity
+                        key={customer.id}
+                        style={[
+                          styles.customerCard,
+                          isSelected &&
+                            styles.customerCardSelected,
+                        ]}
+                        activeOpacity={0.75}
+                        onPress={() =>
+                          handleSelectCustomer(
+                            customer
+                          )
+                        }
+                      >
+                        <View
+                          style={
+                            styles.customerAvatar
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.customerAvatarText
+                            }
+                          >
+                            {customer.firstName
+                              ?.charAt(0)
+                              ?.toUpperCase()}
+                            {customer.lastName
+                              ?.charAt(0)
+                              ?.toUpperCase()}
+                          </Text>
+                        </View>
+
+                        <View
+                          style={
+                            styles.customerInfo
+                          }
+                        >
+                          <Text
+                            style={
+                              styles.customerName
+                            }
+                          >
+                            {customer.firstName}{" "}
+                            {customer.lastName}
+                          </Text>
+
+                          {customer.phoneNumber && (
+                            <Text
+                              style={
+                                styles.customerDetail
+                              }
+                            >
+                              {customer.phoneNumber}
+                            </Text>
+                          )}
+
+                          {customer.email && (
+                            <Text
+                              style={
+                                styles.customerDetail
+                              }
+                            >
+                              {customer.email}
+                            </Text>
+                          )}
+                        </View>
+
+                        {isSelected && (
+                          <Text
+                            style={
+                              styles.selectedIcon
+                            }
+                          >
+                            ✓
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }
+                )}
+              </View>
+
+              {/* New customer */}
+
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                activeOpacity={0.8}
+                onPress={handleNewCustomer}
+              >
+                <Text
+                  style={
+                    styles.secondaryButtonText
                   }
                 >
-                  <View
+                  + Nieuwe klant
+                </Text>
+              </TouchableOpacity>
+
+              {/* Continue */}
+
+              {selectedCustomer && (
+                <TouchableOpacity
+                  style={
+                    styles.primaryButton
+                  }
+                  activeOpacity={0.8}
+                  onPress={
+                    handleContinue
+                  }
+                >
+                  <Text
                     style={
-                      styles.customerAvatar
+                      styles.primaryButtonText
                     }
                   >
-                    <Text
-                      style={
-                        styles.customerAvatarText
-                      }
-                    >
-                      {customer.firstName
-                        ?.charAt(0)
-                        ?.toUpperCase()}
-                      {customer.lastName
-                        ?.charAt(0)
-                        ?.toUpperCase()}
-                    </Text>
-                  </View>
-
-                  <View
-                    style={
-                      styles.customerInfo
-                    }
-                  >
-                    <Text
-                      style={
-                        styles.customerName
-                      }
-                    >
-                      {customer.firstName}{" "}
-                      {customer.lastName}
-                    </Text>
-
-                    {customer.phoneNumber && (
-                      <Text
-                        style={
-                          styles.customerDetail
-                        }
-                      >
-                        {customer.phoneNumber}
-                      </Text>
-                    )}
-
-                    {customer.email && (
-                      <Text
-                        style={
-                          styles.customerDetail
-                        }
-                      >
-                        {customer.email}
-                      </Text>
-                    )}
-                  </View>
-
-                  {isSelected && (
-                    <Text
-                      style={
-                        styles.selectedIcon
-                      }
-                    >
-                      ✓
-                    </Text>
-                  )}
+                    Verder met{" "}
+                    {selectedCustomer.firstName}
+                  </Text>
                 </TouchableOpacity>
-              );
-            }
-          )}
-        </View>
-
-        {/* New customer */}
-
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          activeOpacity={0.8}
-          onPress={handleNewCustomer}
-        >
-          <Text
-            style={
-              styles.secondaryButtonText
-            }
-          >
-            + Nieuwe klant
-          </Text>
-        </TouchableOpacity>
-
-        {/* Continue */}
-
-        {selectedCustomer && (
-          <TouchableOpacity
-            style={
-              styles.primaryButton
-            }
-            activeOpacity={0.8}
-            onPress={
-              handleContinue
-            }
-          >
-            <Text
-              style={
-                styles.primaryButtonText
-              }
-            >
-              Verder met{" "}
-              {selectedCustomer.firstName}
-            </Text>
-          </TouchableOpacity>
-        )}
+              )}
+            </>
+          }
+        />
       </ScrollView>
     </SafeAreaView>
   );
@@ -418,6 +433,14 @@ const styles = StyleSheet.create(
   content: {
     padding: 24,
     paddingBottom: 50,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
 
   backButton: {

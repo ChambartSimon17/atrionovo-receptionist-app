@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Columns from "../../components/ui/Columns";
+import useWideLayout from "../../hooks/useWideLayout";
 
 import {
   useLocalSearchParams,
@@ -21,6 +23,7 @@ import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
 
 export default function EditReservation() {
+  const wide = useWideLayout();
   const { id } = useLocalSearchParams();
 
   const router = useRouter();
@@ -567,9 +570,10 @@ export default function EditReservation() {
       </View>
 
       <ScrollView
-        contentContainerStyle={
-          styles.content
-        }
+        contentContainerStyle={[
+          styles.content,
+          wide && styles.contentWide,
+        ]}
         showsVerticalScrollIndicator={
           false
         }
@@ -590,283 +594,294 @@ export default function EditReservation() {
           reservatie aan.
         </Text>
 
-        {/* ==============================================
-            First name
-        ============================================== */}
+        <Columns
+          gap={0}
+          left={
+            <>
+              {/* ==============================================
+                  First name
+              ============================================== */}
 
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Voornaam
-          </Text>
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Voornaam
+                </Text>
 
-          <TextInput
-            value={firstName}
-            onChangeText={
-              setFirstName
-            }
-            placeholder="Voornaam"
-            autoCapitalize="words"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
+                <TextInput
+                  value={firstName}
+                  onChangeText={
+                    setFirstName
+                  }
+                  placeholder="Voornaam"
+                  autoCapitalize="words"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
 
-        {/* ==============================================
-            Last name
-        ============================================== */}
+              {/* ==============================================
+                  Last name
+              ============================================== */}
 
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Achternaam
-          </Text>
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Achternaam
+                </Text>
 
-          <TextInput
-            value={lastName}
-            onChangeText={
-              setLastName
-            }
-            placeholder="Achternaam"
-            autoCapitalize="words"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
+                <TextInput
+                  value={lastName}
+                  onChangeText={
+                    setLastName
+                  }
+                  placeholder="Achternaam"
+                  autoCapitalize="words"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
 
-        {/* ==============================================
-            Phone
-        ============================================== */}
+              {/* ==============================================
+                  Phone
+              ============================================== */}
 
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Telefoonnummer
-          </Text>
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Telefoonnummer
+                </Text>
 
-          <TextInput
-            value={phoneNumber}
-            onChangeText={
-              setPhoneNumber
-            }
-            placeholder="Telefoonnummer"
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
+                <TextInput
+                  value={phoneNumber}
+                  onChangeText={
+                    setPhoneNumber
+                  }
+                  placeholder="Telefoonnummer"
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
 
-        {/* ==============================================
-            Email
-        ============================================== */}
-
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            E-mail
-          </Text>
-
-          <TextInput
-            value={email}
-            onChangeText={
-              setEmail
-            }
-            placeholder="E-mailadres"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
-
-        {/* ==============================================
-            Guest count
-        ============================================== */}
-
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Aantal personen
-          </Text>
-
-          <TextInput
-            value={guestCount}
-            onChangeText={
-              setGuestCount
-            }
-            placeholder="Aantal personen"
-            keyboardType="number-pad"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
-
-        {/* ==============================================
-            Date
-        ============================================== */}
-
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Datum
-          </Text>
-
-          <TextInput
-            value={date}
-            onChangeText={
-              setDate
-            }
-            placeholder="YYYY-MM-DD"
-            autoCapitalize="none"
-            keyboardType="numbers-and-punctuation"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
-
-        {/* ==============================================
-            Time
-        ============================================== */}
-
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Tijdstip
-          </Text>
-
-          <TextInput
-            value={time}
-            onChangeText={
-              setTime
-            }
-            placeholder="HH:MM"
-            autoCapitalize="none"
-            keyboardType="numbers-and-punctuation"
-            style={styles.input}
-            editable={!saving}
-          />
-        </View>
-
-        {/* ==============================================
-            Notes
-        ============================================== */}
-
-        <View style={styles.card}>
-          <Text
-            style={styles.label}
-          >
-            Notities
-          </Text>
-
-          <TextInput
-            value={notes}
-            onChangeText={
-              setNotes
-            }
-            placeholder="Geen notities"
-            multiline
-            textAlignVertical="top"
-            style={[
-              styles.input,
-              styles.notesInput,
-            ]}
-            editable={!saving}
-          />
-        </View>
-
-        {/* ==============================================
-            Summary
-        ============================================== */}
-
-        <View
-          style={styles.summaryCard}
-        >
-          <Text
-            style={styles.summaryLabel}
-          >
-            Nieuwe reservatie
-          </Text>
-
-          <Text
-            style={styles.summaryValue}
-          >
-            {date} om {time}
-          </Text>
-
-          <Text
-            style={
-              styles.summarySecondary
-            }
-          >
-            {guestCount || "0"}{" "}
-            {Number(
-              guestCount
-            ) === 1
-              ? "persoon"
-              : "personen"}
-          </Text>
-        </View>
-
-        {/* ==============================================
-            Save
-        ============================================== */}
-
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            saving &&
-              styles.disabledButton,
-          ]}
-          onPress={
-            handleSave
+            </>
           }
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator
-              color="#fff"
-            />
-          ) : (
-            <Text
-              style={
-                styles.saveButtonText
-              }
-            >
-              Wijziging opslaan
-            </Text>
-          )}
-        </TouchableOpacity>
+          right={
+            <>
+              {/* ==============================================
+                  Email
+              ============================================== */}
 
-        {/* ==============================================
-            Cancel
-        ============================================== */}
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  E-mail
+                </Text>
 
-        <TouchableOpacity
-          style={
-            styles.cancelButton
+                <TextInput
+                  value={email}
+                  onChangeText={
+                    setEmail
+                  }
+                  placeholder="E-mailadres"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
+
+              {/* ==============================================
+                  Guest count
+              ============================================== */}
+
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Aantal personen
+                </Text>
+
+                <TextInput
+                  value={guestCount}
+                  onChangeText={
+                    setGuestCount
+                  }
+                  placeholder="Aantal personen"
+                  keyboardType="number-pad"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
+
+              {/* ==============================================
+                  Date
+              ============================================== */}
+
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Datum
+                </Text>
+
+                <TextInput
+                  value={date}
+                  onChangeText={
+                    setDate
+                  }
+                  placeholder="YYYY-MM-DD"
+                  autoCapitalize="none"
+                  keyboardType="numbers-and-punctuation"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
+
+              {/* ==============================================
+                  Time
+              ============================================== */}
+
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Tijdstip
+                </Text>
+
+                <TextInput
+                  value={time}
+                  onChangeText={
+                    setTime
+                  }
+                  placeholder="HH:MM"
+                  autoCapitalize="none"
+                  keyboardType="numbers-and-punctuation"
+                  style={styles.input}
+                  editable={!saving}
+                />
+              </View>
+
+              {/* ==============================================
+                  Notes
+              ============================================== */}
+
+              <View style={styles.card}>
+                <Text
+                  style={styles.label}
+                >
+                  Notities
+                </Text>
+
+                <TextInput
+                  value={notes}
+                  onChangeText={
+                    setNotes
+                  }
+                  placeholder="Geen notities"
+                  multiline
+                  textAlignVertical="top"
+                  style={[
+                    styles.input,
+                    styles.notesInput,
+                  ]}
+                  editable={!saving}
+                />
+              </View>
+
+              {/* ==============================================
+                  Summary
+              ============================================== */}
+
+              <View
+                style={styles.summaryCard}
+              >
+                <Text
+                  style={styles.summaryLabel}
+                >
+                  Nieuwe reservatie
+                </Text>
+
+                <Text
+                  style={styles.summaryValue}
+                >
+                  {date} om {time}
+                </Text>
+
+                <Text
+                  style={
+                    styles.summarySecondary
+                  }
+                >
+                  {guestCount || "0"}{" "}
+                  {Number(
+                    guestCount
+                  ) === 1
+                    ? "persoon"
+                    : "personen"}
+                </Text>
+              </View>
+
+              {/* ==============================================
+                  Save
+              ============================================== */}
+
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  saving &&
+                    styles.disabledButton,
+                ]}
+                onPress={
+                  handleSave
+                }
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator
+                    color="#fff"
+                  />
+                ) : (
+                  <Text
+                    style={
+                      styles.saveButtonText
+                    }
+                  >
+                    Wijziging opslaan
+                  </Text>
+                )}
+              </TouchableOpacity>
+
+              {/* ==============================================
+                  Cancel
+              ============================================== */}
+
+              <TouchableOpacity
+                style={
+                  styles.cancelButton
+                }
+                onPress={() =>
+                  router.back()
+                }
+                disabled={saving}
+              >
+                <Text
+                  style={
+                    styles.cancelButtonText
+                  }
+                >
+                  Annuleren
+                </Text>
+              </TouchableOpacity>
+            </>
           }
-          onPress={() =>
-            router.back()
-          }
-          disabled={saving}
-        >
-          <Text
-            style={
-              styles.cancelButtonText
-            }
-          >
-            Annuleren
-          </Text>
-        </TouchableOpacity>
+        />
       </ScrollView>
     </View>
   );
@@ -919,6 +934,14 @@ const styles = StyleSheet.create(
   content: {
     paddingHorizontal: 24,
     paddingBottom: 40,
+  },
+
+  // Tablet in landscape: two columns
+
+  contentWide: {
+    width: "100%",
+    maxWidth: 1180,
+    alignSelf: "center",
   },
 
   title: {
