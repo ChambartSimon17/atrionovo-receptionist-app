@@ -30,6 +30,7 @@ import { plural, t } from "../../i18n";
 import useRestaurantDay, {
   isInsideService,
 } from "../../hooks/useRestaurantDay";
+import useWideLayout from "../../hooks/useWideLayout";
 import {
   colors,
   fonts,
@@ -57,6 +58,10 @@ import {
 //
 // The calendar opens this screen with a ?date=YYYY-MM-DD
 // parameter to show another day.
+//
+// On a tablet in landscape the day, its numbers and the
+// finished reservations stay on the left and the services
+// scroll on the right.
 // ======================================================
 
 function isValidDateParam(value) {
@@ -89,6 +94,7 @@ function sumGuests(reservations) {
 
 export default function RestaurantTodayScreen() {
   const router = useRouter();
+  const wide = useWideLayout();
 
   const { user, business } = useAuth();
 
@@ -171,207 +177,246 @@ export default function RestaurantTodayScreen() {
     });
   }
 
-  return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => reload({ refresh: true })}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* Header */}
+  const refreshControl = (
+    <RefreshControl
+      refreshing={isRefreshing}
+      onRefresh={() => reload({ refresh: true })}
+      tintColor={colors.primary}
+    />
+  );
 
-        <View style={styles.header}>
-          <Text style={styles.headerDate}>
-            {capitalize(formatLongDate(todayString()))}
+  const day = (
+    <>
+      {/* Header */}
+
+      <View style={styles.header}>
+        <Text style={styles.headerDate}>
+          {capitalize(formatLongDate(todayString()))}
+        </Text>
+        <Text style={type.title}>
+          {greeting(now)}
+          {user?.firstName ? `, ${user.firstName}` : ""}
+        </Text>
+        {!!business?.name && (
+          <Text style={styles.businessName}>
+            {business.name}
           </Text>
-          <Text style={type.title}>
-            {greeting(now)}
-            {user?.firstName ? `, ${user.firstName}` : ""}
-          </Text>
-          {!!business?.name && (
-            <Text style={styles.businessName}>
-              {business.name}
-            </Text>
-          )}
-        </View>
-
-        <DayNavigation date={date} onChange={setDate} />
-
-        {/* Numbers of the day */}
-
-        <View style={styles.tiles}>
-          <StatTile
-            tone="primary"
-            style={styles.tile}
-            label="Reservaties"
-            value={String(reservations.length)}
-            note={`${sumGuests(reservations)} couverts`}
-          />
-          <StatTile
-            style={styles.tile}
-            label="Nog te komen"
-            value={String(waiting.length)}
-            note={
-              late.length > 0
-                ? `${late.length} te laat`
-                : `${sumGuests(waiting)} personen`
-            }
-          />
-          <StatTile
-            style={styles.tile}
-            label="Aan tafel"
-            value={String(seated.length)}
-            note={`${sumGuests(seated)} personen`}
-          />
-          <StatTile
-            style={styles.tile}
-            label="Tafels"
-            value={String(tables.length)}
-            note={`${seats} plaatsen`}
-          />
-        </View>
-
-        {/* Reservations per service */}
-
-        {isLoading ? (
-          <SkeletonList rows={4} />
-        ) : error ? (
-          <Card>
-            <Text style={styles.error}>{error}</Text>
-          </Card>
-        ) : services.length === 0 && outside.length === 0 ? (
-          <Card style={styles.closed}>
-            <Text style={type.heading}>Gesloten</Text>
-            <Text style={type.caption}>
-              Er zijn voor deze dag geen openingsuren
-              ingesteld.
-            </Text>
-          </Card>
-        ) : (
-          groups.map((group) => {
-            const covers = sumGuests(group.reservations);
-            const fill =
-              seats > 0 ? Math.min(1, covers / seats) : 0;
-
-            return (
-              <View key={group.key} style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <View>
-                    <Text style={type.heading}>
-                      {group.title}
-                    </Text>
-                    {!!group.subtitle && (
-                      <Text style={type.caption}>
-                        {group.subtitle}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.sectionNumbers}>
-                    <Text style={styles.covers}>
-                      {covers}
-                      {seats > 0 ? ` / ${seats}` : ""}
-                    </Text>
-                    <Text style={type.caption}>couverts</Text>
-                  </View>
-                </View>
-
-                {seats > 0 && (
-                  <View style={styles.fillTrack}>
-                    <View
-                      style={[
-                        styles.fillBar,
-                        { width: `${Math.round(fill * 100)}%` },
-                        fill >= 0.9 && styles.fillBarFull,
-                      ]}
-                    />
-                  </View>
-                )}
-
-                <Card style={styles.list}>
-                  {group.reservations.length === 0 ? (
-                    <Text style={styles.empty}>
-                      Nog geen reservaties.
-                    </Text>
-                  ) : (
-                    group.reservations.map(
-                      (reservation, index) => (
-                        <ReservationRow
-                          key={reservation.id}
-                          reservation={reservation}
-                          tables={tables}
-                          divider={index > 0}
-                          showActions={isToday}
-                          now={now}
-                          busy={actionId === reservation.id}
-                          onPress={() =>
-                            router.push(
-                              `/reservation/${reservation.id}`
-                            )
-                          }
-                          onSeat={seat}
-                          onComplete={complete}
-                        />
-                      )
-                    )
-                  )}
-                </Card>
-              </View>
-            );
-          })
         )}
+      </View>
 
-        {/* Done for today, with undo */}
+      <DayNavigation date={date} onChange={setDate} />
 
-        {!isLoading && finished.length > 0 ? (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={type.heading}>{t("dashboard.finished")}</Text>
-              <Text style={type.caption}>{finished.length}</Text>
+      {/* Numbers of the day */}
+
+      <View style={styles.tiles}>
+        <StatTile
+          tone="primary"
+          style={styles.tile}
+          label="Reservaties"
+          value={String(reservations.length)}
+          note={`${sumGuests(reservations)} couverts`}
+        />
+        <StatTile
+          style={styles.tile}
+          label="Nog te komen"
+          value={String(waiting.length)}
+          note={
+            late.length > 0
+              ? `${late.length} te laat`
+              : `${sumGuests(waiting)} personen`
+          }
+        />
+        <StatTile
+          style={styles.tile}
+          label="Aan tafel"
+          value={String(seated.length)}
+          note={`${sumGuests(seated)} personen`}
+        />
+        <StatTile
+          style={styles.tile}
+          label="Tafels"
+          value={String(tables.length)}
+          note={`${seats} plaatsen`}
+        />
+      </View>
+    </>
+  );
+
+  const servicesList = (
+    <>
+      {/* Reservations per service */}
+
+      {isLoading ? (
+        <SkeletonList rows={4} />
+      ) : error ? (
+        <Card>
+          <Text style={styles.error}>{error}</Text>
+        </Card>
+      ) : services.length === 0 && outside.length === 0 ? (
+        <Card style={styles.closed}>
+          <Text style={type.heading}>Gesloten</Text>
+          <Text style={type.caption}>
+            Er zijn voor deze dag geen openingsuren
+            ingesteld.
+          </Text>
+        </Card>
+      ) : (
+        groups.map((group) => {
+          const covers = sumGuests(group.reservations);
+          const fill =
+            seats > 0 ? Math.min(1, covers / seats) : 0;
+
+          return (
+            <View key={group.key} style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View>
+                  <Text style={type.heading}>
+                    {group.title}
+                  </Text>
+                  {!!group.subtitle && (
+                    <Text style={type.caption}>
+                      {group.subtitle}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.sectionNumbers}>
+                  <Text style={styles.covers}>
+                    {covers}
+                    {seats > 0 ? ` / ${seats}` : ""}
+                  </Text>
+                  <Text style={type.caption}>couverts</Text>
+                </View>
+              </View>
+
+              {seats > 0 && (
+                <View style={styles.fillTrack}>
+                  <View
+                    style={[
+                      styles.fillBar,
+                      { width: `${Math.round(fill * 100)}%` },
+                      fill >= 0.9 && styles.fillBarFull,
+                    ]}
+                  />
+                </View>
+              )}
+
+              <Card style={styles.list}>
+                {group.reservations.length === 0 ? (
+                  <Text style={styles.empty}>
+                    Nog geen reservaties.
+                  </Text>
+                ) : (
+                  group.reservations.map(
+                    (reservation, index) => (
+                      <ReservationRow
+                        key={reservation.id}
+                        reservation={reservation}
+                        tables={tables}
+                        divider={index > 0}
+                        showActions={isToday}
+                        now={now}
+                        busy={actionId === reservation.id}
+                        onPress={() =>
+                          router.push(
+                            `/reservation/${reservation.id}`
+                          )
+                        }
+                        onSeat={seat}
+                        onComplete={complete}
+                      />
+                    )
+                  )
+                )}
+              </Card>
             </View>
-            <Card style={styles.list}>
-              {finished.map((reservation, index) => (
-                <View
-                  key={reservation.id}
-                  style={[styles.finishedRow, index > 0 && styles.finishedDivider]}
+          );
+        })
+      )}
+    </>
+  );
+
+  const finishedList = (
+    <>
+      {/* Done for today, with undo */}
+
+      {!isLoading && finished.length > 0 ? (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={type.heading}>{t("dashboard.finished")}</Text>
+            <Text style={type.caption}>{finished.length}</Text>
+          </View>
+          <Card style={styles.list}>
+            {finished.map((reservation, index) => (
+              <View
+                key={reservation.id}
+                style={[styles.finishedRow, index > 0 && styles.finishedDivider]}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => router.push(`/reservation/${reservation.id}`)}
+                  style={styles.finishedText}
                 >
+                  <Text style={styles.finishedName} numberOfLines={1}>
+                    {formatTime(reservation.startTime)} ·{" "}
+                    {`${reservation.firstName} ${reservation.lastName}`.trim()}
+                  </Text>
+                  <Text style={type.caption}>
+                    {t(`dashboard.status.${reservation.status}`)} ·{" "}
+                    {plural("dashboard.people", reservation.guestCount)}
+                  </Text>
+                </Pressable>
+                {reservation.status !== "CANCELLED" ? (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => router.push(`/reservation/${reservation.id}`)}
-                    style={styles.finishedText}
+                    accessibilityLabel={t("dashboard.undo")}
+                    disabled={actionId === reservation.id}
+                    onPress={() => undo(reservation)}
+                    style={({ pressed }) => [styles.undo, pressed && styles.fabPressed]}
                   >
-                    <Text style={styles.finishedName} numberOfLines={1}>
-                      {formatTime(reservation.startTime)} ·{" "}
-                      {`${reservation.firstName} ${reservation.lastName}`.trim()}
-                    </Text>
-                    <Text style={type.caption}>
-                      {t(`dashboard.status.${reservation.status}`)} ·{" "}
-                      {plural("dashboard.people", reservation.guestCount)}
-                    </Text>
+                    <Undo2 size={14} color={colors.primary} strokeWidth={2} />
+                    <Text style={styles.undoText}>{t("dashboard.undo")}</Text>
                   </Pressable>
-                  {reservation.status !== "CANCELLED" ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={t("dashboard.undo")}
-                      disabled={actionId === reservation.id}
-                      onPress={() => undo(reservation)}
-                      style={({ pressed }) => [styles.undo, pressed && styles.fabPressed]}
-                    >
-                      <Undo2 size={14} color={colors.primary} strokeWidth={2} />
-                      <Text style={styles.undoText}>{t("dashboard.undo")}</Text>
-                    </Pressable>
-                  ) : null}
-                </View>
-              ))}
-            </Card>
-          </View>
-        ) : null}
-      </ScrollView>
+                ) : null}
+              </View>
+            ))}
+          </Card>
+        </View>
+      ) : null}
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      {wide ? (
+        <View style={styles.split}>
+          <ScrollView
+            style={styles.dayPane}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {day}
+            {finishedList}
+          </ScrollView>
+          <ScrollView
+            style={styles.servicesPane}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          >
+            {servicesList}
+          </ScrollView>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {day}
+          {servicesList}
+          {finishedList}
+        </ScrollView>
+      )}
 
       <Pressable
         accessibilityRole="button"
@@ -443,6 +488,32 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: 96,
+    gap: spacing.xl,
+  },
+
+  // Tablet in landscape: the day left, the services right
+
+  split: {
+    flex: 1,
+    flexDirection: "row",
+    width: "100%",
+    maxWidth: 1240,
+    alignSelf: "center",
+  },
+
+  dayPane: {
+    width: 440,
+    flexGrow: 0,
+  },
+
+  servicesPane: {
+    flex: 1,
+  },
+
+  paneContent: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: 96,

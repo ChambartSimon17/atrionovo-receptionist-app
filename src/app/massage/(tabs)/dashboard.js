@@ -40,6 +40,7 @@ import {
   todayString,
 } from "../../../utils/date";
 import { formatPrice } from "../../../utils/price";
+import useWideLayout from "../../../hooks/useWideLayout";
 import { RefreshControl } from "react-native";
 
 // ======================================================
@@ -53,6 +54,9 @@ import { RefreshControl } from "react-native";
 // The week strip and its month calendar move to another
 // day. The calendar opens this screen with a
 // ?date=YYYY-MM-DD parameter to show another day.
+//
+// On a tablet in landscape the day and its numbers stay
+// on the left and the agenda scrolls on the right.
 // ======================================================
 
 function isValidDateParam(value) {
@@ -84,6 +88,7 @@ function initials(appointment) {
 
 export default function MassageTodayScreen() {
   const router = useRouter();
+  const wide = useWideLayout();
 
   const { user, business, accessToken } = useAuth();
 
@@ -182,187 +187,216 @@ export default function MassageTodayScreen() {
     inProgress.map((appointment) => appointment.roomName)
   ).size;
 
-  return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={async () => {
-              setIsRefreshing(true);
-              await reload();
-              setIsRefreshing(false);
-            }}
-            tintColor={colors.primary}
-          />
-        }
-      >
-        {/* Header */}
+  const refreshControl = (
+    <RefreshControl
+      refreshing={isRefreshing}
+      onRefresh={async () => {
+        setIsRefreshing(true);
+        await reload();
+        setIsRefreshing(false);
+      }}
+      tintColor={colors.primary}
+    />
+  );
 
-        <View style={styles.header}>
-          <Text style={styles.headerDate}>
-            {capitalize(formatLongDate(todayString()))}
+  const day = (
+    <>
+      {/* Header */}
+
+      <View style={styles.header}>
+        <Text style={styles.headerDate}>
+          {capitalize(formatLongDate(todayString()))}
+        </Text>
+        <Text style={type.title}>
+          {greeting(now)}
+          {user?.firstName ? `, ${user.firstName}` : ""}
+        </Text>
+        {!!business?.name && (
+          <Text style={styles.businessName}>
+            {business.name}
           </Text>
-          <Text style={type.title}>
-            {greeting(now)}
-            {user?.firstName ? `, ${user.firstName}` : ""}
-          </Text>
-          {!!business?.name && (
-            <Text style={styles.businessName}>
-              {business.name}
-            </Text>
-          )}
-        </View>
+        )}
+      </View>
 
-        {/* Days: week strip, calendar */}
+      {/* Days: week strip, calendar */}
 
-        <WeekStrip
-          date={date}
-          onChange={setDate}
-          counts={monthCounts}
-          onOpenCalendar={() => setCalendarOpen(true)}
+      <WeekStrip
+        date={date}
+        onChange={setDate}
+        counts={monthCounts}
+        onOpenCalendar={() => setCalendarOpen(true)}
+      />
+
+      {/* Numbers of the day */}
+
+      <View style={styles.tiles}>
+        <StatTile
+          tone="primary"
+          style={styles.tile}
+          label="Afspraken"
+          value={String(active.length)}
+          note={`${completed.length} afgerond · ${
+            active.length - completed.length
+          } te gaan`}
         />
-
-        {/* Numbers of the day */}
-
-        <View style={styles.tiles}>
-          <StatTile
-            tone="primary"
-            style={styles.tile}
-            label="Afspraken"
-            value={String(active.length)}
-            note={`${completed.length} afgerond · ${
-              active.length - completed.length
-            } te gaan`}
-          />
-          <StatTile
-            style={styles.tile}
-            label="Omzet"
-            value={formatPrice(revenueCents)}
-            note={
-              isToday
-                ? `${formatPrice(
-                    completed.reduce(
-                      (sum, appointment) =>
-                        sum + (appointment.priceCents ?? 0),
-                      0
-                    )
-                  )} al afgerond`
-                : "verwacht"
-            }
-          />
-          <StatTile
-            style={styles.tile}
-            label={isToday ? "Kamers bezet" : "Kamers"}
-            value={
-              roomCount === null
-                ? "–"
-                : isToday
-                  ? `${busyRooms} / ${roomCount}`
-                  : String(roomCount)
-            }
-            note={isToday ? "op dit moment" : "actief"}
-          />
-          <StatTile
-            style={styles.tile}
-            label="No-shows"
-            value={String(missed.length)}
-            note={`${cancelled.length} geannuleerd`}
-          />
-        </View>
-
-        {/* Right now */}
-
-        {inProgress.length > 0 && (
-          <View style={styles.section}>
-            <Text style={type.heading}>Nu bezig</Text>
-
-            <Card style={styles.nowCard}>
-              {inProgress.map((appointment, index) => {
-                const start = new Date(
-                  appointment.startTime
-                ).getTime();
-                const end = new Date(
-                  appointment.endTime
-                ).getTime();
-                const progress = Math.min(
-                  1,
-                  Math.max(
-                    0,
-                    (now.getTime() - start) / (end - start)
+        <StatTile
+          style={styles.tile}
+          label="Omzet"
+          value={formatPrice(revenueCents)}
+          note={
+            isToday
+              ? `${formatPrice(
+                  completed.reduce(
+                    (sum, appointment) =>
+                      sum + (appointment.priceCents ?? 0),
+                    0
                   )
-                );
-                const minutesLeft = Math.max(
+                )} al afgerond`
+              : "verwacht"
+          }
+        />
+        <StatTile
+          style={styles.tile}
+          label={isToday ? "Kamers bezet" : "Kamers"}
+          value={
+            roomCount === null
+              ? "–"
+              : isToday
+                ? `${busyRooms} / ${roomCount}`
+                : String(roomCount)
+          }
+          note={isToday ? "op dit moment" : "actief"}
+        />
+        <StatTile
+          style={styles.tile}
+          label="No-shows"
+          value={String(missed.length)}
+          note={`${cancelled.length} geannuleerd`}
+        />
+      </View>
+
+      {/* Right now */}
+
+      {inProgress.length > 0 && (
+        <View style={styles.section}>
+          <Text style={type.heading}>Nu bezig</Text>
+
+          <Card style={styles.nowCard}>
+            {inProgress.map((appointment, index) => {
+              const start = new Date(
+                appointment.startTime
+              ).getTime();
+              const end = new Date(
+                appointment.endTime
+              ).getTime();
+              const progress = Math.min(
+                1,
+                Math.max(
                   0,
-                  Math.round(
-                    (end - now.getTime()) / 60000
-                  )
-                );
+                  (now.getTime() - start) / (end - start)
+                )
+              );
+              const minutesLeft = Math.max(
+                0,
+                Math.round(
+                  (end - now.getTime()) / 60000
+                )
+              );
 
-                return (
-                  <View
-                    key={appointment.id}
-                    style={[
-                      styles.nowRow,
-                      index > 0 && styles.nowDivider,
-                    ]}
-                  >
-                    <View style={styles.avatar}>
-                      <Text style={styles.avatarText}>
-                        {initials(appointment)}
+              return (
+                <View
+                  key={appointment.id}
+                  style={[
+                    styles.nowRow,
+                    index > 0 && styles.nowDivider,
+                  ]}
+                >
+                  <View style={styles.avatar}>
+                    <Text style={styles.avatarText}>
+                      {initials(appointment)}
+                    </Text>
+                  </View>
+                  <View style={styles.nowDetails}>
+                    <View style={styles.nowTitleRow}>
+                      <Text style={type.bodyMedium}>
+                        {appointment.firstName}{" "}
+                        {appointment.lastName}
+                      </Text>
+                      <Text style={type.caption}>
+                        nog {minutesLeft} min
                       </Text>
                     </View>
-                    <View style={styles.nowDetails}>
-                      <View style={styles.nowTitleRow}>
-                        <Text style={type.bodyMedium}>
-                          {appointment.firstName}{" "}
-                          {appointment.lastName}
-                        </Text>
-                        <Text style={type.caption}>
-                          nog {minutesLeft} min
-                        </Text>
-                      </View>
-                      <Text style={type.caption}>
-                        {appointment.serviceName} ·{" "}
-                        {appointment.therapistName} ·{" "}
-                        {appointment.roomName} · tot{" "}
-                        {formatTime(appointment.endTime)}
-                      </Text>
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressFill,
-                            {
-                              width: `${Math.round(
-                                progress * 100
-                              )}%`,
-                            },
-                          ]}
-                        />
-                      </View>
+                    <Text style={type.caption}>
+                      {appointment.serviceName} ·{" "}
+                      {appointment.therapistName} ·{" "}
+                      {appointment.roomName} · tot{" "}
+                      {formatTime(appointment.endTime)}
+                    </Text>
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${Math.round(
+                              progress * 100
+                            )}%`,
+                          },
+                        ]}
+                      />
                     </View>
                   </View>
-                );
-              })}
-            </Card>
-          </View>
-        )}
-
-        {/* Agenda of the day */}
-
-        <View style={styles.section}>
-          <Text style={type.heading}>Afspraken</Text>
-
-          <MassageAgenda
-            appointments={appointments}
-            isLoading={isLoading}
-            error={error}
-            onChangeStatus={confirmStatus}
-          />
+                </View>
+              );
+            })}
+          </Card>
         </View>
-      </ScrollView>
+      )}
+    </>
+  );
+
+  const agenda = (
+    <View style={styles.section}>
+      <Text style={type.heading}>Afspraken</Text>
+
+      <MassageAgenda
+        appointments={appointments}
+        isLoading={isLoading}
+        error={error}
+        onChangeStatus={confirmStatus}
+      />
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      {wide ? (
+        <View style={styles.split}>
+          <ScrollView
+            style={styles.dayPane}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {day}
+          </ScrollView>
+          <ScrollView
+            style={styles.agendaPane}
+            contentContainerStyle={styles.paneContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={refreshControl}
+          >
+            {agenda}
+          </ScrollView>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={refreshControl}
+        >
+          {day}
+          {agenda}
+        </ScrollView>
+      )}
 
       <Pressable
         accessibilityRole="button"
@@ -407,6 +441,32 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+    paddingBottom: 96,
+    gap: spacing.xl,
+  },
+
+  // Tablet in landscape: the day left, the agenda right
+
+  split: {
+    flex: 1,
+    flexDirection: "row",
+    width: "100%",
+    maxWidth: 1240,
+    alignSelf: "center",
+  },
+
+  dayPane: {
+    width: 440,
+    flexGrow: 0,
+  },
+
+  agendaPane: {
+    flex: 1,
+  },
+
+  paneContent: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: 96,

@@ -17,6 +17,8 @@ import { Chip, ScreenHeader, SkeletonList } from "../../components/ui";
 import { locale, t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { OUTCOMES, OUTCOME_TONES, formatDuration } from "../../components/call-outcomes";
+import CallDetail from "../../components/CallDetail";
+import useWideLayout from "../../hooks/useWideLayout";
 import { formatTime } from "../../utils/date";
 
 // ======================================================
@@ -29,6 +31,9 @@ import { formatTime } from "../../utils/date";
 // one-line summary. Callers still to call back come
 // first in their own filter. Tap a call for the summary,
 // the transcript and the recording.
+//
+// On a tablet in landscape the chosen call opens next to
+// the list instead of on its own screen.
 // ======================================================
 
 const FILTERS = ["ALL", "NEEDS_CALLBACK", "BOOKED", "CHANGED", "INFORMATION"];
@@ -51,9 +56,11 @@ function dayTitle(date) {
 export default function CallsScreen() {
   const router = useRouter();
   const { business, accessToken } = useAuth();
+  const wide = useWideLayout();
 
   const [calls, setCalls] = useState(null);
   const [filter, setFilter] = useState("ALL");
+  const [selectedId, setSelectedId] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
@@ -130,12 +137,16 @@ export default function CallsScreen() {
     return [...groups.values()];
   }, [calls, filter]);
 
-  return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.header}>
-        <ScreenHeader title={t("calls.title")} />
-      </View>
+  // Side by side: the chosen call, or the newest one shown.
+  const shownIds = sections.flatMap((section) => section.data.map((call) => call.id));
+  const openId = wide
+    ? shownIds.includes(selectedId)
+      ? selectedId
+      : shownIds[0] ?? null
+    : null;
 
+  const list = (
+    <>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -196,12 +207,15 @@ export default function CallsScreen() {
             return (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push(`/calls/${item.id}`)}
+                onPress={() =>
+                  wide ? setSelectedId(item.id) : router.push(`/calls/${item.id}`)
+                }
                 style={({ pressed }) => [
                   styles.row,
                   first && styles.rowFirst,
                   last && styles.rowLast,
                   !first && styles.rowDivider,
+                  item.id === openId && styles.rowSelected,
                   pressed && styles.rowPressed,
                 ]}
               >
@@ -232,6 +246,32 @@ export default function CallsScreen() {
             );
           }}
         />
+      )}
+    </>
+  );
+
+  return (
+    <SafeAreaView style={styles.screen} edges={["top"]}>
+      <View style={styles.header}>
+        <ScreenHeader title={t("calls.title")} />
+      </View>
+
+      {wide ? (
+        <View style={styles.split}>
+          <View style={styles.listPane}>{list}</View>
+          <View style={styles.detailPane}>
+            {openId ? (
+              <CallDetail
+                key={openId}
+                callId={openId}
+                onChange={load}
+                contentStyle={styles.detailContent}
+              />
+            ) : null}
+          </View>
+        </View>
+      ) : (
+        list
       )}
     </SafeAreaView>
   );
@@ -305,6 +345,31 @@ const styles = StyleSheet.create({
 
   rowPressed: {
     backgroundColor: colors.surfaceMuted,
+  },
+
+  rowSelected: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  // Tablet in landscape: list left, call right
+
+  split: {
+    flex: 1,
+    flexDirection: "row",
+  },
+
+  listPane: {
+    width: 440,
+  },
+
+  detailPane: {
+    flex: 1,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+  },
+
+  detailContent: {
+    paddingTop: spacing.sm,
   },
 
   icon: {

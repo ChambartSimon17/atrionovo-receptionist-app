@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { SegmentedControl } from "../../../components/ui";
 import ScheduleView from "../../../components/team/ScheduleView";
 import AttendanceView from "../../../components/team/AttendanceView";
+import useWideLayout from "../../../hooks/useWideLayout";
 import { t } from "../../../i18n";
 import { colors, spacing, type } from "../../../theme";
 
@@ -16,14 +17,20 @@ import { colors, spacing, type } from "../../../theme";
 // date, absences (only the owner reports them).
 // Aanwezigheid: the time clock, compared with the
 // schedule.
+//
+// On a tablet in landscape the week uses the full width.
 // ======================================================
 
 export default function TeamScreen() {
   const [view, setView] = useState("schedule");
+  const wide = useWideLayout();
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, wide && styles.contentWide]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Text style={type.title}>{t("team.title")}</Text>
         </View>
@@ -57,6 +64,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: 48,
     gap: spacing.lg,
+  },
+
+  contentWide: {
+    maxWidth: 1100,
+    paddingHorizontal: spacing.xl,
   },
 
   header: {

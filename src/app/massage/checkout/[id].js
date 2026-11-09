@@ -21,6 +21,7 @@ import { Button, Card, SegmentedControl, Sheet, Switch } from "../../../componen
 import BuyerForm, { buyerIsComplete, EMPTY_BUYER, Field } from "../../../components/invoicing/BuyerForm";
 import { openDocumentPdf } from "../../../components/invoicing/open-file";
 import { formatClock } from "../../../components/team/team-format";
+import useWideLayout from "../../../hooks/useWideLayout";
 import { t } from "../../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../../theme";
 import { todayString } from "../../../utils/date";
@@ -50,6 +51,9 @@ import { formatDuration, formatPrice, parsePriceToCents } from "../../../utils/p
 //
 // Opened with ?date=YYYY-MM-DD, the day of the
 // appointment.
+//
+// On a tablet in landscape the ticket stands on the left
+// and the proof and the payment method on the right.
 // ======================================================
 
 const TIPS = [
@@ -65,6 +69,7 @@ export default function CheckoutScreen() {
   const { id, date } = useLocalSearchParams();
   const { business, accessToken } = useAuth();
 
+  const wide = useWideLayout();
   const [appointment, setAppointment] = useState(null);
   const [error, setError] = useState(null);
   const [extras, setExtras] = useState([]);
@@ -260,179 +265,188 @@ export default function CheckoutScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.content, wide && styles.contentWide]}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={type.title}>{t("checkout.title")}</Text>
 
-        <Card style={styles.customer}>
-          <View style={styles.initials}>
-            <Text style={styles.initialsText}>
-              {`${appointment.firstName?.[0] ?? ""}${appointment.lastName?.[0] ?? ""}`.toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.flex}>
-            <Text style={type.bodyMedium}>{customer}</Text>
-            <Text style={type.caption}>
-              {t("checkout.withTherapist", {
-                room: appointment.roomName,
-                therapist: appointment.therapistName,
-                time: `${formatClock(appointment.startTime)} – ${formatClock(appointment.endTime)}`,
-              })}
-            </Text>
-          </View>
-        </Card>
-
-        {/* Ticket */}
-
-        <Card style={styles.ticket}>
-          <View style={styles.line}>
-            <Text style={[type.body, styles.flex]}>
-              {appointment.serviceName} {formatDuration(appointment.durationMinutes)}
-            </Text>
-            <Text style={type.bodyMedium}>{formatPrice(appointment.priceCents)}</Text>
-          </View>
-
-          {extras.map((extra, index) => (
-            <View key={`${extra.name}-${index}`} style={styles.line}>
-              <Text style={[type.body, styles.flex]}>{extra.name}</Text>
-              <Text style={type.bodyMedium}>{formatPrice(extra.amountCents)}</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t("checkout.remove")}
-                hitSlop={8}
-                onPress={() => setExtras(extras.filter((_, other) => other !== index))}
-              >
-                <X size={16} color={colors.textMuted} strokeWidth={2} />
-              </Pressable>
-            </View>
-          ))}
-
-          <Pressable accessibilityRole="button" onPress={() => setProductOpen(true)} style={styles.addLine}>
-            <Plus size={16} color={colors.primary} strokeWidth={2} />
-            <Text style={styles.addText}>{t("checkout.addProduct")}</Text>
-          </Pressable>
-
-          <View style={styles.tipBlock}>
-            <Text style={type.caption}>{t("checkout.tipFor", { name: appointment.therapistName })}</Text>
-            <View style={styles.tips}>
-              {TIPS.map((option) => {
-                const selected = tip.kind === "percent" && tip.value === option.value;
-
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() => setTip({ kind: "percent", value: option.value })}
-                    style={[styles.tip, selected && styles.tipSelected]}
-                  >
-                    <Text style={[styles.tipText, selected && styles.tipTextSelected]}>{option.label()}</Text>
-                  </Pressable>
-                );
-              })}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ selected: tip.kind === "amount" }}
-                onPress={() => setTipOpen(true)}
-                style={[styles.tip, tip.kind === "amount" && styles.tipSelected]}
-              >
-                <Text style={[styles.tipText, tip.kind === "amount" && styles.tipTextSelected]}>
-                  {tip.kind === "amount" ? formatPrice(tip.value) : t("checkout.tipOther")}
+        <View style={wide ? styles.columns : styles.stack}>
+          <View style={wide ? styles.column : styles.stack}>
+            <Card style={styles.customer}>
+              <View style={styles.initials}>
+                <Text style={styles.initialsText}>
+                  {`${appointment.firstName?.[0] ?? ""}${appointment.lastName?.[0] ?? ""}`.toUpperCase()}
                 </Text>
+              </View>
+              <View style={styles.flex}>
+                <Text style={type.bodyMedium}>{customer}</Text>
+                <Text style={type.caption}>
+                  {t("checkout.withTherapist", {
+                    room: appointment.roomName,
+                    therapist: appointment.therapistName,
+                    time: `${formatClock(appointment.startTime)} – ${formatClock(appointment.endTime)}`,
+                  })}
+                </Text>
+              </View>
+            </Card>
+
+            {/* Ticket */}
+
+            <Card style={styles.ticket}>
+              <View style={styles.line}>
+                <Text style={[type.body, styles.flex]}>
+                  {appointment.serviceName} {formatDuration(appointment.durationMinutes)}
+                </Text>
+                <Text style={type.bodyMedium}>{formatPrice(appointment.priceCents)}</Text>
+              </View>
+
+              {extras.map((extra, index) => (
+                <View key={`${extra.name}-${index}`} style={styles.line}>
+                  <Text style={[type.body, styles.flex]}>{extra.name}</Text>
+                  <Text style={type.bodyMedium}>{formatPrice(extra.amountCents)}</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("checkout.remove")}
+                    hitSlop={8}
+                    onPress={() => setExtras(extras.filter((_, other) => other !== index))}
+                  >
+                    <X size={16} color={colors.textMuted} strokeWidth={2} />
+                  </Pressable>
+                </View>
+              ))}
+
+              <Pressable accessibilityRole="button" onPress={() => setProductOpen(true)} style={styles.addLine}>
+                <Plus size={16} color={colors.primary} strokeWidth={2} />
+                <Text style={styles.addText}>{t("checkout.addProduct")}</Text>
               </Pressable>
-            </View>
+
+              <View style={styles.tipBlock}>
+                <Text style={type.caption}>{t("checkout.tipFor", { name: appointment.therapistName })}</Text>
+                <View style={styles.tips}>
+                  {TIPS.map((option) => {
+                    const selected = tip.kind === "percent" && tip.value === option.value;
+
+                    return (
+                      <Pressable
+                        key={option.value}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setTip({ kind: "percent", value: option.value })}
+                        style={[styles.tip, selected && styles.tipSelected]}
+                      >
+                        <Text style={[styles.tipText, selected && styles.tipTextSelected]}>{option.label()}</Text>
+                      </Pressable>
+                    );
+                  })}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: tip.kind === "amount" }}
+                    onPress={() => setTipOpen(true)}
+                    style={[styles.tip, tip.kind === "amount" && styles.tipSelected]}
+                  >
+                    <Text style={[styles.tipText, tip.kind === "amount" && styles.tipTextSelected]}>
+                      {tip.kind === "amount" ? formatPrice(tip.value) : t("checkout.tipOther")}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <View style={[styles.line, styles.totalLine]}>
+                <View style={styles.flex}>
+                  <Text style={styles.totalLabel}>{t("checkout.total")}</Text>
+                  <Text style={type.caption}>
+                    {t("checkout.vatNote")}
+                    {tipCents > 0 ? ` · ${t("checkout.tipNote", { amount: formatPrice(tipCents) })}` : ""}
+                  </Text>
+                </View>
+                <Text style={styles.totalValue}>{formatPrice(total)}</Text>
+              </View>
+            </Card>
           </View>
 
-          <View style={[styles.line, styles.totalLine]}>
-            <View style={styles.flex}>
-              <Text style={styles.totalLabel}>{t("checkout.total")}</Text>
-              <Text style={type.caption}>
-                {t("checkout.vatNote")}
-                {tipCents > 0 ? ` · ${t("checkout.tipNote", { amount: formatPrice(tipCents) })}` : ""}
-              </Text>
-            </View>
-            <Text style={styles.totalValue}>{formatPrice(total)}</Text>
+          <View style={wide ? styles.column : styles.stack}>
+            {/* Proof for the customer */}
+
+            <Text style={styles.label}>{t("proof.label")}</Text>
+            <SegmentedControl
+              options={[
+                { value: "NONE", label: t("proof.none") },
+                { value: "RECEIPT", label: t("proof.receipt") },
+                { value: "INVOICE", label: t("proof.invoice") },
+              ]}
+              value={proof}
+              onChange={(value) => {
+                if (value !== "NONE" && !invoicing?.complete) {
+                  Alert.alert(t("invoicing.incomplete"));
+                  return;
+                }
+
+                setProof(value);
+              }}
+            />
+
+            {proof === "RECEIPT" ? (
+              <Field
+                label={t("proof.emailOptional")}
+                value={receiptEmail}
+                onChangeText={setReceiptEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            ) : null}
+
+            {proof === "INVOICE" ? (
+              <>
+                <BuyerForm value={buyer} onChange={setBuyer} />
+                <View style={styles.saveRow}>
+                  <Text style={[type.caption, styles.flex]}>{t("proof.save", { name: customer })}</Text>
+                  <Switch value={saveBuyer} onValueChange={setSaveBuyer} />
+                </View>
+              </>
+            ) : null}
+
+            {/* Method */}
+
+            <Text style={styles.label}>{t("checkout.payWith")}</Text>
+            <View style={styles.methods}>
+              <MethodTile
+                icon={QrCode}
+                title={t("checkout.qr")}
+                hint={qrReady ? t("checkout.qrHint") : t("checkout.stripeOff")}
+                selected={method === "STRIPE_LINK"}
+                disabled={!qrReady}
+                onPress={() => setMethod("STRIPE_LINK")}
+              />
+              <MethodTile
+                icon={CreditCard}
+                title={t("checkout.terminal")}
+                hint={t("checkout.terminalHint")}
+                selected={method === "CARD_TERMINAL"}
+                onPress={() => setMethod("CARD_TERMINAL")}
+              />
+              <MethodTile
+                icon={Banknote}
+                title={t("checkout.cash")}
+                hint={t("checkout.cashHint")}
+                selected={method === "CASH"}
+                onPress={() => setMethod("CASH")}
+              />
           </View>
-        </Card>
 
-        {/* Proof for the customer */}
-
-        <Text style={styles.label}>{t("proof.label")}</Text>
-        <SegmentedControl
-          options={[
-            { value: "NONE", label: t("proof.none") },
-            { value: "RECEIPT", label: t("proof.receipt") },
-            { value: "INVOICE", label: t("proof.invoice") },
-          ]}
-          value={proof}
-          onChange={(value) => {
-            if (value !== "NONE" && !invoicing?.complete) {
-              Alert.alert(t("invoicing.incomplete"));
-              return;
-            }
-
-            setProof(value);
-          }}
-        />
-
-        {proof === "RECEIPT" ? (
-          <Field
-            label={t("proof.emailOptional")}
-            value={receiptEmail}
-            onChangeText={setReceiptEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        ) : null}
-
-        {proof === "INVOICE" ? (
-          <>
-            <BuyerForm value={buyer} onChange={setBuyer} />
-            <View style={styles.saveRow}>
-              <Text style={[type.caption, styles.flex]}>{t("proof.save", { name: customer })}</Text>
-              <Switch value={saveBuyer} onValueChange={setSaveBuyer} />
-            </View>
-          </>
-        ) : null}
-
-        {/* Method */}
-
-        <Text style={styles.label}>{t("checkout.payWith")}</Text>
-        <View style={styles.methods}>
-          <MethodTile
-            icon={QrCode}
-            title={t("checkout.qr")}
-            hint={qrReady ? t("checkout.qrHint") : t("checkout.stripeOff")}
-            selected={method === "STRIPE_LINK"}
-            disabled={!qrReady}
-            onPress={() => setMethod("STRIPE_LINK")}
-          />
-          <MethodTile
-            icon={CreditCard}
-            title={t("checkout.terminal")}
-            hint={t("checkout.terminalHint")}
-            selected={method === "CARD_TERMINAL"}
-            onPress={() => setMethod("CARD_TERMINAL")}
-          />
-          <MethodTile
-            icon={Banknote}
-            title={t("checkout.cash")}
-            hint={t("checkout.cashHint")}
-            selected={method === "CASH"}
-            onPress={() => setMethod("CASH")}
-          />
+            <Button
+              variant="primary"
+              loading={busy}
+              disabled={!method || total <= 0 || (proof === "INVOICE" && !buyerIsComplete(buyer))}
+              label={
+                method === "STRIPE_LINK"
+                  ? t("checkout.showQr")
+                  : t("checkout.receive", { amount: formatPrice(total) })
+              }
+              onPress={pay}
+            />
+          </View>
         </View>
-
-        <Button
-          variant="primary"
-          loading={busy}
-          disabled={!method || total <= 0 || (proof === "INVOICE" && !buyerIsComplete(buyer))}
-          label={
-            method === "STRIPE_LINK"
-              ? t("checkout.showQr")
-              : t("checkout.receive", { amount: formatPrice(total) })
-          }
-          onPress={pay}
-        />
       </ScrollView>
 
       <ProductSheet
@@ -860,6 +874,27 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
     paddingBottom: 48,
+    gap: spacing.md,
+  },
+
+  // Tablet in landscape: the ticket left, how to pay right
+
+  contentWide: {
+    maxWidth: 1180,
+  },
+
+  columns: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.xl,
+  },
+
+  column: {
+    flex: 1,
+    gap: spacing.md,
+  },
+
+  stack: {
     gap: spacing.md,
   },
 

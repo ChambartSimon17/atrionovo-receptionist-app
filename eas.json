@@ -19,6 +19,14 @@
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
+    },
+    "screenshots": {
+      "extends": "production",
+      "autoIncrement": false,
+      "environment": "production",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {
