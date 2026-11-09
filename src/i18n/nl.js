@@ -47,6 +47,12 @@ export default {
     passwordMissing: "Vul je wachtwoord in.",
     wrongCredentials: "Dit e-mailadres of wachtwoord klopt niet.",
     failed: "Inloggen is niet gelukt. Probeer het opnieuw.",
+    panelTitle: "Elke oproep beantwoord, ook als jij het druk hebt.",
+    panelPoints: [
+      "Je AI-receptionist neemt elke oproep op en boekt meteen in je agenda.",
+      "Reservaties, afspraken en je team in één app.",
+      "Voor restaurants en massagesalons in België.",
+    ],
   },
 
   business: {

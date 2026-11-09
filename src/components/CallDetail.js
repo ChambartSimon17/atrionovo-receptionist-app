@@ -60,7 +60,7 @@ export default function CallDetail({ callId, onChange, contentStyle }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!business?.id || !callId) {
+      if (!business?.id || !callId || !accessToken) {
         return;
       }
 

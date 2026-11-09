@@ -87,7 +87,7 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
 
   useFocusEffect(
     useCallback(() => {
-      if (!business?.id) {
+      if (!business?.id || !accessToken) {
         return;
       }
 

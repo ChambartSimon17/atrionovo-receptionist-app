@@ -47,6 +47,12 @@ export default {
     passwordMissing: "Enter your password.",
     wrongCredentials: "That email or password isn't right.",
     failed: "Couldn't log in. Try again.",
+    panelTitle: "Every call answered, even when you're busy.",
+    panelPoints: [
+      "Your AI receptionist answers every call and books straight into your calendar.",
+      "Reservations, appointments and your team in one app.",
+      "For restaurants and massage salons in Belgium.",
+    ],
   },
 
   business: {

@@ -65,7 +65,7 @@ export default function CallsScreen() {
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
-    if (!business?.id) {
+    if (!business?.id || !accessToken) {
       return;
     }
 

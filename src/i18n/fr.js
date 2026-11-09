@@ -47,6 +47,12 @@ export default {
     passwordMissing: "Saisissez votre mot de passe.",
     wrongCredentials: "Cette adresse e-mail ou ce mot de passe est incorrect.",
     failed: "La connexion a échoué. Veuillez réessayer.",
+    panelTitle: "Chaque appel a sa réponse, même quand vous êtes débordé.",
+    panelPoints: [
+      "Votre réceptionniste IA répond à chaque appel et réserve directement dans votre agenda.",
+      "Réservations, rendez-vous et équipe dans une seule application.",
+      "Pour les restaurants et salons de massage en Belgique.",
+    ],
   },
 
   business: {
