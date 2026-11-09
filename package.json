@@ -60,5 +60,6 @@
     "testMatch": [
       "<rootDir>/src/**/__tests__/**/*.test.js"
     ]
-  }
+  },
+  "packageManager": "pnpm@9.1.3"
 }
