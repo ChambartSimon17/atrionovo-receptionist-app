@@ -20,6 +20,7 @@ import { api } from "../../services/api";
 import { Button, Card, Switch } from "../../components/ui";
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../theme";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Facturatie (salon)
@@ -32,6 +33,8 @@ import { colors, fonts, radius, spacing, type } from "../../theme";
 // ======================================================
 
 export default function InvoicingScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { business, accessToken } = useAuth();
 
   const [form, setForm] = useState(null);
@@ -119,7 +122,7 @@ export default function InvoicingScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["bottom"]}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, embedded && styles.fill]} keyboardShouldPersistTaps="handled">
           <Text style={type.title}>{t("invoicing.title")}</Text>
           <Text style={type.body}>{t("invoicing.intro")}</Text>
 
@@ -275,6 +278,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 48,
     gap: spacing.sm,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   label: {

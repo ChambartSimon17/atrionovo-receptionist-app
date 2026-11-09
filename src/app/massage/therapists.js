@@ -46,6 +46,8 @@ const EMPTY_FORM = {
 };
 
 export default function TherapistsScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business } = useAuth();
 
   const businessId = business?.id;
@@ -274,7 +276,7 @@ export default function TherapistsScreen() {
       }
     >
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, embedded && styles.fill]}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>Therapeuten</Text>
@@ -536,6 +538,10 @@ export default function TherapistsScreen() {
 
 const styles = StyleSheet.create({
   ...settingsStyles,
+
+  fill: {
+    maxWidth: "100%",
+  },
 
   row: {
     ...settingsStyles.row,

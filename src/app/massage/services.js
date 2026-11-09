@@ -16,6 +16,7 @@ import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
 import { colors, fonts, spacing } from "../../theme";
 import { settingsStyles } from "../../theme/settingsStyles";
+import { useEmbedded } from "../../components/embedded";
 import {
   centsToInputText,
   formatDuration,
@@ -43,6 +44,8 @@ const EMPTY_FORM = {
 };
 
 export default function MassageServicesScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business } = useAuth();
 
   const businessId = business?.id;
@@ -227,7 +230,7 @@ export default function MassageServicesScreen() {
       }
     >
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, embedded && styles.fill]}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>
@@ -432,6 +435,10 @@ function Field({ label, ...inputProps }) {
 
 const styles = StyleSheet.create({
   ...settingsStyles,
+
+  fill: {
+    maxWidth: "100%",
+  },
 
   serviceCard: settingsStyles.card,
 

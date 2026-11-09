@@ -25,6 +25,7 @@ import DateRangePicker from "../../components/ui/DateRangePicker";
 import TimePicker, { formatMinutes } from "../../components/ui/TimePicker";
 import { locale, plural, t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Special opening days
@@ -180,6 +181,8 @@ const EMPTY_FORM = {
 };
 
 export default function SpecialOpeningDaysScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business } = useAuth();
 
   const [specialDays, setSpecialDays] = useState([]);
@@ -392,12 +395,12 @@ export default function SpecialOpeningDaysScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+      <View style={[styles.header, embedded && styles.fill]}>
         <ScreenHeader title={t("special.title")} />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, embedded && styles.fill]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -625,6 +628,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl * 2,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   description: {

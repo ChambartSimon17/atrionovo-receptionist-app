@@ -12,6 +12,7 @@ import { openBusinessFile, openDocumentPdf } from "../../components/invoicing/op
 import { locale, t } from "../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../theme";
 import { formatPrice } from "../../utils/price";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Facturen (salon)
@@ -34,6 +35,8 @@ function shiftMonth(key, delta) {
 }
 
 export default function DocumentsScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { business, accessToken } = useAuth();
 
   const [month, setMonth] = useState(() => monthKey(new Date()));
@@ -103,7 +106,7 @@ export default function DocumentsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, embedded && styles.fill]}>
         <Text style={type.title}>{t("documents.title")}</Text>
 
         <SegmentedControl
@@ -343,6 +346,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 48,
     gap: spacing.md,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   loading: {

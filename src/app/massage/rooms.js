@@ -16,6 +16,7 @@ import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
 import { colors, spacing } from "../../theme";
 import { settingsStyles } from "../../theme/settingsStyles";
+import { useEmbedded } from "../../components/embedded";
 import MassageChoice from "../../components/MassageChoice";
 
 // ======================================================
@@ -36,6 +37,8 @@ const EMPTY_FORM = {
 };
 
 export default function TreatmentRoomsScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business } = useAuth();
 
   const businessId = business?.id;
@@ -212,7 +215,7 @@ export default function TreatmentRoomsScreen() {
       }
     >
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, embedded && styles.fill]}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.title}>
@@ -362,6 +365,10 @@ export default function TreatmentRoomsScreen() {
 
 const styles = StyleSheet.create({
   ...settingsStyles,
+
+  fill: {
+    maxWidth: "100%",
+  },
 
   row: {
     ...settingsStyles.row,

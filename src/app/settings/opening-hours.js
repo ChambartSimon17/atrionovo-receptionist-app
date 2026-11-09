@@ -23,6 +23,7 @@ import TimePicker, { formatMinutes } from "../../components/ui/TimePicker";
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { BUSINESS_TYPES } from "../../utils/business-type";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Opening hours
@@ -66,6 +67,8 @@ function overlaps(periods) {
 }
 
 export default function OpeningHoursScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business, businessType } = useAuth();
 
   const isMassage = businessType === BUSINESS_TYPES.MASSAGE;
@@ -210,11 +213,11 @@ export default function OpeningHoursScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+      <View style={[styles.header, embedded && styles.fill]}>
         <ScreenHeader title={isMassage ? t("hours.titleMassage") : t("hours.title")} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, embedded && styles.fill]}>
         <Text style={styles.description}>{t("hours.description")}</Text>
 
         {isLoading ? (
@@ -363,6 +366,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl * 2,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   description: {

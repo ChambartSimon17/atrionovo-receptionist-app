@@ -28,6 +28,7 @@ import { language as appLanguage, LANGUAGES, setLanguage, t } from "../../i18n";
 import { getAppearance, setAppearance } from "../../theme/appearance";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { BUSINESS_TYPES } from "../../utils/business-type";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Business settings
@@ -74,6 +75,8 @@ function timezoneLabel(value) {
 }
 
 export default function BusinessSettingsScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { accessToken, business, businessType, updateBusiness } = useAuth();
 
   const isMassage = businessType === BUSINESS_TYPES.MASSAGE;
@@ -204,12 +207,12 @@ export default function BusinessSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <View style={styles.header}>
+      <View style={[styles.header, embedded && styles.fill]}>
         <ScreenHeader title={title} />
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, embedded && styles.fill]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.identity}>
@@ -393,6 +396,10 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.xxl * 2,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   identity: {

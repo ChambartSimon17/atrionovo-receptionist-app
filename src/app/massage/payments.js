@@ -10,6 +10,7 @@ import { api } from "../../services/api";
 import { Button, Card } from "../../components/ui";
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../theme";
+import { useEmbedded } from "../../components/embedded";
 
 // ======================================================
 // Betalingen (salon)
@@ -22,6 +23,8 @@ import { colors, fonts, radius, spacing, type } from "../../theme";
 // ======================================================
 
 export default function PaymentsScreen() {
+  // Next to Meer on a tablet: use the whole pane.
+  const embedded = useEmbedded();
   const { business, accessToken } = useAuth();
 
   const [status, setStatus] = useState(null);
@@ -79,7 +82,7 @@ export default function PaymentsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={[]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, embedded && styles.fill]}>
         <Text style={type.title}>{t("payments.title")}</Text>
         <Text style={type.body}>{t("payments.intro")}</Text>
 
@@ -139,6 +142,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingBottom: 48,
     gap: spacing.md,
+  },
+
+  fill: {
+    maxWidth: "100%",
   },
 
   loading: {
