@@ -1423,6 +1423,20 @@ export const api = {
     );
   },
 
+  /**
+   * Busy time from the business's own calendars (iCloud,
+   * Setmore) on one day: read-only, shown grey.
+   */
+  getExternalBusy(businessId, date, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/external-busy?date=${encodeURIComponent(
+        date
+      )}`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
   emailDocument(businessId, documentId, email, accessToken) {
     return authenticatedRequest(
       `/businesses/${businessId}/documents/${documentId}/email`,

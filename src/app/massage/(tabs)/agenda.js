@@ -56,6 +56,11 @@ import { SkeletonList } from "../../../components/ui";
 // red line marks the current time, and tapping an
 // appointment offers the same status actions as the
 // Today screen. "Maand" opens the month calendar.
+//
+// Busy time from the business's own calendars (iCloud,
+// Setmore) is drawn grey and cannot be changed here: the
+// owner changes it in that calendar. A block for the whole
+// business appears in every column.
 // ======================================================
 
 const HOUR_HEIGHT = 72;
@@ -106,6 +111,19 @@ function minutesOfDay(isoString) {
   return date.getHours() * 60 + date.getMinutes();
 }
 
+// Minutes after local midnight of the shown day, clamped
+// to that day (a block can start the day before or run
+// past midnight).
+function minutesWithinDay(isoString, dateString) {
+  const dayStart = parseDay(dateString);
+  dayStart.setHours(0, 0, 0, 0);
+
+  const minutes =
+    (new Date(isoString).getTime() - dayStart.getTime()) / 60_000;
+
+  return Math.min(24 * 60, Math.max(0, minutes));
+}
+
 export default function MassageAgendaScreen() {
   const router = useRouter();
 
@@ -117,6 +135,7 @@ export default function MassageAgendaScreen() {
   const [view, setView] = useState("therapists");
   const [therapists, setTherapists] = useState([]);
   const [rooms, setRooms] = useState([]);
+  const [busyBlocks, setBusyBlocks] = useState([]);
 
   const {
     appointments,
@@ -141,6 +160,25 @@ export default function MassageAgendaScreen() {
         .then((response) => setRooms(response.data))
         .catch(() => setRooms([]));
     }, [business?.id, accessToken])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!business?.id) {
+        return;
+      }
+
+      let current = true;
+
+      api
+        .getExternalBusy(business.id, date, accessToken)
+        .then((response) => current && setBusyBlocks(response.data))
+        .catch(() => current && setBusyBlocks([]));
+
+      return () => {
+        current = false;
+      };
+    }, [business?.id, accessToken, date])
   );
 
   const today = todayString();
@@ -182,6 +220,34 @@ export default function MassageAgendaScreen() {
       Math.ceil(minutesOfDay(appointment.endTime) / 60)
     );
   });
+
+  busyBlocks
+    .filter((block) => !block.allDay)
+    .forEach((block) => {
+      firstHour = Math.min(
+        firstHour,
+        Math.floor(minutesWithinDay(block.startTime, date) / 60)
+      );
+      lastHour = Math.max(
+        lastHour,
+        Math.ceil(minutesWithinDay(block.endTime, date) / 60)
+      );
+    });
+
+  // Busy blocks per column: a block of one therapist only
+  // in that therapist's column; otherwise everywhere.
+  const therapistNames = new Map(
+    therapists.map((therapist) => [therapist.id, therapist.name])
+  );
+
+  function busyBlocksFor(columnName) {
+    return busyBlocks.filter(
+      (block) =>
+        view !== "therapists" ||
+        !block.therapistId ||
+        therapistNames.get(block.therapistId) === columnName
+    );
+  }
 
   const hours = Array.from(
     { length: lastHour - firstHour },
@@ -446,6 +512,16 @@ export default function MassageAgendaScreen() {
                       />
                     ))}
 
+                    {busyBlocksFor(name).map((block) => (
+                      <ExternalBusyBlock
+                        key={block.id}
+                        block={block}
+                        date={date}
+                        firstHour={firstHour}
+                        lastHour={lastHour}
+                      />
+                    ))}
+
                     {appointments
                       .filter(
                         (appointment) =>
@@ -502,6 +578,44 @@ export default function MassageAgendaScreen() {
         />
       </Pressable>
     </SafeAreaView>
+  );
+}
+
+function ExternalBusyBlock({ block, date, firstHour, lastHour }) {
+  const start = block.allDay
+    ? firstHour * 60
+    : Math.max(firstHour * 60, minutesWithinDay(block.startTime, date));
+  const end = block.allDay
+    ? lastHour * 60
+    : Math.min(lastHour * 60, minutesWithinDay(block.endTime, date));
+
+  if (end <= start) {
+    return null;
+  }
+
+  const top = (start - firstHour * 60) * MINUTE_HEIGHT;
+  const height = Math.max(20, (end - start) * MINUTE_HEIGHT - 2);
+
+  const when = block.allDay
+    ? "Hele dag"
+    : `${formatTime(block.startTime)}–${formatTime(block.endTime)}`;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Bezet, ${block.calendarName}, ${when}`}
+      onPress={() =>
+        Alert.alert(
+          `Bezet · ${block.calendarName}`,
+          `${when}\n\nDit komt uit je eigen agenda. Pas het daar aan; hier is het alleen-lezen.`
+        )
+      }
+      style={[styles.busyBlock, { top: top + 1, height }]}
+    >
+      <Text style={styles.busyText} numberOfLines={height < 40 ? 1 : 2}>
+        Bezet · {block.calendarName}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -810,6 +924,26 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     gap: 1,
     overflow: "hidden",
+  },
+
+  busyBlock: {
+    position: "absolute",
+    left: 2,
+    right: 2,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    overflow: "hidden",
+  },
+
+  busyText: {
+    fontFamily: fonts.medium,
+    fontSize: 11,
+    color: colors.textMuted,
   },
 
   blockTime: {

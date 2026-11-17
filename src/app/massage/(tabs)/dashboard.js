@@ -119,6 +119,35 @@ export default function MassageTodayScreen() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Busy time from the business's own calendars (iCloud,
+  // Setmore): shown in the list, never counted in the tiles.
+  const [busyBlocks, setBusyBlocks] = useState([]);
+
+  const loadBusy = useCallback(
+    () =>
+      api
+        .getExternalBusy(business.id, date, accessToken)
+        .then((response) => response?.data ?? [])
+        .catch(() => []),
+    [business?.id, date, accessToken]
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!business?.id) {
+        return;
+      }
+
+      let current = true;
+
+      loadBusy().then((blocks) => current && setBusyBlocks(blocks));
+
+      return () => {
+        current = false;
+      };
+    }, [business?.id, loadBusy])
+  );
+
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [monthCounts, setMonthCounts] = useState({});
 
@@ -192,7 +221,8 @@ export default function MassageTodayScreen() {
       refreshing={isRefreshing}
       onRefresh={async () => {
         setIsRefreshing(true);
-        await reload();
+        const [, blocks] = await Promise.all([reload(), loadBusy()]);
+        setBusyBlocks(blocks);
         setIsRefreshing(false);
       }}
       tintColor={colors.primary}
@@ -360,6 +390,7 @@ export default function MassageTodayScreen() {
 
       <MassageAgenda
         appointments={appointments}
+        busyBlocks={busyBlocks}
         isLoading={isLoading}
         error={error}
         onChangeStatus={confirmStatus}

@@ -32,6 +32,11 @@ import { formatDuration, formatPrice } from "../utils/price";
 //
 // "Afrekenen" opens the checkout of an appointment that
 // is not paid yet; a paid one shows what was received.
+//
+// busyBlocks: busy time from the business's own calendars
+// (iCloud, Setmore). Shown as thin grey rows between the
+// appointments, in time order, without actions: they are
+// changed in that calendar, not here.
 // ======================================================
 
 const STATUS_LABELS = {
@@ -44,6 +49,7 @@ const STATUS_LABELS = {
 
 export default function MassageAgenda({
   appointments,
+  busyBlocks = [],
   isLoading,
   error,
   onChangeStatus,
@@ -59,7 +65,7 @@ export default function MassageAgenda({
     return <Text style={styles.error}>{error}</Text>;
   }
 
-  if (appointments.length === 0) {
+  if (appointments.length === 0 && busyBlocks.length === 0) {
     return (
       <View style={styles.emptyBox}>
         <Text style={styles.empty}>{emptyText}</Text>
@@ -69,9 +75,36 @@ export default function MassageAgenda({
 
   const now = new Date();
 
+  // Appointments and busy blocks in time order; all-day
+  // blocks first.
+  const rows = [
+    ...busyBlocks.map((block) => ({
+      key: `busy-${block.id}`,
+      sortMs: block.allDay ? -Infinity : Date.parse(block.startTime),
+      block,
+    })),
+    ...appointments.map((appointment) => ({
+      key: appointment.id,
+      sortMs: Date.parse(appointment.startTime),
+      appointment,
+    })),
+  ].sort((a, b) => a.sortMs - b.sortMs);
+
   return (
     <View style={styles.list}>
-      {appointments.map((appointment, index) => {
+      {rows.map((row, index) => {
+        if (row.block) {
+          return (
+            <BusyRow
+              key={row.key}
+              block={row.block}
+              divider={index > 0}
+            />
+          );
+        }
+
+        const appointment = row.appointment;
+
         const status = isInProgress(appointment, now)
           ? "IN_PROGRESS"
           : appointment.status;
@@ -217,6 +250,31 @@ export default function MassageAgenda({
           </View>
         );
       })}
+
+      {appointments.length === 0 && (
+        <Text style={[styles.empty, styles.emptyFooter]}>
+          {emptyText}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function BusyRow({ block, divider }) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Bezet, ${block.calendarName}`}
+      style={[styles.busyRow, divider && styles.rowDivider]}
+    >
+      <Text style={styles.busyTime}>
+        {block.allDay
+          ? "Hele dag"
+          : `${formatTime(block.startTime)}–${formatTime(block.endTime)}`}
+      </Text>
+      <Text style={styles.busyLabel} numberOfLines={1}>
+        Bezet · {block.calendarName}
+      </Text>
     </View>
   );
 }
@@ -318,6 +376,34 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.md,
     paddingVertical: spacing.md,
+  },
+
+  busyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+
+  busyTime: {
+    width: 80,
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  busyLabel: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+
+  emptyFooter: {
+    textAlign: "center",
+    paddingVertical: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.divider,
   },
 
   rowDivider: {
