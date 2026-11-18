@@ -165,6 +165,8 @@ export default {
     therapistsSubtitle: "Who gives which massages and when",
     rooms: "Treatment rooms",
     roomsSubtitle: "Rooms and which massages fit",
+    integrations: "Integrations",
+    integrationsSubtitle: "Connect your own calendars",
     logout: "Log out",
   },
 

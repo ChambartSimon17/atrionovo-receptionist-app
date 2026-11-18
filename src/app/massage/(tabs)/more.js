@@ -5,6 +5,7 @@ import {
   CreditCard,
   FileText,
   HandHeart,
+  Plug,
   ReceiptEuro,
   Map,
   Store,
@@ -90,6 +91,12 @@ export default function MassageMoreScreen() {
           icon: CalendarClock,
           title: t("special.title"),
           subtitle: t("more.special"),
+        },
+        {
+          href: "/massage/integrations",
+          icon: Plug,
+          title: t("more.integrations"),
+          subtitle: t("more.integrationsSubtitle"),
         },
       ]}
     />

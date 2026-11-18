@@ -165,6 +165,8 @@ export default {
     therapistsSubtitle: "Qui donne quels massages et quand",
     rooms: "Cabines",
     roomsSubtitle: "Cabines et massages possibles",
+    integrations: "Intégrations",
+    integrationsSubtitle: "Connecter vos propres agendas",
     logout: "Se déconnecter",
   },
 

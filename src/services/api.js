@@ -1437,6 +1437,73 @@ export const api = {
     );
   },
 
+  // Calendar integrations (Meer → Integraties). The
+  // password and the ICS link are only ever sent, never
+  // returned.
+  getCalendarIntegrations(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  connectIcloudCalendar(businessId, data, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/icloud`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+  },
+
+  getIcloudCalendars(businessId, connectionId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/${connectionId}/remote-calendars`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  saveIcloudCalendars(businessId, connectionId, data, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/${connectionId}/calendars`,
+      accessToken,
+      { method: "PUT", body: JSON.stringify(data) }
+    );
+  },
+
+  connectIcsCalendar(businessId, data, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/ics`,
+      accessToken,
+      { method: "POST", body: JSON.stringify(data) }
+    );
+  },
+
+  updateExternalCalendar(businessId, calendarId, data, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/calendars/${calendarId}`,
+      accessToken,
+      { method: "PATCH", body: JSON.stringify(data) }
+    );
+  },
+
+  syncCalendarIntegrations(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/sync`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  },
+
+  disconnectCalendar(businessId, connectionId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/calendar-integrations/${connectionId}`,
+      accessToken,
+      { method: "DELETE" }
+    );
+  },
+
   emailDocument(businessId, documentId, email, accessToken) {
     return authenticatedRequest(
       `/businesses/${businessId}/documents/${documentId}/email`,

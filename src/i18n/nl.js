@@ -165,6 +165,8 @@ export default {
     therapistsSubtitle: "Wie welke massages geeft en wanneer",
     rooms: "Behandelkamers",
     roomsSubtitle: "Kamers en welke massages erin kunnen",
+    integrations: "Integraties",
+    integrationsSubtitle: "Je eigen agenda's koppelen",
     logout: "Uitloggen",
   },
 

@@ -9,6 +9,7 @@ import PaymentsScreen from "../app/massage/payments";
 import ServicesScreen from "../app/massage/services";
 import TherapistsScreen from "../app/massage/therapists";
 import RoomsScreen from "../app/massage/rooms";
+import IntegrationsScreen from "../app/massage/integrations";
 
 // ======================================================
 // Pages that open next to Meer
@@ -32,4 +33,5 @@ export const morePages = {
   "/massage/services": ServicesScreen,
   "/massage/therapists": TherapistsScreen,
   "/massage/rooms": RoomsScreen,
+  "/massage/integrations": IntegrationsScreen,
 };
