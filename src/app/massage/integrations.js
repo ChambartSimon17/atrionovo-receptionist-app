@@ -19,7 +19,7 @@ import { useAuth } from "../../context/auth-context";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { settingsStyles } from "../../theme/settingsStyles";
 import { useEmbedded } from "../../components/embedded";
-import { SettingsGroup, SettingsRow, Stepper, Switch } from "../../components/ui";
+import { Chip, SettingsGroup, SettingsRow, Stepper, Switch } from "../../components/ui";
 
 // ======================================================
 // Integraties
@@ -79,7 +79,55 @@ function syncText(calendar) {
 }
 
 const EMPTY_LOGIN = { username: "", password: "" };
-const EMPTY_LINK = { name: "", url: "", travelMinutes: 0 };
+const EMPTY_LINK = { source: null, name: "", url: "", travelMinutes: 0 };
+
+// Where each booking system keeps its calendar link
+// (iCal / ICS). Systems without such a link can still be
+// used through Google Agenda when they sync with it.
+const LINK_SOURCES = [
+  {
+    id: "setmore",
+    label: "Setmore",
+    steps:
+      "In Setmore: Settings → Your profile → Integrations. Klik naast Link your calendar op Get link en daarna Copy link. Mogelijk alleen bij een betalend plan.",
+  },
+  {
+    id: "salonized",
+    label: "Salonized",
+    steps:
+      "In Salonized: het tandwiel linksonder → Agenda-instellingen → Deel je agenda met externe programma's. Kopieer de link.",
+  },
+  {
+    id: "fresha",
+    label: "Fresha",
+    steps:
+      "In Fresha: Agenda → instellingen → Agenda synchroniseren → Andere agenda (Apple of Outlook). Kopieer de agenda-link.",
+  },
+  {
+    id: "acuity",
+    label: "Acuity",
+    steps:
+      "In Acuity Scheduling: Sync with Other Calendars → 1-way Calendar Sync. Kopieer de link onderaan de pagina.",
+  },
+  {
+    id: "google",
+    label: "Google Agenda",
+    steps:
+      "Op de computer in Google Agenda: ⋮ naast de agenda → Instellingen en delen → Agenda integreren. Kopieer het Geheim adres in iCal-indeling. Google werkt deze link maar om de paar uur bij.",
+  },
+  {
+    id: "outlook",
+    label: "Outlook",
+    steps:
+      "In Outlook op het web: Instellingen → Agenda → Gedeelde agenda's → Een agenda publiceren. Kies de agenda, publiceer en kopieer de ICS-link.",
+  },
+  {
+    id: "other",
+    label: "Ander systeem",
+    steps:
+      "Zoek in de instellingen naar iCal, ICS, webcal of agenda delen/synchroniseren. Square, SimplyBook.me en Booksy hebben geen eigen link maar kunnen naar Google Agenda synchroniseren: koppel dan die Google-agenda. Treatwell kan zijn agenda niet delen.",
+  },
+];
 
 export default function IntegrationsScreen() {
   const embedded = useEmbedded();
@@ -100,6 +148,11 @@ export default function IntegrationsScreen() {
   const [picking, setPicking] = useState(null);
 
   const load = useCallback(async () => {
+    // Still logging in (opened from a link at start-up).
+    if (!businessId || !accessToken) {
+      return;
+    }
+
     try {
       const response = await api.getCalendarIntegrations(businessId, accessToken);
       setConnections(response.data);
@@ -452,9 +505,39 @@ export default function IntegrationsScreen() {
             <Text style={styles.formTitle}>Agenda-link toevoegen</Text>
 
             <Text style={styles.hint}>
-              Bijvoorbeeld de agenda van Setmore: kopieer daar de iCal- of webcal-link. Afspraken
-              uit deze agenda tellen als bezet.
+              Afspraken uit deze agenda tellen als bezet. Kies waar de agenda vandaan komt:
             </Text>
+
+            <View style={styles.chips}>
+              {LINK_SOURCES.map((source) => (
+                <Chip
+                  key={source.id}
+                  label={source.label}
+                  selected={link.source === source.id}
+                  onPress={() =>
+                    setLink({
+                      ...link,
+                      source: source.id,
+                      // Suggest a name, unless one was typed.
+                      name:
+                        !link.name || LINK_SOURCES.some((item) => item.label === link.name)
+                          ? source.id === "other"
+                            ? ""
+                            : source.label
+                          : link.name,
+                    })
+                  }
+                />
+              ))}
+            </View>
+
+            {link.source ? (
+              <View style={styles.guide}>
+                <Text style={styles.guideText}>
+                  {LINK_SOURCES.find((source) => source.id === link.source)?.steps}
+                </Text>
+              </View>
+            ) : null}
 
             <Text style={[styles.label, styles.spaced]}>Naam</Text>
             <TextInput
@@ -508,7 +591,7 @@ export default function IntegrationsScreen() {
               <ActionButton
                 icon={Link2}
                 label="Agenda-link toevoegen"
-                hint="Setmore en andere"
+                hint="Setmore, Salonized, Fresha, Google, Outlook..."
                 onPress={() => setMode("link")}
               />
             </View>
@@ -802,6 +885,27 @@ const styles = StyleSheet.create({
   writeTextOn: {
     fontFamily: fonts.medium,
     color: colors.primary,
+  },
+
+  chips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+
+  guide: {
+    marginTop: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+  },
+
+  guideText: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.text,
   },
 
   busy: {
