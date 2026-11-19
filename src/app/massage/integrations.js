@@ -137,6 +137,7 @@ export default function IntegrationsScreen() {
   const canEdit = !user?.role || user.role === "OWNER" || user.role === "MANAGER";
 
   const [connections, setConnections] = useState([]);
+  const [therapists, setTherapists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBusy, setIsBusy] = useState(false);
 
@@ -154,8 +155,13 @@ export default function IntegrationsScreen() {
     }
 
     try {
-      const response = await api.getCalendarIntegrations(businessId, accessToken);
+      const [response, therapistResponse] = await Promise.all([
+        api.getCalendarIntegrations(businessId, accessToken),
+        api.getTherapists(businessId, accessToken).catch(() => ({ data: [] })),
+      ]);
+
       setConnections(response.data);
+      setTherapists(therapistResponse.data ?? []);
     } catch (error) {
       Alert.alert("Fout", error.message || "De integraties konden niet worden geladen.");
     } finally {
@@ -255,6 +261,7 @@ export default function IntegrationsScreen() {
         remoteUrl: calendar.remoteUrl,
         read: calendar.read || calendar.remoteUrl === picking.writeUrl,
         travelMinutes: calendar.travelMinutes ?? 0,
+        therapistId: calendar.therapistId ?? null,
       })),
     };
 
@@ -282,7 +289,12 @@ export default function IntegrationsScreen() {
       () =>
         api.connectIcsCalendar(
           businessId,
-          { name, url, travelMinutes: link.travelMinutes },
+          {
+            name,
+            url,
+            travelMinutes: link.travelMinutes,
+            therapistId: link.therapistId ?? null,
+          },
           accessToken
         ),
       "De agenda-link kon niet worden toegevoegd."
@@ -355,6 +367,29 @@ export default function IntegrationsScreen() {
 
   const icloud = connections.filter((connection) => connection.provider === "ICLOUD_CALDAV");
   const links = connections.filter((connection) => connection.provider === "ICS_FEED");
+
+  // With one therapist every calendar is for the whole
+  // business, so the choice is not shown.
+  const hasTeam = therapists.length > 1;
+
+  function ownerText(therapistId) {
+    if (!therapistId) {
+      return "Hele zaak";
+    }
+
+    return therapists.find((therapist) => therapist.id === therapistId)?.name ?? "Therapeut";
+  }
+
+  function chooseOwner(calendar) {
+    Alert.alert("Voor wie geldt deze agenda?", "Alleen die persoon is dan bezet.", [
+      { text: "Hele zaak", onPress: () => updateCalendar(calendar, { therapistId: null }) },
+      ...therapists.map((therapist) => ({
+        text: therapist.name,
+        onPress: () => updateCalendar(calendar, { therapistId: therapist.id }),
+      })),
+      { text: "Annuleren", style: "cancel" },
+    ]);
+  }
 
   return (
     <KeyboardAvoidingView
@@ -438,6 +473,7 @@ export default function IntegrationsScreen() {
             <Text style={styles.hint}>
               Zet aan welke agenda's als bezet tellen. Kies er één waarin nieuwe afspraken komen.
               Reistijd blokkeert ook de tijd ervoor en erna.
+              {hasTeam ? " Kies per agenda of ze voor de hele zaak of voor één therapeut geldt." : ""}
             </Text>
 
             {picking.calendars.length === 0 ? (
@@ -480,6 +516,16 @@ export default function IntegrationsScreen() {
                           suffix="min"
                         />
                       </View>
+
+                      {hasTeam ? (
+                        <OwnerChoice
+                          therapists={therapists}
+                          value={calendar.therapistId ?? null}
+                          onChange={(therapistId) =>
+                            updatePicked(calendar.remoteUrl, { therapistId })
+                          }
+                        />
+                      ) : null}
 
                       <Pressable
                         style={[styles.writeChoice, isWrite && styles.writeChoiceOn]}
@@ -572,6 +618,14 @@ export default function IntegrationsScreen() {
               />
             </View>
 
+            {hasTeam ? (
+              <OwnerChoice
+                therapists={therapists}
+                value={link.therapistId ?? null}
+                onChange={(therapistId) => setLink({ ...link, therapistId })}
+              />
+            ) : null}
+
             <Text style={styles.hint}>
               De link wordt versleuteld bewaard en daarna niet meer getoond.
             </Text>
@@ -625,6 +679,7 @@ export default function IntegrationsScreen() {
                     hint={[
                       calendar.isWriteTarget ? "Nieuwe afspraken komen hierin" : "Telt als bezet",
                       calendar.travelMinutes ? `${calendar.travelMinutes} min reistijd` : null,
+                      hasTeam ? `Geldt voor: ${ownerText(calendar.therapistId)}` : null,
                       syncText(calendar),
                     ]
                       .filter(Boolean)
@@ -673,6 +728,13 @@ export default function IntegrationsScreen() {
                       suffix="min"
                     />
                   </SettingsRow>
+                  {hasTeam ? (
+                    <SettingsRow
+                      label="Geldt voor"
+                      value={ownerText(calendar.therapistId)}
+                      onPress={() => chooseOwner(calendar)}
+                    />
+                  ) : null}
                   <SettingsRow
                     label="Ontkoppelen"
                     danger
@@ -695,6 +757,27 @@ export default function IntegrationsScreen() {
         ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+// "Hele zaak" or one therapist: who is busy when this
+// calendar has something planned.
+function OwnerChoice({ therapists, value, onChange }) {
+  return (
+    <View style={styles.owner}>
+      <Text style={styles.pickLabel}>Geldt voor</Text>
+      <View style={styles.chips}>
+        <Chip label="Hele zaak" selected={!value} onPress={() => onChange(null)} />
+        {therapists.map((therapist) => (
+          <Chip
+            key={therapist.id}
+            label={therapist.name}
+            selected={value === therapist.id}
+            onPress={() => onChange(therapist.id)}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -885,6 +968,10 @@ const styles = StyleSheet.create({
   writeTextOn: {
     fontFamily: fonts.medium,
     color: colors.primary,
+  },
+
+  owner: {
+    marginTop: spacing.md,
   },
 
   chips: {
