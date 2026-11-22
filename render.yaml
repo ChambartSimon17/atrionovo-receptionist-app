@@ -4,7 +4,7 @@ services:
   - type: web
     name: atrionovo-web-app
     runtime: static
-    buildCommand: npm install -g pnpm@9.1.3 && pnpm install --frozen-lockfile && npx expo export --platform web --output-dir dist
+    buildCommand: pnpm install --frozen-lockfile && pnpm exec expo export --platform web --output-dir dist
     staticPublishPath: dist
     pullRequestPreviewsEnabled: false
     envVars:
