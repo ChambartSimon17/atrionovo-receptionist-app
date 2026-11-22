@@ -35,6 +35,7 @@ import {
 } from "../utils/business-type";
 
 import { StatusBar } from "expo-status-bar";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import {
   setMonitoringBusiness,
@@ -45,7 +46,7 @@ import {
   registerPushNotifications,
 } from "../services/notifications";
 
-import { isDark } from "../theme";
+import { colors, isDark } from "../theme";
 import { watchSystemAppearance } from "../theme/appearance";
 
 SplashScreen.preventAutoHideAsync();
@@ -127,15 +128,59 @@ function AuthGuard() {
     segments,
   ]);
 
+  // While the stored login is being checked there is no
+  // business yet; screens that read it would crash (on
+  // the web on every page refresh). Nothing navigates in
+  // this phase, so the navigator can wait.
+  if (isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Every screen of a business needs a logged-in user.
+  // Logged out (logout, an expired session, a link opened
+  // in the browser) they are not drawn at all, and only
+  // the login screen and the start screen remain.
   return (
     <Stack
       screenOptions={{
         headerShown: false,
       }}
     >
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen name="(restaurant)" />
+        <Stack.Screen name="massage" />
+        <Stack.Screen name="analytics" />
+        <Stack.Screen name="calendar" />
+        <Stack.Screen name="calls/index" />
+        <Stack.Screen name="calls/[id]" />
+        <Stack.Screen name="customers/[id]" />
+        <Stack.Screen name="floor-plan/edit" />
+        <Stack.Screen name="reservation/[id]" />
+        <Stack.Screen name="reservation/confirm" />
+        <Stack.Screen name="reservation/customer" />
+        <Stack.Screen name="reservation/edit" />
+        <Stack.Screen name="reservation/new" />
+        <Stack.Screen name="reservation/new-customer" />
+        <Stack.Screen name="settings/business" />
+        <Stack.Screen name="settings/opening-hours" />
+        <Stack.Screen name="settings/special-opening-days" />
+      </Stack.Protected>
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+  },
+});
 
 function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
