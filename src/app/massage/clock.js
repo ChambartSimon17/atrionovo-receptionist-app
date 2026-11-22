@@ -17,6 +17,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { ArrowLeft, Camera, Check, LogIn, LogOut, Lock, UserRound } from "lucide-react-native";
 
+import { useIsMassage } from "../../theme/skin";
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
 import Avatar from "../../components/team/Avatar";
@@ -677,6 +678,7 @@ function SelfieStep({ person, onPhoto, onCancel }) {
 // ------------------------------------------------------
 
 function ResultStep({ result, onDone }) {
+  const isMassage = useIsMassage();
   const [seconds, setSeconds] = useState(RESULT_SECONDS);
 
   useEffect(() => {
@@ -723,7 +725,9 @@ function ResultStep({ result, onDone }) {
             value: `${formatClock(result.firstAppointment.startTime)} · ${result.firstAppointment.roomName}`,
           }
         : null,
-      { label: t("clock.todayCount"), value: plural("clock.massages", result.appointmentCount) },
+      isMassage
+        ? { label: t("clock.todayCount"), value: plural("clock.massages", result.appointmentCount) }
+        : null,
     ].filter(Boolean);
   } else {
     icon = "out";

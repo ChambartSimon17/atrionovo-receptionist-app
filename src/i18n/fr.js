@@ -167,6 +167,11 @@ export default {
     roomsSubtitle: "Cabines et massages possibles",
     integrations: "Intégrations",
     integrationsSubtitle: "Connecter vos propres agendas",
+    guests: "Clients",
+    guestsSubtitle: "Fiches clients, visites et allergies",
+    staff: "Employés",
+    staffSubtitle: "Cuisine, salle et leurs horaires",
+    platformsSubtitle: "Zenchef, TheFork et autres plateformes de réservation",
     logout: "Se déconnecter",
   },
 

@@ -26,6 +26,7 @@ export default {
     replan: "Reschedule",
     appointmentCount: { one: "1 appointment", other: "{count} appointments" },
     noTherapists: "No therapists yet. Add them under More → Therapists.",
+    noStaff: "No staff yet. Add them under More → Staff.",
     tapHint: "Tap a day to change the hours.",
     reasons: {
       SICK: "Sick",
@@ -57,6 +58,7 @@ export default {
     notePlaceholder: "e.g. wedding",
     setAbsent: { one: "Mark {name} away · 1 day", other: "Mark {name} away · {count} days" },
     chooseTherapist: "Choose a therapist first.",
+    chooseStaff: "Choose a staff member first.",
 
     absenceTitle: "{reason} · {name}",
     affected: "Appointments in this period",
@@ -72,6 +74,7 @@ export default {
 
     weekly: "Usual week",
     editWeekly: "Change usual hours and massages",
+    editWeeklyStaff: "Change usual hours",
     changes: "Changes",
     noChanges: "No changes planned.",
     insteadOf: "instead of {hours}",
@@ -191,6 +194,12 @@ export default {
   },
 
   checkout: {
+    bill: "Bill",
+    addAmount: "Add amount",
+    amountNamePlaceholder: "e.g. Food, Drinks",
+    tip: "Tip",
+    forGuests: "{guests} · {time}",
+    emptyBill: "Tap \"Add amount\" and enter the total of the bill.",
     title: "Checkout",
     withTherapist: "{room} · with {therapist} · {time}",
     addProduct: "Add product",
@@ -220,6 +229,7 @@ export default {
     waiting: "Waiting for payment…",
     shareLink: "Share link (SMS or WhatsApp)",
     shareMessage: "Pay for your massage at {business}: {url}",
+    shareMessageBill: "Pay your bill at {business}: {url}",
     cancelQr: "Other payment method",
     paid: "Paid",
     paidLine: "{amount} · {method} · {time}",
@@ -289,6 +299,19 @@ export default {
     saved: "Saved",
   },
 
+  platforms: {
+    title: "Integrations",
+    intro:
+      "Already using a booking platform? AtrioNovo will soon read its reservations and write changes from the AI receptionist and your website back to it, so you keep a single diary.",
+    soon: "Coming soon",
+    zenchef: "Reservations and tables from Zenchef",
+    thefork: "Reservations through TheFork",
+    resengo: "Reservations through Resengo",
+    formitable: "Reservations through Formitable",
+    opentable: "Reservations through OpenTable",
+    footer:
+      "Using one of these platforms? Let us know and we will set up the connection together.",
+  },
   documents: {
     title: "Invoices",
     subtitle: "Receipts, invoices and credit notes",

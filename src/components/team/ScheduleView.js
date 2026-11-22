@@ -4,6 +4,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { AlertTriangle, ChevronLeft, ChevronRight, Plus } from "lucide-react-native";
 
 import { useAuth } from "../../context/auth-context";
+import { useIsMassage } from "../../theme/skin";
 import { api } from "../../services/api";
 import { Button, Card } from "../ui";
 import Avatar from "./Avatar";
@@ -29,6 +30,7 @@ import { dayColors, formatDateRange, fromKey, reasonLabel, shortHour } from "./t
 export default function ScheduleView() {
   const router = useRouter();
   const { business, accessToken } = useAuth();
+  const isMassage = useIsMassage();
 
   const [monday, setMonday] = useState(() => weekStart(todayString()));
   const [week, setWeek] = useState(null);
@@ -127,7 +129,7 @@ export default function ScheduleView() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {therapists.length === 0 && !error ? (
-        <Text style={type.caption}>{t("team.noTherapists")}</Text>
+        <Text style={type.caption}>{t(isMassage ? "team.noTherapists" : "team.noStaff")}</Text>
       ) : (
         <Card style={styles.grid}>
           <View style={styles.gridRow}>

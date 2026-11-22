@@ -7,6 +7,7 @@ import Columns from "../../../components/ui/Columns";
 import useWideLayout from "../../../hooks/useWideLayout";
 
 import { useAuth } from "../../../context/auth-context";
+import { useIsMassage } from "../../../theme/skin";
 import { api } from "../../../services/api";
 import { Button, Card } from "../../../components/ui";
 import Avatar from "../../../components/team/Avatar";
@@ -39,6 +40,7 @@ export default function TherapistScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { business, accessToken } = useAuth();
+  const isMassage = useIsMassage();
 
   const [therapist, setTherapist] = useState(null);
   const wide = useWideLayout();
@@ -121,7 +123,7 @@ export default function TherapistScreen() {
                   );
                 })}
               </Card>
-              <Button label={t("team.editWeekly")} onPress={() => router.push("/massage/therapists")} />
+              <Button label={t(isMassage ? "team.editWeekly" : "team.editWeeklyStaff")} onPress={() => router.push("/massage/therapists")} />
 
               {/* Changes and absences */}
 
@@ -205,10 +207,12 @@ export default function TherapistScreen() {
                   <Text style={styles.monthValue}>{formatWorked(therapist.month.workedMinutes)}</Text>
                   <Text style={type.caption}>{t("team.worked")}</Text>
                 </View>
-                <View style={styles.monthItem}>
-                  <Text style={styles.monthValue}>{therapist.month.appointmentCount}</Text>
-                  <Text style={type.caption}>{t("team.massages")}</Text>
-                </View>
+                {isMassage ? (
+                  <View style={styles.monthItem}>
+                    <Text style={styles.monthValue}>{therapist.month.appointmentCount}</Text>
+                    <Text style={type.caption}>{t("team.massages")}</Text>
+                  </View>
+                ) : null}
               </Card>
 
               {/* Time clock */}

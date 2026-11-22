@@ -18,6 +18,8 @@ import { useAuth } from "../../context/auth-context";
 import { colors, fonts, spacing } from "../../theme";
 import { settingsStyles, switchColors } from "../../theme/settingsStyles";
 import MassageChoice from "../../components/MassageChoice";
+import { useIsMassage } from "../../theme/skin";
+import { useEmbedded } from "../../components/embedded";
 import {
   DAYS,
   createEmptyWeek,
@@ -37,6 +39,10 @@ import {
 //
 // Therapists are deactivated instead of deleted, so that
 // existing appointments keep their therapist.
+//
+// A restaurant uses the same screen for its staff
+// (Medewerkers): only a name and weekly hours, no
+// massages.
 // ======================================================
 
 const EMPTY_FORM = {
@@ -45,7 +51,37 @@ const EMPTY_FORM = {
   week: createEmptyWeek(),
 };
 
+// The words that differ between a salon and a restaurant.
+const WORDS = {
+  massage: {
+    title: "Therapeuten",
+    one: "therapeut",
+    intro:
+      "Kies per therapeut welke massages die kan geven en wanneer die werkt. Klanten kiezen zelf geen therapeut.",
+    loadFailed: "De therapeuten konden niet worden geladen.",
+    deactivateBody: (name) =>
+      `${name} krijgt geen nieuwe afspraken meer. Bestaande afspraken blijven bewaard.`,
+    placeholder: "Bijvoorbeeld Anna",
+    empty: "Je hebt nog geen therapeuten toegevoegd.",
+  },
+  restaurant: {
+    title: "Medewerkers",
+    one: "medewerker",
+    intro:
+      "Je keukenploeg en zaalpersoneel, met hun vaste werkuren. Zo staan ze in het rooster en kunnen ze inklokken.",
+    loadFailed: "De medewerkers konden niet worden geladen.",
+    deactivateBody: (name) =>
+      `${name} staat dan niet meer in het rooster en kan niet meer inklokken. Gewerkte uren blijven bewaard.`,
+    placeholder: "Bijvoorbeeld Lotte",
+    empty: "Je hebt nog geen medewerkers toegevoegd.",
+  },
+};
+
+const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+
 export default function TherapistsScreen() {
+  const isMassage = useIsMassage();
+  const words = isMassage ? WORDS.massage : WORDS.restaurant;
   // Next to Meer on a tablet: use the whole pane.
   const embedded = useEmbedded();
   const { accessToken, business } = useAuth();
@@ -69,10 +105,9 @@ export default function TherapistsScreen() {
           api.getTherapists(businessId, accessToken, {
             includeInactive: true,
           }),
-          api.getMassageServices(
-            businessId,
-            accessToken
-          ),
+          isMassage
+            ? api.getMassageServices(businessId, accessToken)
+            : Promise.resolve({ data: [] }),
         ]);
 
       setTherapists(therapistResponse.data);
@@ -80,13 +115,12 @@ export default function TherapistsScreen() {
     } catch (error) {
       Alert.alert(
         "Fout",
-        error.message ||
-          "De therapeuten konden niet worden geladen."
+        error.message || words.loadFailed
       );
     } finally {
       setIsLoading(false);
     }
-  }, [businessId, accessToken]);
+  }, [businessId, accessToken, isMassage, words.loadFailed]);
 
   useEffect(() => {
     load();
@@ -201,7 +235,7 @@ export default function TherapistsScreen() {
       Alert.alert(
         "Opslaan mislukt",
         error.message ||
-          "De therapeut kon niet worden opgeslagen."
+          `De ${words.one} kon niet worden opgeslagen.`
       );
     } finally {
       setIsSaving(false);
@@ -237,8 +271,8 @@ export default function TherapistsScreen() {
 
   function confirmDeactivate(therapist) {
     Alert.alert(
-      "Therapeut uitschakelen?",
-      `${therapist.name} krijgt geen nieuwe afspraken meer. Bestaande afspraken blijven bewaard.`,
+      `${capitalize(words.one)} uitschakelen?`,
+      words.deactivateBody(therapist.name),
       [
         { text: "Annuleren", style: "cancel" },
         {
@@ -279,20 +313,16 @@ export default function TherapistsScreen() {
         contentContainerStyle={[styles.content, embedded && styles.fill]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Therapeuten</Text>
+        <Text style={styles.title}>{words.title}</Text>
 
-        <Text style={styles.description}>
-          Kies per therapeut welke massages die kan geven
-          en wanneer die werkt. Klanten kiezen zelf geen
-          therapeut.
-        </Text>
+        <Text style={styles.description}>{words.intro}</Text>
 
         {editingId !== null ? (
           <View style={styles.formCard}>
             <Text style={styles.formTitle}>
               {editingId === "new"
-                ? "Nieuwe therapeut"
-                : "Therapeut aanpassen"}
+                ? `Nieuwe ${words.one}`
+                : `${capitalize(words.one)} aanpassen`}
             </Text>
 
             <Text style={styles.label}>Naam</Text>
@@ -303,21 +333,25 @@ export default function TherapistsScreen() {
               onChangeText={(name) =>
                 setForm({ ...form, name })
               }
-              placeholder="Bijvoorbeeld Anna"
+              placeholder={words.placeholder}
               placeholderTextColor={colors.textDisabled}
             />
 
-            <Text style={styles.sectionLabel}>
-              Massages die deze therapeut geeft
-            </Text>
+            {isMassage ? (
+              <>
+                <Text style={styles.sectionLabel}>
+                  Massages die deze therapeut geeft
+                </Text>
 
-            <MassageChoice
-              services={services}
-              selectedIds={form.serviceIds}
-              onChange={(serviceIds) =>
-                setForm({ ...form, serviceIds })
-              }
-            />
+                <MassageChoice
+                  services={services}
+                  selectedIds={form.serviceIds}
+                  onChange={(serviceIds) =>
+                    setForm({ ...form, serviceIds })
+                  }
+                />
+              </>
+            ) : null}
 
             <Text style={styles.sectionLabel}>
               Werkuren per week
@@ -464,14 +498,14 @@ export default function TherapistsScreen() {
             onPress={startAdding}
           >
             <Text style={styles.primaryText}>
-              Therapeut toevoegen
+              {capitalize(words.one)} toevoegen
             </Text>
           </Pressable>
         )}
 
         {therapists.length === 0 && (
           <Text style={styles.empty}>
-            Je hebt nog geen therapeuten toegevoegd.
+            {words.empty}
           </Text>
         )}
 
@@ -490,9 +524,11 @@ export default function TherapistsScreen() {
                 : " · uitgeschakeld"}
             </Text>
 
-            <Text style={styles.cardMeta}>
-              {serviceNames(therapist.serviceIds)}
-            </Text>
+            {isMassage ? (
+              <Text style={styles.cardMeta}>
+                {serviceNames(therapist.serviceIds)}
+              </Text>
+            ) : null}
 
             <Text style={styles.cardMeta}>
               {summarizeWorkingDays(

@@ -22,7 +22,7 @@ import BuyerForm, { buyerIsComplete, EMPTY_BUYER, Field } from "../../../compone
 import { openDocumentPdf } from "../../../components/invoicing/open-file";
 import { formatClock } from "../../../components/team/team-format";
 import useWideLayout from "../../../hooks/useWideLayout";
-import { t } from "../../../i18n";
+import { plural, t } from "../../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../../theme";
 import { todayString } from "../../../utils/date";
 import { formatDuration, formatPrice, parsePriceToCents } from "../../../utils/price";
@@ -30,6 +30,11 @@ import { formatDuration, formatPrice, parsePriceToCents } from "../../../utils/p
 // ======================================================
 // Afrekenen (checkout of one appointment)
 // ======================================================
+//
+// A restaurant settles a reservation here as well
+// (?kind=reservation): the ticket starts empty and the
+// owner types the total of the bill (or a few lines,
+// such as food and drinks) and a tip.
 //
 // A ticket: the massage, products added at the counter
 // and a tip for the therapist. Then how the customer pays:
@@ -66,7 +71,8 @@ const POLL_MS = 2500;
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { id, date } = useLocalSearchParams();
+  const { id, date, kind } = useLocalSearchParams();
+  const isReservation = kind === "reservation";
   const { business, accessToken } = useAuth();
 
   const wide = useWideLayout();
@@ -98,8 +104,18 @@ export default function CheckoutScreen() {
   useEffect(() => {
     let active = true;
 
+    // A reservation is loaded on its own and shaped like
+    // an appointment without a massage.
+    const booking = isReservation
+      ? api.getReservation(id, accessToken).then((response) => {
+          const reservation = response?.data || response;
+
+          return { data: reservation ? [{ ...reservation, isReservation: true }] : [] };
+        })
+      : api.getMassageAppointments(business.id, date || todayString(), accessToken);
+
     Promise.all([
-      api.getMassageAppointments(business.id, date || todayString(), accessToken),
+      booking,
       api.getStripeStatus(business.id, accessToken).catch(() => null),
       api.getInvoicing(business.id, accessToken).catch(() => null),
     ])
@@ -135,17 +151,24 @@ export default function CheckoutScreen() {
         }
 
         setReceiptEmail(found.email ?? "");
+
+        // An empty bill: ask for the amount straight away.
+        if (found.isReservation) {
+          setProductOpen(true);
+        }
       })
       .catch((loadError) => active && setError(loadError.message));
 
     return () => {
       active = false;
     };
-  }, [business?.id, id, date, accessToken]);
+  }, [business?.id, id, date, isReservation, accessToken]);
 
-  const items = appointment
-    ? [{ name: appointment.serviceName, amountCents: appointment.priceCents }, ...extras]
-    : [];
+  const items = !appointment
+    ? []
+    : isReservation
+      ? extras
+      : [{ name: appointment.serviceName, amountCents: appointment.priceCents }, ...extras];
 
   const subtotal = items.reduce((sum, item) => sum + item.amountCents, 0);
   const tipCents =
@@ -198,7 +221,9 @@ export default function CheckoutScreen() {
     try {
       const response = await api.createPayment(
         business.id,
-        { appointmentId: appointment.id, method, items, tipCents },
+        isReservation
+          ? { reservationId: appointment.id, method, items, tipCents }
+          : { appointmentId: appointment.id, method, items, tipCents },
         accessToken
       );
 
@@ -237,6 +262,7 @@ export default function CheckoutScreen() {
   if (step === "qr" && payment) {
     return (
       <QrStep
+        forBill={isReservation}
         payment={payment}
         businessName={business?.name}
         onPaid={finish}
@@ -255,7 +281,7 @@ export default function CheckoutScreen() {
         defaultEmail={receiptEmail}
         canInvoice={!!invoicing?.complete}
         onDone={() => router.back()}
-        onNext={() => router.replace("/massage/new-appointment")}
+        onNext={isReservation ? null : () => router.replace("/massage/new-appointment")}
       />
     );
   }
@@ -282,11 +308,16 @@ export default function CheckoutScreen() {
               <View style={styles.flex}>
                 <Text style={type.bodyMedium}>{customer}</Text>
                 <Text style={type.caption}>
-                  {t("checkout.withTherapist", {
-                    room: appointment.roomName,
-                    therapist: appointment.therapistName,
-                    time: `${formatClock(appointment.startTime)} – ${formatClock(appointment.endTime)}`,
-                  })}
+                  {isReservation
+                    ? t("checkout.forGuests", {
+                        guests: plural("dashboard.people", appointment.guestCount),
+                        time: formatClock(appointment.startTime),
+                      })
+                    : t("checkout.withTherapist", {
+                        room: appointment.roomName,
+                        therapist: appointment.therapistName,
+                        time: `${formatClock(appointment.startTime)} – ${formatClock(appointment.endTime)}`,
+                      })}
                 </Text>
               </View>
             </Card>
@@ -294,12 +325,18 @@ export default function CheckoutScreen() {
             {/* Ticket */}
 
             <Card style={styles.ticket}>
-              <View style={styles.line}>
-                <Text style={[type.body, styles.flex]}>
-                  {appointment.serviceName} {formatDuration(appointment.durationMinutes)}
-                </Text>
-                <Text style={type.bodyMedium}>{formatPrice(appointment.priceCents)}</Text>
-              </View>
+              {isReservation ? (
+                extras.length === 0 ? (
+                  <Text style={type.caption}>{t("checkout.emptyBill")}</Text>
+                ) : null
+              ) : (
+                <View style={styles.line}>
+                  <Text style={[type.body, styles.flex]}>
+                    {appointment.serviceName} {formatDuration(appointment.durationMinutes)}
+                  </Text>
+                  <Text style={type.bodyMedium}>{formatPrice(appointment.priceCents)}</Text>
+                </View>
+              )}
 
               {extras.map((extra, index) => (
                 <View key={`${extra.name}-${index}`} style={styles.line}>
@@ -318,11 +355,17 @@ export default function CheckoutScreen() {
 
               <Pressable accessibilityRole="button" onPress={() => setProductOpen(true)} style={styles.addLine}>
                 <Plus size={16} color={colors.primary} strokeWidth={2} />
-                <Text style={styles.addText}>{t("checkout.addProduct")}</Text>
+                <Text style={styles.addText}>
+                  {isReservation ? t("checkout.addAmount") : t("checkout.addProduct")}
+                </Text>
               </Pressable>
 
               <View style={styles.tipBlock}>
-                <Text style={type.caption}>{t("checkout.tipFor", { name: appointment.therapistName })}</Text>
+                <Text style={type.caption}>
+                  {isReservation
+                    ? t("checkout.tip")
+                    : t("checkout.tipFor", { name: appointment.therapistName })}
+                </Text>
                 <View style={styles.tips}>
                   {TIPS.map((option) => {
                     const selected = tip.kind === "percent" && tip.value === option.value;
@@ -450,6 +493,7 @@ export default function CheckoutScreen() {
       </ScrollView>
 
       <ProductSheet
+        forBill={isReservation}
         visible={productOpen}
         onClose={() => setProductOpen(false)}
         onAdd={(product) => {
@@ -493,16 +537,17 @@ function MethodTile({ icon: Icon, title, hint, selected, disabled, onPress }) {
 // Adding a product or a tip amount
 // ------------------------------------------------------
 
-function ProductSheet({ visible, onClose, onAdd }) {
+function ProductSheet({ visible, forBill, onClose, onAdd }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
 
   useEffect(() => {
     if (visible) {
-      setName("");
+      // A restaurant bill is usually one line.
+      setName(forBill ? t("checkout.bill") : "");
       setPrice("");
     }
-  }, [visible]);
+  }, [visible, forBill]);
 
   const cents = parsePriceToCents(price);
 
@@ -510,7 +555,7 @@ function ProductSheet({ visible, onClose, onAdd }) {
     <Sheet
       visible={visible}
       onClose={onClose}
-      title={t("checkout.addProduct")}
+      title={forBill ? t("checkout.addAmount") : t("checkout.addProduct")}
       footer={
         <Button
           variant="primary"
@@ -525,10 +570,10 @@ function ProductSheet({ visible, onClose, onAdd }) {
         <TextInput
           value={name}
           onChangeText={setName}
-          placeholder={t("checkout.productNamePlaceholder")}
+          placeholder={forBill ? t("checkout.amountNamePlaceholder") : t("checkout.productNamePlaceholder")}
           placeholderTextColor={colors.textDisabled}
           style={styles.input}
-          autoFocus
+          autoFocus={!forBill}
         />
         <Text style={styles.label}>{t("checkout.productPrice")}</Text>
         <TextInput
@@ -538,6 +583,7 @@ function ProductSheet({ visible, onClose, onAdd }) {
           placeholderTextColor={colors.textDisabled}
           keyboardType="decimal-pad"
           style={styles.input}
+          autoFocus={forBill}
         />
       </View>
     </Sheet>
@@ -588,7 +634,7 @@ function AmountSheet({ visible, title, onClose, onSave }) {
 // QR code: waiting for the customer
 // ------------------------------------------------------
 
-function QrStep({ payment, businessName, onPaid, onCancel }) {
+function QrStep({ payment, businessName, forBill, onPaid, onCancel }) {
   const { business, accessToken } = useAuth();
   const done = useRef(false);
 
@@ -644,7 +690,7 @@ function QrStep({ payment, businessName, onPaid, onCancel }) {
           icon={<Share2 size={18} color={colors.text} strokeWidth={1.8} />}
           onPress={() =>
             Share.share({
-              message: t("checkout.shareMessage", { business: businessName, url: payment.checkoutUrl }),
+              message: t(forBill ? "checkout.shareMessageBill" : "checkout.shareMessage", { business: businessName, url: payment.checkoutUrl }),
             })
           }
           style={styles.wide}
@@ -793,7 +839,9 @@ function PaidStep({ payment, summary, document, onDocument, defaultEmail, canInv
           </Card>
         ) : null}
 
-        <Button label={t("checkout.nextAppointment")} onPress={onNext} style={styles.wide} />
+        {onNext ? (
+          <Button label={t("checkout.nextAppointment")} onPress={onNext} style={styles.wide} />
+        ) : null}
         <Button label={t("checkout.done")} variant="primary" onPress={onDone} style={styles.wide} />
       </ScrollView>
 

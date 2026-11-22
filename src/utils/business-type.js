@@ -40,12 +40,28 @@ const SHARED_SETTINGS_SCREENS = [
 // Top-level screens both business types use.
 const SHARED_SCREENS = ["calls", "floor-plan"];
 
+// Screens under /massage/ that restaurants use as well:
+// the team, the staff list, the time clock, checkout,
+// payments, invoicing and the reservation platforms.
+const RESTAURANT_STAFF_SCREENS = [
+  "team",
+  "therapists",
+  "clock",
+  "checkout",
+  "payments",
+  "invoicing",
+  "documents",
+  "platforms",
+];
+
 /**
  * Whether a business type may open the screen with the
  * given expo-router segments (for example ["settings",
  * "opening-hours"]).
  *
- * - Restaurants may open everything except /massage/...
+ * - Restaurants may open everything except /massage/...,
+ *   apart from the shared staff and payment screens
+ *   (RESTAURANT_STAFF_SCREENS).
  * - Massage businesses may only open /massage/..., the
  *   calendar, the call log, the floor plan editor, the
  *   shared settings screens and the login screen. The restaurant tabs sit in the "(restaurant)"
@@ -77,5 +93,8 @@ export function isRouteAllowed(type, segments) {
     );
   }
 
-  return first !== "massage";
+  return (
+    first !== "massage" ||
+    RESTAURANT_STAFF_SCREENS.includes(segments[1])
+  );
 }

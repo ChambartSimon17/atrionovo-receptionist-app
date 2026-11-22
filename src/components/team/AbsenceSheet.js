@@ -5,6 +5,7 @@ import { Button, Chip, SegmentedControl, Sheet } from "../ui";
 import DateRangePicker from "../ui/DateRangePicker";
 import TimeRangeField from "./TimeRangeField";
 import { plural, t } from "../../i18n";
+import { useIsMassage } from "../../theme/skin";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { dayCount } from "./team-format";
 
@@ -23,6 +24,7 @@ import { dayCount } from "./team-format";
 const REASONS = ["SICK", "LEAVE", "PERSONAL", "TRAINING"];
 
 export default function AbsenceSheet({ visible, therapists, initial, onClose, onSubmit }) {
+  const isMassage = useIsMassage();
   const [therapistId, setTherapistId] = useState(null);
   const [reason, setReason] = useState("SICK");
   const [range, setRange] = useState({ start: null, end: null });
@@ -48,7 +50,7 @@ export default function AbsenceSheet({ visible, therapists, initial, onClose, on
 
   async function submit() {
     if (!therapist || !range.start) {
-      Alert.alert(t("team.chooseTherapist"));
+      Alert.alert(t(isMassage ? "team.chooseTherapist" : "team.chooseStaff"));
       return;
     }
 
@@ -84,7 +86,7 @@ export default function AbsenceSheet({ visible, therapists, initial, onClose, on
           label={
             therapist
               ? plural("team.setAbsent", days || 1, { name: therapist.name })
-              : t("team.chooseTherapist")
+              : t(isMassage ? "team.chooseTherapist" : "team.chooseStaff")
           }
           onPress={submit}
         />

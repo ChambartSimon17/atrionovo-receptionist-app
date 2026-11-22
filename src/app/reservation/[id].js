@@ -21,6 +21,7 @@ import {
 import {
   Armchair,
   ChevronLeft,
+  CreditCard,
   DoorOpen,
   Pencil,
   Phone,
@@ -33,6 +34,7 @@ import useWideLayout from "../../hooks/useWideLayout";
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
 import { guestLabel } from "../../components/ReservationRow";
+import { formatPrice } from "../../utils/price";
 import {
   Badge,
   Button,
@@ -244,6 +246,15 @@ export default function ReservationDetailsScreen() {
   );
   const isOpen = reservation.status === "CONFIRMED";
 
+  // The table settled (POST /payments with this
+  // reservation); otherwise it can be settled once the
+  // guests are seated.
+  const payment = reservation.payments?.[0] ?? null;
+  const canSettle =
+    !payment &&
+    (reservation.status === "SEATED" ||
+      reservation.status === "COMPLETED");
+
   return (
     <SafeAreaView style={styles.screen}>
       <BackBar onBack={() => router.back()} />
@@ -316,6 +327,37 @@ export default function ReservationDetailsScreen() {
               {/* Next steps */}
 
               <View style={styles.actions}>
+                {payment ? (
+                  <Card style={styles.paid}>
+                    <CreditCard size={16} color={colors.positive} strokeWidth={2} />
+                    <Text style={styles.paidText}>
+                      {t("checkout.alreadyPaid", {
+                        amount: formatPrice(payment.amountCents + payment.tipCents),
+                      })}{" "}
+                      · {t(`checkout.methods.${payment.method}`)}
+                    </Text>
+                  </Card>
+                ) : null}
+
+                {canSettle && (
+                  <Button
+                    label={t("checkout.title")}
+                    variant="primary"
+                    onPress={() =>
+                      router.push(
+                        `/massage/checkout/${reservation.id}?kind=reservation`
+                      )
+                    }
+                    icon={
+                      <CreditCard
+                        size={18}
+                        color={colors.onPrimary}
+                        strokeWidth={1.8}
+                      />
+                    }
+                  />
+                )}
+
                 {isOpen && (
                   <Button
                     label="Aan tafel"
@@ -341,7 +383,7 @@ export default function ReservationDetailsScreen() {
                 {reservation.status === "SEATED" && (
                   <Button
                     label="Gasten vertrokken"
-                    variant="primary"
+                    variant={canSettle ? "secondary" : "primary"}
                     loading={busy === "complete"}
                     onPress={() =>
                       changeStatus(
@@ -698,6 +740,19 @@ const styles = StyleSheet.create({
 
   actions: {
     gap: spacing.sm,
+  },
+
+  paid: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+
+  paidText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.positive,
   },
 
   actionRow: {

@@ -167,6 +167,11 @@ export default {
     roomsSubtitle: "Rooms and which massages fit",
     integrations: "Integrations",
     integrationsSubtitle: "Connect your own calendars",
+    guests: "Guests",
+    guestsSubtitle: "Guest cards, visits and allergies",
+    staff: "Staff",
+    staffSubtitle: "Kitchen and floor staff and their hours",
+    platformsSubtitle: "Zenchef, TheFork and other booking platforms",
     logout: "Log out",
   },
 

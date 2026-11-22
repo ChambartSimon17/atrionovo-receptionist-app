@@ -26,6 +26,7 @@ export default {
     replan: "Replanifier",
     appointmentCount: { one: "1 rendez-vous", other: "{count} rendez-vous" },
     noTherapists: "Pas encore de thérapeutes. Ajoutez-les via Plus → Thérapeutes.",
+    noStaff: "Pas encore d'employés. Ajoutez-les via Plus → Employés.",
     tapHint: "Touchez un jour pour modifier les heures.",
     reasons: {
       SICK: "Malade",
@@ -57,6 +58,7 @@ export default {
     notePlaceholder: "ex. mariage",
     setAbsent: { one: "Marquer {name} absent · 1 jour", other: "Marquer {name} absent · {count} jours" },
     chooseTherapist: "Choisissez d'abord un thérapeute.",
+    chooseStaff: "Choisissez d'abord un employé.",
 
     absenceTitle: "{reason} · {name}",
     affected: "Rendez-vous pendant cette période",
@@ -72,6 +74,7 @@ export default {
 
     weekly: "Semaine fixe",
     editWeekly: "Modifier les heures fixes et les massages",
+    editWeeklyStaff: "Modifier les heures fixes",
     changes: "Exceptions",
     noChanges: "Aucune exception prévue.",
     insteadOf: "au lieu de {hours}",
@@ -191,6 +194,12 @@ export default {
   },
 
   checkout: {
+    bill: "Addition",
+    addAmount: "Ajouter un montant",
+    amountNamePlaceholder: "p.ex. Repas, Boissons",
+    tip: "Pourboire",
+    forGuests: "{guests} · {time}",
+    emptyBill: "Tapez « Ajouter un montant » et indiquez le total de l'addition.",
     title: "Encaisser",
     withTherapist: "{room} · avec {therapist} · {time}",
     addProduct: "Ajouter un produit",
@@ -220,6 +229,7 @@ export default {
     waiting: "En attente du paiement…",
     shareLink: "Partager le lien (SMS ou WhatsApp)",
     shareMessage: "Payez votre massage chez {business} : {url}",
+    shareMessageBill: "Réglez votre addition chez {business} : {url}",
     cancelQr: "Autre moyen de paiement",
     paid: "Payé",
     paidLine: "{amount} · {method} · {time}",
@@ -289,6 +299,19 @@ export default {
     saved: "Enregistré",
   },
 
+  platforms: {
+    title: "Intégrations",
+    intro:
+      "Vous utilisez déjà une plateforme de réservation ? AtrioNovo lira bientôt ses réservations et y renverra les modifications de la réceptionniste IA et de votre site, pour n'avoir qu'un seul agenda.",
+    soon: "Bientôt",
+    zenchef: "Réservations et tables de Zenchef",
+    thefork: "Réservations via TheFork",
+    resengo: "Réservations via Resengo",
+    formitable: "Réservations via Formitable",
+    opentable: "Réservations via OpenTable",
+    footer:
+      "Vous utilisez une de ces plateformes ? Dites-le-nous et nous mettrons la connexion en place avec vous.",
+  },
   documents: {
     title: "Factures",
     subtitle: "Tickets, factures et notes de crédit",

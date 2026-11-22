@@ -167,6 +167,11 @@ export default {
     roomsSubtitle: "Kamers en welke massages erin kunnen",
     integrations: "Integraties",
     integrationsSubtitle: "Je eigen agenda's koppelen",
+    guests: "Gasten",
+    guestsSubtitle: "Gastenkaarten, bezoeken en allergieën",
+    staff: "Medewerkers",
+    staffSubtitle: "Keuken- en zaalpersoneel en hun uren",
+    platformsSubtitle: "Zenchef, TheFork en andere reservatieplatformen",
     logout: "Uitloggen",
   },
 

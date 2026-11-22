@@ -6,6 +6,7 @@ import Columns from "../../../../components/ui/Columns";
 import useWideLayout from "../../../../hooks/useWideLayout";
 
 import { useAuth } from "../../../../context/auth-context";
+import { useIsMassage } from "../../../../theme/skin";
 import { api } from "../../../../services/api";
 import { Button, Card } from "../../../../components/ui";
 import { locale, plural, t } from "../../../../i18n";
@@ -33,6 +34,8 @@ export default function AbsenceScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const { business, accessToken } = useAuth();
+  // Restaurants have no appointments to move.
+  const isMassage = useIsMassage();
 
   const [absence, setAbsence] = useState(null);
   const wide = useWideLayout();
@@ -154,9 +157,9 @@ export default function AbsenceScreen() {
           }
           right={
             <>
-              <Text style={styles.label}>{t("team.affected")}</Text>
+              {!isMassage ? null : <Text style={styles.label}>{t("team.affected")}</Text>}
 
-              {conflicts.length === 0 ? (
+              {!isMassage ? null : conflicts.length === 0 ? (
                 <Text style={type.caption}>{t("team.noAffected")}</Text>
               ) : (
                 conflicts.map((appointment) => (

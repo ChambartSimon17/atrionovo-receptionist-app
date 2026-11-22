@@ -26,6 +26,7 @@ export default {
     replan: "Herplannen",
     appointmentCount: { one: "1 afspraak", other: "{count} afspraken" },
     noTherapists: "Nog geen therapeuten. Voeg ze toe via Meer → Therapeuten.",
+    noStaff: "Nog geen medewerkers. Voeg ze toe via Meer → Medewerkers.",
     tapHint: "Tik op een dag om de uren aan te passen.",
     reasons: {
       SICK: "Ziek",
@@ -59,6 +60,7 @@ export default {
     notePlaceholder: "bv. huwelijk",
     setAbsent: { one: "{name} afwezig zetten · 1 dag", other: "{name} afwezig zetten · {count} dagen" },
     chooseTherapist: "Kies eerst een therapeut.",
+    chooseStaff: "Kies eerst een medewerker.",
 
     // Absence screen
     absenceTitle: "{reason} · {name}",
@@ -76,6 +78,7 @@ export default {
     // Therapist detail
     weekly: "Vaste week",
     editWeekly: "Vaste uren en massages aanpassen",
+    editWeeklyStaff: "Vaste uren aanpassen",
     changes: "Afwijkingen",
     noChanges: "Geen afwijkingen gepland.",
     insteadOf: "i.p.v. {hours}",
@@ -197,6 +200,12 @@ export default {
   },
 
   checkout: {
+    bill: "Rekening",
+    addAmount: "Bedrag toevoegen",
+    amountNamePlaceholder: "bv. Eten, Dranken",
+    tip: "Fooi",
+    forGuests: "{guests} · {time}",
+    emptyBill: "Tik op \"Bedrag toevoegen\" en vul het totaal van de rekening in.",
     title: "Afrekenen",
     withTherapist: "{room} · bij {therapist} · {time}",
     addProduct: "Product toevoegen",
@@ -226,6 +235,7 @@ export default {
     waiting: "Wachten op betaling…",
     shareLink: "Link delen (sms of WhatsApp)",
     shareMessage: "Betaal je massage bij {business}: {url}",
+    shareMessageBill: "Betaal je rekening bij {business}: {url}",
     cancelQr: "Andere betaalwijze",
     paid: "Betaald",
     paidLine: "{amount} · {method} · {time}",
@@ -295,6 +305,19 @@ export default {
     saved: "Opgeslagen",
   },
 
+  platforms: {
+    title: "Integraties",
+    intro:
+      "Werk je al met een reservatieplatform? Dan leest AtrioNovo straks de reservaties van dat platform en zet het wijzigingen van de AI-receptionist en je website daar terug in, zodat je maar één agenda hebt.",
+    soon: "Binnenkort",
+    zenchef: "Reservaties en tafels van Zenchef",
+    thefork: "Reservaties via TheFork",
+    resengo: "Reservaties via Resengo",
+    formitable: "Reservaties via Formitable",
+    opentable: "Reservaties via OpenTable",
+    footer:
+      "Werk je met een van deze platformen? Laat het ons weten, dan zetten we de koppeling samen met jou op.",
+  },
   documents: {
     title: "Facturen",
     subtitle: "Kastickets, facturen en creditnota's",

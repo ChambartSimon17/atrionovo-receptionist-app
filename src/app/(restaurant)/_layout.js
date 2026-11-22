@@ -5,7 +5,7 @@ import {
   Ellipsis,
   House,
   LayoutGrid,
-  Users,
+  UsersRound,
 } from "lucide-react-native";
 
 import {
@@ -19,7 +19,10 @@ import { t } from "../../i18n";
 // ======================================================
 //
 // The bottom tab bar of a restaurant:
-// Vandaag · Zaal · Agenda · Gasten · Meer.
+// Vandaag · Zaal · Agenda · Team · Meer.
+//
+// Gasten is no tab any more (it opens from Meer, like
+// Klanten for a salon), but keeps its URL /customers.
 //
 // The group does not change the URLs, so /dashboard and
 // /customers stay what they were.
@@ -76,10 +79,17 @@ export default function RestaurantTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="team"
+        options={{
+          title: t("tabs.team"),
+          tabBarIcon: tabIcon(UsersRound),
+        }}
+      />
+      <Tabs.Screen
         name="customers"
         options={{
+          href: null,
           title: t("tabs.guests"),
-          tabBarIcon: tabIcon(Users),
         }}
       />
       <Tabs.Screen
