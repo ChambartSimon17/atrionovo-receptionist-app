@@ -1,5 +1,5 @@
 import { DevSettings } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import { getPref, setPref } from "../storage/prefs";
 
 import baseNl from "./nl";
 import baseFr from "./fr";
@@ -42,7 +42,7 @@ export const LANGUAGES = [
 
 function storedLanguage() {
   try {
-    const stored = SecureStore.getItem(KEY);
+    const stored = getPref(KEY);
 
     return DICTIONARIES[stored] ? stored : null;
   } catch {
@@ -98,7 +98,7 @@ export function setLanguage(next) {
   }
 
   try {
-    SecureStore.setItem(KEY, next);
+    setPref(KEY, next);
   } catch {
     return;
   }

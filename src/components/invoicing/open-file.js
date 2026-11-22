@@ -17,8 +17,8 @@ const TYPES = {
   csv: { mimeType: "text/csv", UTI: "public.comma-separated-values-text" },
 };
 
-export async function openBusinessFile(businessId, path, filename, accessToken) {
-  const bytes = await api.downloadBusinessFile(businessId, path, accessToken);
+// Writes bytes or text to the cache and opens the share sheet.
+export async function shareFile(filename, content) {
   const file = new File(Paths.cache, filename);
 
   if (file.exists) {
@@ -26,11 +26,17 @@ export async function openBusinessFile(businessId, path, filename, accessToken) 
   }
 
   file.create();
-  file.write(bytes);
+  file.write(content);
 
   const extension = filename.split(".").pop();
 
   await Sharing.shareAsync(file.uri, TYPES[extension] ?? {});
+}
+
+export async function openBusinessFile(businessId, path, filename, accessToken) {
+  const bytes = await api.downloadBusinessFile(businessId, path, accessToken);
+
+  await shareFile(filename, bytes);
 }
 
 export function openDocumentPdf(businessId, document, accessToken) {

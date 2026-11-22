@@ -2,12 +2,11 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Image } from "expo-image";
-import * as Sharing from "expo-sharing";
-import { File, Paths } from "expo-file-system";
 import { ChevronRight, Download, Lock } from "lucide-react-native";
 
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
+import { shareFile } from "../invoicing/open-file";
 import { Button, Card, SegmentedControl } from "../ui";
 import Avatar from "./Avatar";
 import EntrySheet from "./EntrySheet";
@@ -93,16 +92,7 @@ export default function AttendanceView() {
 
     try {
       const csv = await api.getAttendanceCsv(business.id, range.from, range.to, accessToken);
-      const file = new File(Paths.cache, `uren-${range.from}-${range.to}.csv`);
-
-      if (file.exists) {
-        file.delete();
-      }
-
-      file.create();
-      file.write(csv);
-
-      await Sharing.shareAsync(file.uri, { mimeType: "text/csv", UTI: "public.comma-separated-values-text" });
+      await shareFile(`uren-${range.from}-${range.to}.csv`, csv);
     } catch (exportError) {
       Alert.alert(t("common.error"), exportError.message);
     } finally {

@@ -1,3 +1,6 @@
+import "../web/setup";
+
+
 import {
   Stack,
   useRouter,

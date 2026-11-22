@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useRef,
   useState,
 } from "react";
 
@@ -48,8 +49,21 @@ export default function useDayAppointments(date) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Only the latest request may fill the screen: an older
+  // one (another day, or before the login was restored)
+  // can answer last.
+  const latest = useRef(0);
+
   const load = useCallback(
     async (day) => {
+      // Opening a page directly (web, deep link) can come
+      // before the login is restored; it loads again then.
+      if (!businessId || !accessToken) {
+        return;
+      }
+
+      const request = ++latest.current;
+
       try {
         setError(null);
 
@@ -60,14 +74,20 @@ export default function useDayAppointments(date) {
             accessToken
           );
 
-        setAppointments(response.data);
+        if (request === latest.current) {
+          setAppointments(response.data);
+        }
       } catch (loadError) {
-        setError(
-          loadError.message ||
-            "De afspraken konden niet worden geladen."
-        );
+        if (request === latest.current) {
+          setError(
+            loadError.message ||
+              "De afspraken konden niet worden geladen."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (request === latest.current) {
+          setIsLoading(false);
+        }
       }
     },
     [businessId, accessToken]

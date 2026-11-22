@@ -1,5 +1,5 @@
 import { Appearance, DevSettings } from "react-native";
-import * as SecureStore from "expo-secure-store";
+import { getPref, setPref } from "../storage/prefs";
 
 // ======================================================
 // Appearance
@@ -18,7 +18,7 @@ export const APPEARANCES = ["automatic", "light", "dark"];
 
 export function getAppearance() {
   try {
-    const stored = SecureStore.getItem(KEY);
+    const stored = getPref(KEY);
 
     return APPEARANCES.includes(stored) ? stored : "automatic";
   } catch {
@@ -37,7 +37,7 @@ apply(getAppearance());
 
 export function setAppearance(appearance) {
   try {
-    SecureStore.setItem(KEY, appearance);
+    setPref(KEY, appearance);
   } catch {
     // Not stored: it still applies until the app closes.
   }
