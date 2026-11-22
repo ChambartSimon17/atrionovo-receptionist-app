@@ -12,6 +12,7 @@ import {
   colors,
   fonts,
 } from "../../../theme";
+import { useSideTabs } from "../../../components/SideTabBar";
 import { t } from "../../../i18n";
 
 // ======================================================
@@ -37,9 +38,14 @@ function tabIcon(Icon) {
 }
 
 export default function MassageTabsLayout() {
+  // A sidebar instead of the bottom bar in the browser on a laptop.
+  const sidebar = useSideTabs();
+
   return (
     <Tabs
+      tabBar={sidebar.tabBar}
       screenOptions={{
+        ...sidebar.screenOptions,
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
