@@ -63,6 +63,7 @@ import {
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
 import { BUSINESS_TYPES } from "../../utils/business-type";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // Floor plan editor
@@ -456,7 +457,7 @@ export default function FloorPlanEditor() {
 
   async function handleDone() {
     if (!isDirty) {
-      router.back();
+      goBack(router);
       return;
     }
 
@@ -465,7 +466,7 @@ export default function FloorPlanEditor() {
       const saved = await save(plan);
       savedPlan.current = JSON.stringify(saved);
       setPlan(saved);
-      router.back();
+      goBack(router);
     } catch (saveError) {
       Alert.alert(t("common.error"), saveError?.message || t("editor.saveFailed"));
     } finally {

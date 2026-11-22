@@ -26,6 +26,7 @@ import { plural, t } from "../../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../../theme";
 import { todayString } from "../../../utils/date";
 import { formatDuration, formatPrice, parsePriceToCents } from "../../../utils/price";
+import { goBack } from "../../../utils/navigation";
 
 // ======================================================
 // Afrekenen (checkout of one appointment)
@@ -280,7 +281,7 @@ export default function CheckoutScreen() {
         onDocument={setDocument}
         defaultEmail={receiptEmail}
         canInvoice={!!invoicing?.complete}
-        onDone={() => router.back()}
+        onDone={() => goBack(router)}
         onNext={isReservation ? null : () => router.replace("/massage/new-appointment")}
       />
     );

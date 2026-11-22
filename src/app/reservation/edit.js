@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
+import { goBack } from "../../utils/navigation";
 
 export default function EditReservation() {
   const wide = useWideLayout();
@@ -410,7 +411,7 @@ export default function EditReservation() {
             text: "OK",
 
             onPress: () =>
-              router.back(),
+              goBack(router),
           },
         ]
       );
@@ -476,7 +477,7 @@ export default function EditReservation() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() =>
-            router.back()
+            goBack(router)
           }
         >
           <Text
@@ -517,7 +518,7 @@ export default function EditReservation() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() =>
-            router.back()
+            goBack(router)
           }
         >
           <Text
@@ -548,7 +549,7 @@ export default function EditReservation() {
             styles.headerBackButton
           }
           onPress={() =>
-            router.back()
+            goBack(router)
           }
         >
           <Text
@@ -867,7 +868,7 @@ export default function EditReservation() {
                   styles.cancelButton
                 }
                 onPress={() =>
-                  router.back()
+                  goBack(router)
                 }
                 disabled={saving}
               >

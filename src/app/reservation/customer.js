@@ -17,6 +17,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
+import { goBack } from "../../utils/navigation";
 
 export default function ReservationCustomer() {
   const wide = useWideLayout();
@@ -153,7 +154,7 @@ export default function ReservationCustomer() {
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.7}
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
         >
           <Text
             style={styles.backButtonText}

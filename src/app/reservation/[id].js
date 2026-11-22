@@ -56,6 +56,7 @@ import {
 import { UserX, Undo2 } from "lucide-react-native";
 import { Skeleton } from "../../components/ui";
 import { t } from "../../i18n";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // Reservatie
@@ -217,7 +218,7 @@ export default function ReservationDetailsScreen() {
   if (isLoading || error || !reservation) {
     return (
       <SafeAreaView style={styles.screen}>
-        <BackBar onBack={() => router.back()} />
+        <BackBar onBack={() => goBack(router)} />
         <View style={styles.center}>
           {isLoading ? (
             <View style={{ width: "100%", gap: 12, padding: 20 }}>
@@ -257,7 +258,7 @@ export default function ReservationDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <BackBar onBack={() => router.back()} />
+      <BackBar onBack={() => goBack(router)} />
 
       <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <Columns

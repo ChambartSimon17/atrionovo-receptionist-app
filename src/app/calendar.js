@@ -34,6 +34,7 @@ import {
 } from "../utils/business-type";
 import { skin } from "../theme/skin";
 import { colors, spacing } from "../theme";
+import { goBack } from "../utils/navigation";
 
 // ======================================================
 // Helpers
@@ -383,7 +384,7 @@ export default function Calendar() {
             styles.backButton
           }
           onPress={() =>
-            router.back()
+            goBack(router)
           }
         >
           <Text

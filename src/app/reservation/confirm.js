@@ -20,6 +20,7 @@ import {
 import { useAuth } from "../../context/auth-context";
 import { api } from "../../services/api";
 import { skin } from "../../theme/skin";
+import { goBack } from "../../utils/navigation";
 
 export default function ReservationConfirm() {
   const wide = useWideLayout();
@@ -214,7 +215,7 @@ export default function ReservationConfirm() {
         <TouchableOpacity
           style={styles.backButton}
           activeOpacity={0.7}
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           disabled={creating}
         >
           <Text
@@ -394,7 +395,7 @@ export default function ReservationConfirm() {
               <TouchableOpacity
                 style={styles.cancelButton}
                 activeOpacity={0.8}
-                onPress={() => router.back()}
+                onPress={() => goBack(router)}
                 disabled={creating}
               >
                 <Text

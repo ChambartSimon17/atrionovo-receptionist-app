@@ -45,6 +45,7 @@ import {
 import { formatTime } from "../../../utils/date";
 import { formatPrice } from "../../../utils/price";
 import { Skeleton, SkeletonList } from "../../../components/ui";
+import { goBack } from "../../../utils/navigation";
 
 // ======================================================
 // Klantprofiel
@@ -192,7 +193,7 @@ export default function MassageClientScreen() {
   if (isLoading || error || !customer) {
     return (
       <SafeAreaView style={styles.screen}>
-        <BackBar onBack={() => router.back()} />
+        <BackBar onBack={() => goBack(router)} />
         <View style={styles.center}>
           {isLoading ? (
             <View style={{ width: "100%", gap: 12 }}>
@@ -215,7 +216,7 @@ export default function MassageClientScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <BackBar onBack={() => router.back()} />
+      <BackBar onBack={() => goBack(router)} />
 
       <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <Columns

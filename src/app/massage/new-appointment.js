@@ -36,6 +36,7 @@ import {
   todayString,
 } from "../../utils/date";
 import { formatDuration, formatPrice } from "../../utils/price";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // New massage appointment
@@ -186,7 +187,7 @@ export default function NewAppointmentScreen() {
       Alert.alert(
         "Afspraak gemaakt",
         "De afspraak staat in de agenda.",
-        [{ text: "OK", onPress: () => router.back() }]
+        [{ text: "OK", onPress: () => goBack(router) }]
       );
     } catch (error) {
       if (error.status === 409) {
@@ -244,7 +245,7 @@ export default function NewAppointmentScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Sluiten"
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           style={styles.closeButton}
         >
           <X size={18} color={colors.text} strokeWidth={1.8} />

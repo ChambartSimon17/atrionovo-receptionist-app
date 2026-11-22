@@ -37,6 +37,7 @@ import {
   todayString,
 } from "../../utils/date";
 import AiInsightsCard from "../../components/AiInsightsCard";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // Analyse
@@ -216,7 +217,7 @@ export default function MassageAnalyticsScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Terug"
-          onPress={() => router.back()}
+          onPress={() => goBack(router)}
           style={styles.iconButton}
         >
           <ChevronLeft

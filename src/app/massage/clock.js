@@ -25,6 +25,7 @@ import PinPad from "../../components/team/PinPad";
 import { formatClock, formatMinutes, formatPeriods, formatWorked, fromKey } from "../../components/team/team-format";
 import { locale, plural, t } from "../../i18n";
 import { colors, fonts, radius, spacing, type } from "../../theme";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // Prikklok (time clock)
@@ -231,7 +232,7 @@ export default function ClockScreen() {
   function confirmExit() {
     Alert.alert(t("clock.exitTitle"), t("clock.exitMessage"), [
       { text: t("common.cancel"), style: "cancel" },
-      { text: t("clock.exit"), style: "destructive", onPress: () => router.back() },
+      { text: t("clock.exit"), style: "destructive", onPress: () => goBack(router) },
     ]);
   }
 

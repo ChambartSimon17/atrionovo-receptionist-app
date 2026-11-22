@@ -19,6 +19,7 @@ import {
   formatMinutes,
   reasonLabel,
 } from "../../../../components/team/team-format";
+import { goBack } from "../../../../utils/navigation";
 
 // ======================================================
 // Absence (Team → an absence)
@@ -106,7 +107,7 @@ export default function AbsenceScreen() {
         onPress: async () => {
           try {
             await api.deleteAbsence(business.id, id, accessToken);
-            router.back();
+            goBack(router);
           } catch (deleteError) {
             Alert.alert(t("common.error"), deleteError.message);
           }

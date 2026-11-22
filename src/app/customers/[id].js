@@ -47,6 +47,7 @@ import {
 import { guestSummary } from "../../hooks/useGuestHistory";
 import { formatTime } from "../../utils/date";
 import { Skeleton, SkeletonList } from "../../components/ui";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // Gastprofiel
@@ -147,7 +148,7 @@ export default function GuestProfileScreen({ customerId }) {
   if (isLoading || error || !customer) {
     return (
       <SafeAreaView style={styles.screen}>
-        {embedded ? null : <BackBar onBack={() => router.back()} />}
+        {embedded ? null : <BackBar onBack={() => goBack(router)} />}
         <View style={styles.center}>
           {isLoading ? (
             <View style={{ width: "100%", gap: 12 }}>
@@ -171,7 +172,7 @@ export default function GuestProfileScreen({ customerId }) {
 
   return (
     <SafeAreaView style={styles.screen}>
-      {embedded ? null : <BackBar onBack={() => router.back()} />}
+      {embedded ? null : <BackBar onBack={() => goBack(router)} />}
 
       <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]}>
         <Columns

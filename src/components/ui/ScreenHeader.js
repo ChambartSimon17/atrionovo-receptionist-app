@@ -5,6 +5,7 @@ import { ChevronLeft } from "lucide-react-native";
 import { useEmbedded } from "../embedded";
 import { t } from "../../i18n";
 import { colors, fonts, radius, spacing } from "../../theme";
+import { goBack } from "../../utils/navigation";
 
 // ======================================================
 // ScreenHeader
@@ -27,7 +28,7 @@ export default function ScreenHeader({ title, right, onBack }) {
           accessibilityRole="button"
           accessibilityLabel={t("common.back")}
           hitSlop={8}
-          onPress={onBack ?? (() => router.back())}
+          onPress={onBack ?? (() => goBack(router))}
           style={({ pressed }) => [styles.back, pressed && styles.pressed]}
         >
           <ChevronLeft size={20} color={colors.text} strokeWidth={1.8} />
