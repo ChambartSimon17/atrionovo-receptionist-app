@@ -154,6 +154,9 @@ export default function MassageAgenda({
               </View>
 
               <Text style={styles.meta}>
+                {appointment.locationName
+                  ? `${appointment.locationName} · `
+                  : ""}
                 {appointment.serviceName} ·{" "}
                 {formatDuration(
                   appointment.durationMinutes

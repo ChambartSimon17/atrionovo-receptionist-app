@@ -45,6 +45,9 @@ import { goBack } from "../../utils/navigation";
 // Steps: choose the massage, the day and a free time,
 // then enter the customer. The backend chooses the
 // therapist and the room; the customer cannot pick them.
+// A practice with several locations (rooms with their own
+// hours) first chooses the location: each has its own
+// hours, so the free times depend on it.
 // A note (for example a preferred therapist) is optional.
 // The bar at the bottom sums up the choice and confirms.
 // ======================================================
@@ -66,6 +69,10 @@ export default function NewAppointmentScreen() {
   const [serviceId, setServiceId] = useState(null);
   const [date, setDate] = useState(todayString());
 
+  // Locations of the practice; empty for one place.
+  const [locations, setLocations] = useState([]);
+  const [locationId, setLocationId] = useState(null);
+
   const [slots, setSlots] = useState([]);
   const [isLoadingSlots, setIsLoadingSlots] =
     useState(false);
@@ -82,12 +89,19 @@ export default function NewAppointmentScreen() {
   useEffect(() => {
     async function loadServices() {
       try {
-        const response = await api.getMassageServices(
-          businessId,
-          accessToken
-        );
+        const [response, roomResponse] = await Promise.all([
+          api.getMassageServices(businessId, accessToken),
+          api.getTreatmentRooms(businessId, accessToken),
+        ]);
 
         setServices(response.data);
+
+        const own = roomResponse.data.filter(
+          (room) => room.isActive && room.hasOwnHours
+        );
+
+        setLocations(own);
+        setLocationId(own[0]?.id ?? null);
       } catch (error) {
         Alert.alert(
           "Fout",
@@ -114,7 +128,7 @@ export default function NewAppointmentScreen() {
       const response =
         await api.getMassageAvailability(
           businessId,
-          { date, serviceId },
+          { date, serviceId, roomId: locationId },
           accessToken
         );
 
@@ -132,11 +146,12 @@ export default function NewAppointmentScreen() {
     }
   }
 
-  // New massage or day: the chosen time no longer applies.
+  // New massage, day or location: the chosen time no
+  // longer applies.
   useEffect(() => {
     setSlot(null);
     loadSlots();
-  }, [serviceId, date]);
+  }, [serviceId, date, locationId]);
 
   async function handleSave() {
     if (!serviceId || !slot) {
@@ -166,6 +181,10 @@ export default function NewAppointmentScreen() {
       lastName: lastName.trim(),
       phoneNumber: phoneNumber.trim(),
     };
+
+    if (locationId) {
+      data.roomId = locationId;
+    }
 
     if (email.trim()) {
       data.email = email.trim();
@@ -341,6 +360,36 @@ export default function NewAppointmentScreen() {
             right={
               <>
                 <SectionLabel number={2} title="Dag en tijd" />
+
+                {locations.length > 0 ? (
+                  <View style={styles.locations}>
+                    {locations.map((location) => {
+                      const selected = location.id === locationId;
+
+                      return (
+                        <Pressable
+                          key={location.id}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected }}
+                          onPress={() => setLocationId(location.id)}
+                          style={[
+                            styles.location,
+                            selected && styles.locationSelected,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.locationText,
+                              selected && styles.onPrimary,
+                            ]}
+                          >
+                            {location.name}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                ) : null}
 
                 <ScrollView
                   horizontal
@@ -761,6 +810,34 @@ const styles = StyleSheet.create({
 
   onPrimary: {
     color: colors.onPrimary,
+  },
+
+  locations: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+
+  location: {
+    minHeight: touchTarget,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    justifyContent: "center",
+  },
+
+  locationSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+
+  locationText: {
+    fontFamily: fonts.medium,
+    fontSize: 14,
+    color: colors.text,
   },
 
   slotLoading: {

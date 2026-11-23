@@ -533,13 +533,18 @@ export const api = {
 
   getMassageAvailability(
     businessId,
-    { date, serviceId },
+    { date, serviceId, roomId },
     accessToken
   ) {
+    // roomId: only the times at that location.
+    const room = roomId
+      ? `&roomId=${encodeURIComponent(roomId)}`
+      : "";
+
     return authenticatedRequest(
       `/businesses/${businessId}/massage-availability?date=${encodeURIComponent(
         date
-      )}&serviceId=${encodeURIComponent(serviceId)}`,
+      )}&serviceId=${encodeURIComponent(serviceId)}${room}`,
       accessToken,
       {
         method: "GET",

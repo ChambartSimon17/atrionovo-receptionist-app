@@ -272,7 +272,9 @@ export default function MassageAgendaScreen() {
     nowOffset <= hours.length * HOUR_HEIGHT;
 
   function openAppointment(appointment) {
-    const summary = `${appointment.serviceName} · ${formatPrice(
+    const summary = `${
+      appointment.locationName ? `${appointment.locationName}\n` : ""
+    }${appointment.serviceName} · ${formatPrice(
       appointment.priceCents
     )}\n${appointment.therapistName} · ${
       appointment.roomName
@@ -683,10 +685,19 @@ function AppointmentBlock({
             ]}
             numberOfLines={1}
           >
-            {appointment.serviceName} ·{" "}
-            {view === "therapists"
-              ? appointment.roomName
-              : appointment.therapistName}
+            {appointment.locationName
+              ? // A location of the practice comes first,
+                // so the agenda shows where the massage is.
+                `${appointment.locationName} · ${appointment.serviceName}${
+                  view === "therapists"
+                    ? ""
+                    : ` · ${appointment.therapistName}`
+                }`
+              : `${appointment.serviceName} · ${
+                  view === "therapists"
+                    ? appointment.roomName
+                    : appointment.therapistName
+                }`}
           </Text>
         </>
       )}

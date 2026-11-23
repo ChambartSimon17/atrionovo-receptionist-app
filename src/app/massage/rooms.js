@@ -7,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -15,9 +16,16 @@ import {
 import { api } from "../../services/api";
 import { useAuth } from "../../context/auth-context";
 import { colors, spacing } from "../../theme";
-import { settingsStyles } from "../../theme/settingsStyles";
+import { settingsStyles, switchColors } from "../../theme/settingsStyles";
 import { useEmbedded } from "../../components/embedded";
 import MassageChoice from "../../components/MassageChoice";
+import WeekHoursEditor from "../../components/WeekHoursEditor";
+import {
+  createEmptyWeek,
+  summarizeWorkingDays,
+  weekToWorkingHours,
+  workingHoursToWeek,
+} from "../../utils/time";
 
 // ======================================================
 // Treatment rooms
@@ -29,11 +37,19 @@ import MassageChoice from "../../components/MassageChoice";
 //
 // Rooms are deactivated instead of deleted, so that
 // existing appointments keep their room.
+//
+// A room can be a separate location of the practice (for
+// example a practice at home and one in a salon) with its
+// own opening hours. It is then only bookable within those
+// hours, the receptionist asks callers which location, and
+// the agenda and calendar show where each massage is.
 // ======================================================
 
 const EMPTY_FORM = {
   name: "",
   serviceIds: [],
+  hasOwnHours: false,
+  week: createEmptyWeek(),
 };
 
 export default function TreatmentRoomsScreen() {
@@ -94,6 +110,8 @@ export default function TreatmentRoomsScreen() {
     setForm({
       name: room.name,
       serviceIds: room.serviceIds,
+      hasOwnHours: room.hasOwnHours ?? false,
+      week: workingHoursToWeek(room.openingHours),
     });
     setEditingId(room.id);
   }
@@ -111,9 +129,27 @@ export default function TreatmentRoomsScreen() {
       return;
     }
 
+    const { workingHours: openingHours, error } =
+      weekToWorkingHours(form.week);
+
+    if (form.hasOwnHours && error) {
+      Alert.alert("Controleer je invoer", error);
+      return;
+    }
+
+    if (form.hasOwnHours && openingHours.length === 0) {
+      Alert.alert(
+        "Controleer je invoer",
+        "Kies op welke dagen deze locatie open is."
+      );
+      return;
+    }
+
     const data = {
       name,
       serviceIds: form.serviceIds,
+      hasOwnHours: form.hasOwnHours,
+      openingHours: form.hasOwnHours ? openingHours : [],
     };
 
     try {
@@ -260,6 +296,36 @@ export default function TreatmentRoomsScreen() {
               }
             />
 
+            <View style={styles.locationHeader}>
+              <View style={styles.locationText}>
+                <Text style={styles.sectionLabel}>
+                  Aparte locatie
+                </Text>
+                <Text style={styles.cardMeta}>
+                  Met eigen openingsuren, bijvoorbeeld je
+                  praktijk thuis en een salon. De receptie
+                  vraagt klanten op welke locatie ze willen
+                  komen, en de agenda toont waar elke
+                  afspraak is.
+                </Text>
+              </View>
+
+              <Switch
+                {...switchColors}
+                value={form.hasOwnHours}
+                onValueChange={(hasOwnHours) =>
+                  setForm({ ...form, hasOwnHours })
+                }
+              />
+            </View>
+
+            {form.hasOwnHours ? (
+              <WeekHoursEditor
+                week={form.week}
+                onChange={(week) => setForm({ ...form, week })}
+              />
+            ) : null}
+
             <View style={styles.row}>
               <Pressable
                 style={[
@@ -331,6 +397,14 @@ export default function TreatmentRoomsScreen() {
               {serviceNames(room.serviceIds)}
             </Text>
 
+            {room.hasOwnHours ? (
+              <Text style={styles.cardMeta}>
+                Aparte locatie · open{" "}
+                {summarizeWorkingDays(room.openingHours) ??
+                  "geen dagen"}
+              </Text>
+            ) : null}
+
             <View style={styles.cardActions}>
               <Pressable
                 onPress={() => startEditing(room)}
@@ -373,5 +447,16 @@ const styles = StyleSheet.create({
   row: {
     ...settingsStyles.row,
     marginTop: spacing.xl,
+  },
+
+  locationHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+
+  locationText: {
+    flex: 1,
   },
 });
