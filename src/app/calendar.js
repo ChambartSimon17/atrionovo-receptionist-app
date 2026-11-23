@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 import {
@@ -128,6 +129,11 @@ function formatMonthTitle(
 // ======================================================
 
 export default function Calendar() {
+  // On a tablet or laptop the month fills the screen: the
+  // rows share the height instead of each day being almost
+  // square, so every week fits without scrolling.
+  const { width } = useWindowDimensions();
+  const fillScreen = width >= 768;
 
   const router =
     useRouter();
@@ -571,19 +577,35 @@ export default function Calendar() {
         </View>
       ) : (
         <View
-          style={
-            styles.calendarGrid
-          }
+          style={[
+            styles.calendarGrid,
+            fillScreen &&
+              styles.calendarGridFill,
+          ]}
         >
           {calendarDays.map(
             (day, index) => {
+              const cellSize =
+                fillScreen && {
+                  aspectRatio:
+                    undefined,
+                  height: `${
+                    100 /
+                    Math.ceil(
+                      calendarDays.length /
+                        7
+                    )
+                  }%`,
+                };
+
               if (!day) {
                 return (
                   <View
                     key={`empty-${index}`}
-                    style={
-                      styles.dayCell
-                    }
+                    style={[
+                      styles.dayCell,
+                      cellSize,
+                    ]}
                   />
                 );
               }
@@ -614,6 +636,7 @@ export default function Calendar() {
                   }
                   style={[
                     styles.dayCell,
+                    cellSize,
                     isToday &&
                       styles.todayCell,
                   ]}
@@ -808,6 +831,11 @@ const styleDefs = {
         "#fff",
       borderRadius: 20,
       padding: 10,
+    },
+
+    calendarGridFill: {
+      flex: 1,
+      marginBottom: 24,
     },
 
     dayCell: {
