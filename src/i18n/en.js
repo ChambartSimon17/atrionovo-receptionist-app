@@ -357,6 +357,7 @@ export default {
     markHandled: "Called back",
     reopen: "Reopen",
     summary: "Summary",
+    callbackReason: "Callback request",
     transcript: "Conversation",
     listen: "Listen to recording",
     ai: "AI",

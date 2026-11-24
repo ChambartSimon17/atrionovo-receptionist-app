@@ -163,6 +163,15 @@ export default function CallDetail({ callId, onChange, contentStyle }) {
             ) : null}
           </View>
 
+          {call.callbackReason ? (
+            // What the caller asked to be called back for
+            // (e.g. a Body Dearmouring session).
+            <Card style={[styles.card, styles.callbackCard]}>
+              <Text style={styles.cardLabel}>{t("calls.callbackReason")}</Text>
+              <Text style={styles.summary}>{call.callbackReason}</Text>
+            </Card>
+          ) : null}
+
           {call.summary ? (
             <Card style={styles.card}>
               <Text style={styles.cardLabel}>{t("calls.summary")}</Text>
@@ -290,6 +299,11 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     color: colors.textMuted,
     marginBottom: spacing.sm,
+  },
+
+  callbackCard: {
+    borderColor: colors.primary,
+    borderWidth: 1,
   },
 
   summary: {

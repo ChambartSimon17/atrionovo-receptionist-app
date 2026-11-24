@@ -357,6 +357,7 @@ export default {
     markHandled: "Teruggebeld",
     reopen: "Opnieuw openen",
     summary: "Samenvatting",
+    callbackReason: "Terugbelverzoek",
     transcript: "Gesprek",
     listen: "Opname beluisteren",
     ai: "AI",

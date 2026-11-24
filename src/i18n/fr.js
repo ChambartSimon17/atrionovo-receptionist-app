@@ -357,6 +357,7 @@ export default {
     markHandled: "Rappelé",
     reopen: "Rouvrir",
     summary: "Résumé",
+    callbackReason: "Demande de rappel",
     transcript: "Conversation",
     listen: "Écouter l'enregistrement",
     ai: "IA",

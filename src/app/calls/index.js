@@ -236,9 +236,9 @@ export default function CallsScreen() {
                     {" · "}
                     <Text style={styles.duration}>{formatDuration(item.durationSeconds)}</Text>
                   </Text>
-                  {item.summary ? (
+                  {item.callbackReason || item.summary ? (
                     <Text style={styles.summary} numberOfLines={2}>
-                      {item.summary}
+                      {item.callbackReason || item.summary}
                     </Text>
                   ) : null}
                 </View>
