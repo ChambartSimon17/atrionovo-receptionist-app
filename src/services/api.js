@@ -1347,6 +1347,25 @@ export const api = {
     );
   },
 
+  // AtrioNovo subscription: plan, this month's minutes and
+  // SMS, invoices. Owner and manager.
+  getBilling(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/billing`,
+      accessToken,
+      { method: "GET" }
+    );
+  },
+
+  // { url } of Stripe's customer portal (owner only).
+  getBillingPortalLink(businessId, accessToken) {
+    return authenticatedRequest(
+      `/businesses/${businessId}/billing/portal`,
+      accessToken,
+      { method: "POST", body: JSON.stringify({}) }
+    );
+  },
+
   getStripeOnboardingLink(businessId, accessToken) {
     return authenticatedRequest(
       `/businesses/${businessId}/payments/stripe/onboarding`,

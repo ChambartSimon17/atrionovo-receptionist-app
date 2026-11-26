@@ -11,6 +11,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import {
   ChartColumn,
   ChevronRight,
+  Gauge,
   LogOut,
   PhoneCall,
 } from "lucide-react-native";
@@ -35,7 +36,8 @@ import { morePages } from "./more-pages";
 //   the business card
 //   Analyse (green card)
 //   AI-receptionist: the call log, with the number of
-//   callers still to call back
+//   callers still to call back, and (owner, manager) the
+//   subscription with this month's call minutes
 //   Instellingen: the links the business type passes in
 //   Uitloggen
 //
@@ -85,6 +87,10 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
   const [loggingOut, setLoggingOut] = useState(false);
   const [openCallbacks, setOpenCallbacks] = useState(0);
   const [callsToday, setCallsToday] = useState(null);
+  const [billing, setBilling] = useState(null);
+
+  // Staff see no prices or invoices.
+  const seesBilling = !user?.role || user.role === "OWNER" || user.role === "MANAGER";
 
   useFocusEffect(
     useCallback(() => {
@@ -117,7 +123,14 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
         )
         .then((response) => setOpenCallbacks((response?.data ?? response)?.openCallbacks ?? 0))
         .catch(() => {});
-    }, [accessToken, business?.id])
+
+      if (seesBilling) {
+        api
+          .getBilling(business.id, accessToken)
+          .then((response) => setBilling(response?.data ?? response))
+          .catch(() => {});
+      }
+    }, [accessToken, business?.id, seesBilling])
   );
 
   const aiLinks = [
@@ -131,7 +144,21 @@ export default function MoreScreen({ settingsLinks, analyticsHref, analyticsSubt
           : t("more.callsToday", { count: callsToday }),
       badge: openCallbacks > 0 ? t("more.callBackBadge", { count: openCallbacks }) : null,
     },
-  ];
+    seesBilling && {
+      href: "/settings/subscription",
+      icon: Gauge,
+      title: t("more.subscription"),
+      subtitle: billing?.plan
+        ? t("more.subscriptionUsage", {
+            used: billing.usage?.minutes ?? 0,
+            included: billing.plan.includedMinutes,
+          })
+        : t("more.subscriptionSubtitle"),
+      badge: ["past_due", "unpaid", "incomplete"].includes(billing?.status)
+        ? t("subscription.statusPastDue")
+        : null,
+    },
+  ].filter(Boolean);
 
   // Next to the list on a tablet, on its own screen on a phone.
   function open(href) {

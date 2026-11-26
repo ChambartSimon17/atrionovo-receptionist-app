@@ -2,6 +2,7 @@ import CallsScreen from "../app/calls/index";
 import BusinessScreen from "../app/settings/business";
 import OpeningHoursScreen from "../app/settings/opening-hours";
 import SpecialOpeningDaysScreen from "../app/settings/special-opening-days";
+import SubscriptionScreen from "../app/settings/subscription";
 import ClientsScreen from "../app/massage/clients";
 import DocumentsScreen from "../app/massage/documents";
 import InvoicingScreen from "../app/massage/invoicing";
@@ -28,6 +29,7 @@ export const morePages = {
   "/settings/business": BusinessScreen,
   "/settings/opening-hours": OpeningHoursScreen,
   "/settings/special-opening-days": SpecialOpeningDaysScreen,
+  "/settings/subscription": SubscriptionScreen,
   "/massage/clients": ClientsScreen,
   "/massage/documents": DocumentsScreen,
   "/massage/invoicing": InvoicingScreen,
