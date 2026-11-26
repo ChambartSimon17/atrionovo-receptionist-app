@@ -7,7 +7,7 @@ import {
 } from "react-native";
 
 import { useRouter } from "expo-router";
-import { CreditCard } from "lucide-react-native";
+import { CreditCard, TriangleAlert } from "lucide-react-native";
 
 import { Badge } from "./ui";
 import { t } from "../i18n";
@@ -37,6 +37,11 @@ import { formatDuration, formatPrice } from "../utils/price";
 // (iCloud, Setmore). Shown as thin grey rows between the
 // appointments, in time order, without actions: they are
 // changed in that calendar, not here.
+//
+// A block that overlaps an appointment (it was added in
+// that calendar after the booking) is shown in orange with
+// the appointment it clashes with, and the appointment
+// gets the same warning.
 // ======================================================
 
 const STATUS_LABELS = {
@@ -176,6 +181,21 @@ export default function MassageAgenda({
                 </Text>
               )}
 
+              {!inactive && appointment.externalConflicts?.length > 0 ? (
+                <View style={styles.conflict}>
+                  <TriangleAlert size={14} color={colors.warning} strokeWidth={2} />
+                  <Text style={styles.conflictText}>
+                    Overlapt met{" "}
+                    {appointment.externalConflicts
+                      .map(
+                        (conflict) =>
+                          `${conflict.calendarName} ${formatTime(conflict.startTime)}–${formatTime(conflict.endTime)}`
+                      )
+                      .join(", ")}
+                  </Text>
+                </View>
+              ) : null}
+
               {appointment.payment ? (
                 <View style={styles.paid}>
                   <CreditCard size={14} color={colors.positive} strokeWidth={2} />
@@ -264,20 +284,37 @@ export default function MassageAgenda({
 }
 
 function BusyRow({ block, divider }) {
+  const clashes = block.conflicts ?? [];
+  const clash = clashes.length > 0;
+
   return (
     <View
       accessible
-      accessibilityLabel={`Bezet, ${block.calendarName}`}
+      accessibilityLabel={
+        clash
+          ? `Dubbele boeking: ${block.calendarName} overlapt met ${clashes.map((c) => c.name).join(", ")}`
+          : `Bezet, ${block.calendarName}`
+      }
       style={[styles.busyRow, divider && styles.rowDivider]}
     >
-      <Text style={styles.busyTime}>
+      <Text style={[styles.busyTime, clash && styles.busyClash]}>
         {block.allDay
           ? "Hele dag"
           : `${formatTime(block.startTime)}–${formatTime(block.endTime)}`}
       </Text>
-      <Text style={styles.busyLabel} numberOfLines={1}>
-        Bezet · {block.calendarName}
-      </Text>
+      <View style={styles.busyBody}>
+        <Text style={[styles.busyLabel, clash && styles.busyClash]} numberOfLines={1}>
+          {clash ? "Dubbele boeking" : "Bezet"} · {block.calendarName}
+        </Text>
+        {clashes.map((conflict) => (
+          <View key={conflict.appointmentId} style={styles.busyConflict}>
+            <TriangleAlert size={13} color={colors.warning} strokeWidth={2} />
+            <Text style={styles.conflictText}>
+              Overlapt met de afspraak van {conflict.name} ({formatTime(conflict.startTime)}–{formatTime(conflict.endTime)})
+            </Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -395,8 +432,41 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 
-  busyLabel: {
+  busyBody: {
     flex: 1,
+    gap: 2,
+  },
+
+  busyClash: {
+    color: colors.warning,
+  },
+
+  busyConflict: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+
+  conflict: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-start",
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+  },
+
+  conflictText: {
+    flexShrink: 1,
+    fontFamily: fonts.medium,
+    fontSize: 12,
+    color: colors.warning,
+  },
+
+  busyLabel: {
     fontFamily: fonts.medium,
     fontSize: 12,
     color: colors.textMuted,

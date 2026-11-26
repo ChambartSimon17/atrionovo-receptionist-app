@@ -240,6 +240,18 @@ export default function MassageAgendaScreen() {
     therapists.map((therapist) => [therapist.id, therapist.name])
   );
 
+  // A block only clashes in a column that has one of the
+  // appointments it overlaps; elsewhere it is plain busy.
+  function clashesIn(block, columnName) {
+    return (block.conflicts ?? []).some((conflict) =>
+      appointments.some(
+        (appointment) =>
+          appointment.id === conflict.appointmentId &&
+          appointment[columnKey] === columnName
+      )
+    );
+  }
+
   function busyBlocksFor(columnName) {
     return busyBlocks.filter(
       (block) =>
@@ -514,7 +526,9 @@ export default function MassageAgendaScreen() {
                       />
                     ))}
 
-                    {busyBlocksFor(name).map((block) => (
+                    {busyBlocksFor(name)
+                      .filter((block) => !clashesIn(block, name))
+                      .map((block) => (
                       <ExternalBusyBlock
                         key={block.id}
                         block={block}
@@ -539,6 +553,21 @@ export default function MassageAgendaScreen() {
                           onPress={() =>
                             openAppointment(appointment)
                           }
+                        />
+                      ))}
+
+                    {/* Busy time that overlaps an appointment:
+                        on top, so it is never hidden behind it. */}
+                    {busyBlocksFor(name)
+                      .filter((block) => clashesIn(block, name))
+                      .map((block) => (
+                        <ExternalBusyBlock
+                          key={block.id}
+                          block={block}
+                          date={date}
+                          firstHour={firstHour}
+                          lastHour={lastHour}
+                          clash
                         />
                       ))}
                   </Pressable>
@@ -583,7 +612,7 @@ export default function MassageAgendaScreen() {
   );
 }
 
-function ExternalBusyBlock({ block, date, firstHour, lastHour }) {
+function ExternalBusyBlock({ block, date, firstHour, lastHour, clash = false }) {
   const start = block.allDay
     ? firstHour * 60
     : Math.max(firstHour * 60, minutesWithinDay(block.startTime, date));
@@ -602,20 +631,44 @@ function ExternalBusyBlock({ block, date, firstHour, lastHour }) {
     ? "Hele dag"
     : `${formatTime(block.startTime)}–${formatTime(block.endTime)}`;
 
+  const clashes = clash
+    ? block.conflicts
+        .map(
+          (conflict) =>
+            `${conflict.name} (${formatTime(conflict.startTime)}–${formatTime(conflict.endTime)})`
+        )
+        .join(", ")
+    : "";
+
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Bezet, ${block.calendarName}, ${when}`}
+      accessibilityLabel={
+        clash
+          ? `Dubbele boeking, ${block.calendarName}, ${when}, overlapt met ${clashes}`
+          : `Bezet, ${block.calendarName}, ${when}`
+      }
       onPress={() =>
         Alert.alert(
-          `Bezet · ${block.calendarName}`,
-          `${when}\n\nDit komt uit je eigen agenda. Pas het daar aan; hier is het alleen-lezen.`
+          clash
+            ? `Dubbele boeking · ${block.calendarName}`
+            : `Bezet · ${block.calendarName}`,
+          clash
+            ? `${when} overlapt met de afspraak van ${clashes}.\n\nDit staat in je eigen agenda (${block.calendarName}). Verplaats of annuleer één van de twee.`
+            : `${when}\n\nDit komt uit je eigen agenda. Pas het daar aan; hier is het alleen-lezen.`
         )
       }
-      style={[styles.busyBlock, { top: top + 1, height }]}
+      style={[
+        styles.busyBlock,
+        clash && styles.busyClash,
+        { top: top + 1, height },
+      ]}
     >
-      <Text style={styles.busyText} numberOfLines={height < 40 ? 1 : 2}>
-        Bezet · {block.calendarName}
+      <Text
+        style={[styles.busyText, clash && styles.busyClashText]}
+        numberOfLines={height < 40 ? 1 : 2}
+      >
+        {clash ? "⚠ Dubbel" : "Bezet"} · {block.calendarName}
       </Text>
     </Pressable>
   );
@@ -949,6 +1002,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 4,
     overflow: "hidden",
+  },
+
+  // Overlaps an appointment: drawn on top, on the right
+  // half, so the appointment stays readable.
+  busyClash: {
+    left: "50%",
+    borderStyle: "solid",
+    borderColor: colors.warning,
+    backgroundColor: colors.warningSoft,
+    zIndex: 2,
+  },
+
+  busyClashText: {
+    color: colors.warning,
   },
 
   busyText: {

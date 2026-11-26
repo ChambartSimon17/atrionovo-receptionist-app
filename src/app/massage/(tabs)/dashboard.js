@@ -16,7 +16,7 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import { Plus } from "lucide-react-native";
+import { Plus, TriangleAlert } from "lucide-react-native";
 
 import { useAuth } from "../../../context/auth-context";
 import { api } from "../../../services/api";
@@ -31,6 +31,7 @@ import useDayAppointments, {
 import {
   colors,
   fonts,
+  radius,
   spacing,
   type,
 } from "../../../theme";
@@ -384,9 +385,28 @@ export default function MassageTodayScreen() {
     </>
   );
 
+  // Appointments that overlap busy time from Setmore or
+  // iCloud (added there after the booking).
+  const clashCount = new Set(
+    busyBlocks.flatMap((block) =>
+      (block.conflicts ?? []).map((conflict) => conflict.appointmentId)
+    )
+  ).size;
+
   const agenda = (
     <View style={styles.section}>
       <Text style={type.heading}>Afspraken</Text>
+
+      {clashCount > 0 ? (
+        <View style={styles.clashBanner}>
+          <TriangleAlert size={16} color={colors.warning} strokeWidth={2} />
+          <Text style={styles.clashText}>
+            {clashCount === 1
+              ? "1 afspraak overlapt met je eigen agenda. Verplaats of annuleer er één van de twee."
+              : `${clashCount} afspraken overlappen met je eigen agenda. Verplaats of annuleer telkens één van de twee.`}
+          </Text>
+        </View>
+      ) : null}
 
       <MassageAgenda
         appointments={appointments}
@@ -463,6 +483,23 @@ export default function MassageTodayScreen() {
 }
 
 const styles = StyleSheet.create({
+  clashBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: colors.warningSoft,
+  },
+
+  clashText: {
+    flex: 1,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    color: colors.warning,
+  },
+
   screen: {
     flex: 1,
     backgroundColor: colors.background,
