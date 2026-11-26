@@ -45,8 +45,11 @@ const APPLE_ACCOUNT_URL = "https://account.apple.com";
 const FAILURE_TEXT = {
   LOGIN_REFUSED:
     "Apple weigert de login. Controleer je Apple ID en gebruik een app-specifiek wachtwoord, niet je gewone wachtwoord.",
-  TIMEOUT: "De agenda reageert niet. Probeer het zo meteen opnieuw.",
-  NOT_A_CALENDAR: "Deze link is geen agenda. Kopieer de agenda-link (iCal / webcal) opnieuw.",
+  TIMEOUT: "De agenda reageert niet. Probeer later opnieuw.",
+  NOT_A_CALENDAR: "Dit lijkt geen agenda-link. Kopieer de link via 'Copy link'.",
+  LINK_REFUSED:
+    "Deze link is verlopen of wordt geweigerd. Maak in Setmore een nieuwe link aan via Settings → My Profile → Calendar → Get link.",
+  FEED_GONE: "Deze agenda bestaat niet meer. Controleer de link.",
   INVALID_LINK: "Gebruik de https- of webcal-link van de agenda.",
   CALENDAR_GONE: "Een gekozen agenda bestaat niet meer in dit account.",
   UNREACHABLE: "De agenda is niet bereikbaar. Controleer de gegevens en probeer opnieuw.",
