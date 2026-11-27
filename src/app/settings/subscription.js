@@ -189,8 +189,7 @@ export default function SubscriptionScreen() {
               <Text style={styles.planPrice}>
                 {formatPrice(plan.priceCents)}{" "}
                 {plan.interval === "YEAR" ? t("subscription.perYear") : t("subscription.perMonth")}
-                {" · "}
-                {t("subscription.excl")}
+                {data.vatExempt ? null : ` · ${t("subscription.excl")}`}
               </Text>
               {data.cancelAtPeriodEnd ? (
                 <Text style={styles.planNote}>{t("subscription.endsAtPeriodEnd")}</Text>
@@ -238,7 +237,9 @@ export default function SubscriptionScreen() {
               label={t("subscription.extraCost")}
               value={
                 usage?.extraCents > 0
-                  ? `${formatPrice(usage.extraCents)} ${t("subscription.excl")}`
+                  ? data.vatExempt
+                    ? formatPrice(usage.extraCents)
+                    : `${formatPrice(usage.extraCents)} ${t("subscription.excl")}`
                   : t("subscription.noExtra")
               }
             />
